@@ -1,10 +1,11 @@
+
 // src/contexts/sales-context.tsx
 "use client";
 import type React from 'react';
 import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { SELLERS, ALL_SELLERS_OPTION, LOCAL_STORAGE_SALES_KEY } from '@/lib/constants';
 import type { Sale, Seller, SalesContextType, SalesFilters } from '@/lib/types';
-import { v4 as uuidv4 } from 'uuid'; // Needs: npm install uuid && npm install @types/uuid
+import { v4 as uuidv4 } from 'uuid'; 
 
 export const SalesContext = createContext<SalesContextType | undefined>(undefined);
 
@@ -34,9 +35,8 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [sales, loading]);
 
   const addSale = useCallback((saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>): Sale => {
-    // O 'seller' já está incluído em saleData, fornecido pelo SalesForm.
     const newSale: Sale = {
-      ...saleData,
+      ...saleData, 
       id: uuidv4(),
       createdAt: Date.now(),
     };
@@ -49,15 +49,12 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSales(prevSales =>
       prevSales.map(sale => {
         if (sale.id === id) {
-          // Ensure `updatedAt` is part of the update, and `seller` can be updated if present in `saleUpdateData`
           updatedSale = { ...sale, ...saleUpdateData, updatedAt: Date.now() };
           return updatedSale;
         }
         return sale;
-      })
+      }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Re-sort after update
     );
-    // Re-sort if date changed or simply maintain current sort by re-sorting
-    setSales(prevSales => [...prevSales].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     return updatedSale;
   }, []);
 
@@ -65,7 +62,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSales(prevSales => prevSales.filter(sale => sale.id !== id));
   }, []);
 
-  const getSaleById = useCallback((id: string) => {
+  const getSaleById = useCallback((id: string): Sale | undefined => {
     return sales.find(sale => sale.id === id);
   }, [sales]);
 
@@ -95,20 +92,18 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
       .filter(sale => {
         if (!filters.startDate) return true;
-        // Ensure date comparison is robust by comparing only date parts or normalizing time
         const saleDate = new Date(sale.date);
-        saleDate.setHours(0,0,0,0); // Normalize sale date to start of day
+        saleDate.setHours(0,0,0,0); 
         const filterStartDate = new Date(filters.startDate);
-        filterStartDate.setHours(0,0,0,0); // Normalize filter start date to start of day
+        filterStartDate.setHours(0,0,0,0); 
         return saleDate >= filterStartDate;
       })
       .filter(sale => {
         if (!filters.endDate) return true;
-        // Ensure date comparison is robust
         const saleDate = new Date(sale.date);
-        saleDate.setHours(0,0,0,0); // Normalize sale date to start of day
+        saleDate.setHours(0,0,0,0); 
         const filterEndDate = new Date(filters.endDate);
-        filterEndDate.setHours(23, 59, 59, 999); // Normalize filter end date to end of day
+        filterEndDate.setHours(23, 59, 59, 999); 
         return saleDate <= filterEndDate;
       });
   }, [sales, selectedSeller, filters]);
@@ -133,4 +128,3 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </SalesContext.Provider>
   );
 };
-

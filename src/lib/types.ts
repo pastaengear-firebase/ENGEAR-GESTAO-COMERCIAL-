@@ -12,7 +12,7 @@ export interface Sale {
   clientService: string;
   salesValue: number;
   status: StatusOption;
-  payment: number; // Alterado de PaymentOption para number
+  payment: number; 
   createdAt: number; // timestamp
   updatedAt?: number; // timestamp
 }
@@ -32,9 +32,9 @@ export type UnauthenticatedState = {
 export type AuthState = AuthenticatedState | UnauthenticatedState;
 
 export type AuthContextType = AuthState & {
-  login: (username: string, token?: string) => void; // token is unused for now but good for future
+  login: (username: string, token?: string) => void; 
   logout: () => void;
-  loading: boolean; // Adicionado para que os consumidores saibam quando o contexto está pronto
+  loading: boolean; 
 };
 
 export type SalesFilters = {
@@ -63,3 +63,4 @@ export type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   isActive?: (pathname: string) => boolean;
 };
+

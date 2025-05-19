@@ -21,7 +21,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { suggestSalesImprovements, type SuggestSalesImprovementsInput, type SuggestSalesImprovementsOutput } from '@/ai/flows/suggest-sales-improvements';
-import { useRouter, useSearchParams } from 'next/navigation'; // For editing
+import { useRouter, useSearchParams } from 'next/navigation'; 
 import type { Sale } from '@/lib/types';
 
 interface SalesFormProps {
@@ -54,7 +54,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
       clientService: '',
       salesValue: 0,
       status: undefined,
-      payment: 0, // Default payment value
+      payment: 0, 
     },
   });
 
@@ -71,22 +71,21 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
           clientService: saleToEdit.clientService,
           salesValue: saleToEdit.salesValue,
           status: saleToEdit.status,
-          payment: saleToEdit.payment, // Load payment value
+          payment: saleToEdit.payment, 
         });
         setAssignedSeller(saleToEdit.seller);
       } else {
         toast({ title: "Erro", description: "Venda não encontrada para edição.", variant: "destructive" });
-        router.push('/inserir-venda'); // Clear editId from URL
+        router.push('/inserir-venda'); 
       }
     }
   }, [editSaleId, getSaleById, form, toast, router]);
   
   useEffect(() => {
-    // If global seller is specific, use it, otherwise prompt for selection if not editing
     if (!editSaleId && SELLERS.includes(globalSelectedSeller as Seller)) {
       setAssignedSeller(globalSelectedSeller as Seller);
     } else if (!editSaleId && globalSelectedSeller === ALL_SELLERS_OPTION) {
-      setAssignedSeller(undefined); // Require selection if "EQUIPE COMERCIAL"
+      setAssignedSeller(undefined); 
     }
   }, [globalSelectedSeller, editSaleId]);
 
@@ -99,8 +98,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
 
   const fetchSuggestions = async () => {
     const formData = form.getValues();
-     // Check if all required enum fields are selected before fetching suggestions
-    if (!formData.company || !formData.area || !formData.status ) { // Payment is no longer an enum
+    if (!formData.company || !formData.area || !formData.status ) { 
         toast({
             title: "Campos Incompletos",
             description: "Por favor, preencha todos os campos obrigatórios (Empresa, Área, Status) antes de verificar com IA.",
@@ -112,12 +110,10 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
         return;
     }
 
-    // Check if any field relevant for AI suggestion has a value
     const relevantFieldsFilled = Object.entries(formData).some(([key, value]) => {
         if (key === 'date' && value instanceof Date && !isNaN(value.getTime())) return true;
         if (typeof value === 'string' && value.trim() !== '') return true;
         if (typeof value === 'number' && value !== 0) return true;
-        // Check for enum fields (company, area, status)
         if (['company', 'area', 'status'].includes(key) && value !== undefined) return true;
         return false;
     });
@@ -128,13 +124,13 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
       try {
         const aiInput: SuggestSalesImprovementsInput = {
           date: format(formData.date, 'yyyy-MM-dd'),
-          company: formData.company,
+          company: formData.company!, // Add non-null assertion as it's checked above
           project: formData.project,
-          os: formData.os, // os can be empty or "0000"
-          area: formData.area,
+          os: formData.os, 
+          area: formData.area!, // Add non-null assertion
           clientService: formData.clientService,
           salesValue: formData.salesValue,
-          status: formData.status,
+          status: formData.status!, // Add non-null assertion
           payment: formData.payment, 
         };
         const suggestions = await suggestSalesImprovements(aiInput);
@@ -171,9 +167,9 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
     
     const salePayload: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'> = {
       ...data,
-      date: format(data.date, 'yyyy-MM-dd'), // Store date as ISO string
+      date: format(data.date, 'yyyy-MM-dd'), 
       seller: assignedSeller,
-      payment: Number(data.payment) // Ensure payment is a number
+      payment: Number(data.payment) 
     };
 
     try {
@@ -255,9 +251,9 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
 
           { (globalSelectedSeller === ALL_SELLERS_OPTION || editSaleId) && (
              <FormField
-              control={form.control}
-              name="seller" 
-              render={({ field }) => ( 
+              control={form.control} // This field is not directly part of SalesFormSchema, managed by local state 'assignedSeller'
+              name="seller" // Placeholder name, actual value from assignedSeller
+              render={({ field }) => (  // field is not directly used for value here, but for context
                 <FormItem>
                   <FormLabel>Vendedor</FormLabel>
                   <Select 
@@ -330,7 +326,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
               <FormItem>
                 <FormLabel>O.S. (Ordem de Serviço)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Número da O.S. ou 0000" {...field} disabled={isSubmitting} />
+                  <Input placeholder="Número da O.S., 0000 ou deixe em branco" {...field} disabled={isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -492,4 +488,3 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
     </Form>
   );
 }
-
