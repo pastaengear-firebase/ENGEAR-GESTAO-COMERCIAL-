@@ -8,80 +8,102 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%; /* white */
-    --foreground: 240 10% 3.9%; /* near black */
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    /* Light Theme - Maroon & Golden Yellow */
+    --background: 0 0% 96%; /* Light Gray */
+    --foreground: 0 0% 15%; /* Dark Gray for text */
+    
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 0 0% 15%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 25 95% 53%; /* Engie orange/coral like: hsl(25, 95%, 53%) */
-    --primary-foreground: 0 0% 100%; /* white */
-    --secondary: 240 4.8% 95.9%; /* light gray */
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 210 100% 50%; /* A professional, vibrant blue for accents */
-    --accent-foreground: 0 0% 100%; /* white */
-    --destructive: 0 72.2% 50.6%; /* red */
+    --popover-foreground: 0 0% 15%;
+
+    --primary: 345 55% 30%; /* Maroon */
+    --primary-foreground: 0 0% 100%; /* White */
+
+    --secondary: 0 0% 90%; /* Lighter Gray */
+    --secondary-foreground: 0 0% 25%;
+
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 43 88% 63%; /* Golden Yellow */
+    --accent-foreground: 345 55% 15%; /* Dark Maroon for text on accent */
+
+    --destructive: 0 72.2% 50.6%; /* Standard Red */
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%; /* light gray border */
-    --input: 0 0% 89.8%; /* light gray input bg */
-    --ring: 25 95% 53%; /* Primary color for rings */
+
+    --border: 0 0% 85%;
+    --input: 0 0% 90%;
+    --ring: 345 55% 35%; /* Maroon for focus rings (slightly lighter for visibility) */
+    
     --radius: 0.5rem;
 
-    --chart-1: 25 95% 53%;
-    --chart-2: 210 100% 50%;
-    --chart-3: 140 60% 50%;
-    --chart-4: 45 90% 55%;
-    --chart-5: 300 70% 58%;
+    /* Chart Colors - Light Theme */
+    --chart-1: 345 55% 30%; /* Maroon */
+    --chart-2: 43 88% 63%; /* Golden Yellow */
+    --chart-3: 150 45% 45%; /* Complementary Teal/Green */
+    --chart-4: 200 60% 50%; /* Complementary Blue */
+    --chart-5: 25 70% 55%;  /* Complementary Orange */
 
-    /* Sidebar specific colors */
-    --sidebar-background: 240 5.9% 10%; /* Dark blue for sidebar */
-    --sidebar-foreground: 0 0% 98%; /* Light text on dark sidebar */
-    --sidebar-primary: 25 95% 53%; /* Primary color for active/hover elements in sidebar */
-    --sidebar-primary-foreground: 0 0% 100%; /* White text on primary */
-    --sidebar-accent: 25 95% 53%; /* Accent color (can be primary) */
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 240 3.7% 15.9%; /* Darker border for sidebar elements */
-    --sidebar-ring: 25 95% 53%;
+    /* Sidebar specific colors (always darkish, themed with maroon) */
+    --sidebar-background: 345 35% 18%; /* Dark Maroon */
+    --sidebar-foreground: 0 0% 95%;    /* Off-white */
+    --sidebar-primary: 43 88% 63%;     /* Golden Yellow for active/selection */
+    --sidebar-primary-foreground: 345 35% 10%; /* Very Dark Maroon for text on yellow */
+    --sidebar-accent: 345 40% 30%;     /* Slightly lighter/saturated Maroon for hover */
+    --sidebar-accent-foreground: 0 0% 98%;  /* White */
+    --sidebar-border: 345 30% 25%;
+    --sidebar-ring: 43 88% 63%;        /* Golden Yellow ring */
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 25 95% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 210 100% 50%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    /* Dark Theme - Maroon & Golden Yellow */
+    --background: 220 10% 12%; /* Dark Cool Gray */
+    --foreground: 0 0% 95%;    /* Light Gray/Off-white */
+
+    --card: 220 10% 15%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 220 10% 15%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 345 55% 55%; /* Brighter Maroon for dark mode */
+    --primary-foreground: 0 0% 100%; /* White */
+
+    --secondary: 220 10% 20%;
+    --secondary-foreground: 0 0% 85%;
+
+    --muted: 220 10% 20%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 43 88% 70%; /* Brighter Golden Yellow for dark mode */
+    --accent-foreground: 345 55% 15%; /* Dark Maroon */
+    
+    --destructive: 0 62.8% 40.6%; /* Adjusted Red for dark mode */
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 25 95% 53%;
 
-    --chart-1: 25 95% 53%;
-    --chart-2: 210 100% 50%;
-    --chart-3: 140 60% 50%;
-    --chart-4: 45 90% 55%;
-    --chart-5: 300 70% 58%;
+    --border: 220 10% 25%;
+    --input: 220 10% 22%;
+    --ring: 345 55% 55%; /* Brighter Maroon ring */
 
-    /* Sidebar specific colors for dark theme */
-    --sidebar-background: 240 10% 3.9%; /* Very dark blue for sidebar */
-    --sidebar-foreground: 0 0% 98%; /* Light text on dark sidebar */
-    --sidebar-primary: 25 95% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 25 95% 53%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 25 95% 53%;
+    /* Chart Colors - Dark Theme */
+    --chart-1: 345 55% 55%; /* Brighter Maroon */
+    --chart-2: 43 88% 70%; /* Brighter Golden Yellow */
+    --chart-3: 150 50% 60%; /* Adjusted Teal/Green */
+    --chart-4: 200 65% 65%; /* Adjusted Blue */
+    --chart-5: 25 75% 68%;  /* Adjusted Orange */
+
+    /* Sidebar specific colors for dark theme (already defined to be darkish) */
+    /* These can be the same as light theme's sidebar if a consistent sidebar look is desired, or tweaked */
+    --sidebar-background: 345 35% 18%; 
+    --sidebar-foreground: 0 0% 95%;   
+    --sidebar-primary: 43 88% 63%;    
+    --sidebar-primary-foreground: 345 35% 10%; 
+    --sidebar-accent: 345 40% 30%;    
+    --sidebar-accent-foreground: 0 0% 98%; 
+    --sidebar-border: 345 30% 25%;
+    --sidebar-ring: 43 88% 63%;
   }
 }
 
