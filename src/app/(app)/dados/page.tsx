@@ -44,8 +44,8 @@ export default function DadosPage() {
 
   const totalSalesValue = filteredSales.reduce((sum, sale) => sum + sale.salesValue, 0);
   const totalPayments = filteredSales
-    .filter(sale => sale.status === 'FINALIZADO') // Changed from 'Ganha' to 'FINALIZADO'
-    .reduce((sum, sale) => sum + sale.payment, 0); // Changed to sum sale.payment
+    .filter(sale => sale.status === 'FINALIZADO') 
+    .reduce((sum, sale) => sum + sale.payment, 0);
 
 
   return (
@@ -85,12 +85,11 @@ export default function DadosPage() {
         </CardContent>
         <CardFooter className="border-t p-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-muted-foreground">
            <p>Total de Registros: <span className="font-semibold text-foreground">{filteredSales.length}</span></p>
-           <div className="flex gap-4">
-             <p>Valor Total em Vendas: <span className="font-semibold text-foreground">R$ {totalSalesValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
-             <p>Total Recebido (Finalizado): <span className="font-semibold text-foreground">R$ {totalPayments.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
-           </div>
+           <p>Valor Total em Vendas: <span className="font-semibold text-foreground">R$ {totalSalesValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+           <p>Total Recebido (Finalizado): <span className="font-semibold text-foreground">R$ {totalPayments.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
         </CardFooter>
       </Card>
     </div>
   );
 }
+
