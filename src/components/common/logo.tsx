@@ -24,8 +24,10 @@ const Logo: React.FC<LogoProps> = ({ className, width = 280, height = 80 }) => {
   //    const logoImagePath = "/minha_logo_engear.jpg";
   //
   //    Certifique-se de que a extensão do arquivo (.png, .jpg, .svg, etc.) está correta.
+  //    VERIFIQUE TAMBÉM AS LETRAS MAIÚSCULAS E MINÚSCULAS NO NOME DO ARQUIVO.
+  //    O nome do arquivo é SENSÍVEL A MAIÚSCULAS/MINÚSCULAS em muitos sistemas.
 
-  const logoImagePath = "/logo.png"; // <--- VERIFIQUE E AJUSTE ESTA LINHA CUIDADOSAMENTE!
+  const logoImagePath = "/logo.png"; // <--- CONFIRMADO PARA USAR "logo.png".
 
   return (
     <div className={className ? `${className} bg-white` : "bg-white"} style={{ display: 'inline-block', padding: '5px', borderRadius: '4px' }}>
