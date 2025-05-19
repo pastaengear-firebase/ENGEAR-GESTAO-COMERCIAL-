@@ -4,24 +4,12 @@ import LoginForm from '@/components/auth/login-form';
 import Logo from '@/components/common/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+// useRouter e useEffect não são mais necessários para redirecionamento interno aqui.
 
 export default function LoginPage() {
-  const { isAuthenticated, loading } = useAuth();
-  const router = useRouter();
+  const { isAuthenticated, loading } = useAuth(); // isAuthenticated ainda é útil para depuração, mas não para lógica de redirecionamento aqui.
 
-  useEffect(() => {
-    // This effect handles redirection IF ALREADY AUTHENTICATED and not loading.
-    // The middleware should typically handle redirecting from /login if authenticated via cookie.
-    // This client-side redirect is a fallback or handles cases where direct navigation to /login occurs
-    // while the client-side AuthContext still believes the user is authenticated.
-    if (!loading && isAuthenticated) {
-      router.replace('/dashboard');
-    }
-  }, [isAuthenticated, loading, router]);
-
-  // If AuthContext is still determining the auth state, show a loading message.
+  // Se AuthContext ainda está determinando o estado de autenticação, mostra uma mensagem de carregamento.
   if (loading) {
      return (
       <div className="flex h-screen items-center justify-center bg-secondary">
@@ -30,19 +18,10 @@ export default function LoginPage() {
     );
   }
 
-  // If AuthContext has loaded AND the user is authenticated,
-  // it means the useEffect above will trigger a redirect.
-  // While that redirect is happening, we can show a message or loader.
-  // This state should be brief.
-  if (isAuthenticated) { 
-     return (
-      <div className="flex h-screen items-center justify-center bg-secondary">
-        <p className="text-muted-foreground">Redirecionando para o painel...</p>
-      </div>
-    );
-  }
-
-  // If AuthContext has loaded and the user is NOT authenticated, render the login form.
+  // Se o AuthContext carregou (loading: false), a página de login sempre renderiza o formulário.
+  // A HomePage (`/`) e o middleware são responsáveis por direcionar o usuário
+  // para o dashboard se ele já estiver autenticado. Se ele chegou aqui,
+  // o middleware (baseado em cookie) provavelmente já decidiu que ele não está autenticado.
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-secondary p-4">
       <div className="mb-8">
