@@ -33,44 +33,8 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [sales, loading]);
 
-  const addSale = useCallback((saleData: Omit<Sale, 'id' | 'createdAt' | 'seller'>): Sale => {
-    if (!SELLERS.includes(selectedSeller as Seller) && selectedSeller !== ALL_SELLERS_OPTION) {
-        throw new Error("Invalid seller selected for new sale.");
-    }
-    
-    // If 'EQUIPE COMERCIAL' is selected, default to the first seller or handle as error/prompt user
-    // For simplicity, let's assume if 'EQUIPE COMERCIAL' is selected, the form should enforce seller selection,
-    // or we default. Here, we'll require the form to pass a specific seller.
-    // This logic is a bit tricky: a sale MUST belong to a specific seller.
-    // 'selectedSeller' in context is for filtering. The form should specify the actual seller.
-    // Let's assume the form provides the seller, or a default if 'EQUIPE COMERCIAL' is active.
-    // For now, this method expects saleData to have a valid seller if not using context's selectedSeller.
-    // The prompt implies the seller selector is global. So, new sales are for selectedSeller.
-    // If selectedSeller is EQUIPE COMERCIAL, this is an issue. Form must handle.
-    // For this implementation, we'll assume the form ensures a specific seller is tied to the sale.
-    // Let's adjust: the `addSale` method should take a `seller` property.
-    // No, the requirement "Create a seller selector on all pages (except login) with options: SERGIO, RODRIGO, and EQUIPE COMERCIAL"
-    // implies this global selector dictates the seller for new entries *if* a specific seller is chosen.
-    // If 'EQUIPE COMERCIAL' is chosen, the form should probably have its own seller field.
-    // This is a design ambiguity. I'll assume if selectedSeller is SERGIO or RODRIGO, new sales go to them.
-    // If EQUIPE COMERCIAL, the form should have a selector for SERGIO/RODRIGO.
-
-    // For simplicity in this context, let's assume new sales can only be added when SERGIO or RODRIGO is selected.
-    // The SalesForm will need to handle this.
-    // The method here will just assign the current *specific* seller.
-    // The form component itself should prevent adding if 'EQUIPE COMERCIAL' is selected
-    // or provide a way to choose SERGIO/RODRIGO within the form.
-    // Given the flow, let's assume `saleData` comes from `SalesForm` which will have the specific seller.
-    // Re-evaluating: `addSale` should take the full sale object including seller, or derive it.
-    // The `SalesForm` will be responsible for setting the seller.
-    // The global `selectedSeller` is primarily for filtering views.
-
-    // Correct approach: SalesForm will know which seller to assign.
-    // This `addSale` will receive `seller` in `saleData`.
-    // The type `Omit<Sale, 'id' | 'createdAt'>` should be `Omit<Sale, 'id' | 'createdAt'>`
-    // This means `SalesFormData` should map to `Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>`
-    // and the `SalesForm` passes the chosen specific seller.
-
+  const addSale = useCallback((saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>): Sale => {
+    // O 'seller' já está incluído em saleData, fornecido pelo SalesForm.
     const newSale: Sale = {
       ...saleData,
       id: uuidv4(),
@@ -80,17 +44,20 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return newSale;
   }, []);
 
-  const updateSale = useCallback((id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt'>>): Sale | undefined => {
+  const updateSale = useCallback((id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>): Sale | undefined => {
     let updatedSale: Sale | undefined;
     setSales(prevSales =>
       prevSales.map(sale => {
         if (sale.id === id) {
+          // Ensure `updatedAt` is part of the update, and `seller` can be updated if present in `saleUpdateData`
           updatedSale = { ...sale, ...saleUpdateData, updatedAt: Date.now() };
           return updatedSale;
         }
         return sale;
       })
     );
+    // Re-sort if date changed or simply maintain current sort by re-sorting
+    setSales(prevSales => [...prevSales].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     return updatedSale;
   }, []);
 
@@ -128,14 +95,21 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
       .filter(sale => {
         if (!filters.startDate) return true;
-        return new Date(sale.date) >= filters.startDate;
+        // Ensure date comparison is robust by comparing only date parts or normalizing time
+        const saleDate = new Date(sale.date);
+        saleDate.setHours(0,0,0,0); // Normalize sale date to start of day
+        const filterStartDate = new Date(filters.startDate);
+        filterStartDate.setHours(0,0,0,0); // Normalize filter start date to start of day
+        return saleDate >= filterStartDate;
       })
       .filter(sale => {
         if (!filters.endDate) return true;
-        // Ensure endDate is inclusive by setting time to end of day
-        const endOfDay = new Date(filters.endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        return new Date(sale.date) <= endOfDay;
+        // Ensure date comparison is robust
+        const saleDate = new Date(sale.date);
+        saleDate.setHours(0,0,0,0); // Normalize sale date to start of day
+        const filterEndDate = new Date(filters.endDate);
+        filterEndDate.setHours(23, 59, 59, 999); // Normalize filter end date to end of day
+        return saleDate <= filterEndDate;
       });
   }, [sales, selectedSeller, filters]);
 
@@ -159,3 +133,4 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </SalesContext.Provider>
   );
 };
+
