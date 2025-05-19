@@ -4,12 +4,11 @@ import LoginForm from '@/components/auth/login-form';
 import Logo from '@/components/common/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
-// useRouter e useEffect não são mais necessários para redirecionamento interno aqui.
 
 export default function LoginPage() {
-  const { isAuthenticated, loading } = useAuth(); // isAuthenticated ainda é útil para depuração, mas não para lógica de redirecionamento aqui.
+  const { loading } = useAuth(); // Apenas o estado de carregamento é necessário aqui
 
-  // Se AuthContext ainda está determinando o estado de autenticação, mostra uma mensagem de carregamento.
+  // Se o AuthContext ainda estiver determinando o estado de autenticação, mostra uma mensagem de carregamento.
   if (loading) {
      return (
       <div className="flex h-screen items-center justify-center bg-secondary">
