@@ -19,10 +19,10 @@ const SuggestSalesImprovementsInputSchema = z.object({
   company: z.enum(COMPANY_OPTIONS).describe('The name of the company sold to.'),
   project: z.string().describe('The project name associated with the sale.'),
   os: z.string().describe('The order sheet number.'),
-  area: z.enum(AREA_OPTIONS).describe('The area of the sale (e.g., North, South, East, West).'),
+  area: z.enum(AREA_OPTIONS).describe('The area of the sale (e.g., INST. AC, MANUT. AC).'),
   clientService: z.string().describe('The type of client or service provided.'),
   salesValue: z.number().describe('The monetary value of the sale.'),
-  status: z.enum(STATUS_OPTIONS).describe('The current status of the sale (e.g., Open, Won, Lost).'),
+  status: z.enum(STATUS_OPTIONS).describe('The current status of the sale (e.g., Á INICAR, EM ANDAMENTO, FINALIZADO, CANCELADO).'),
   payment: z.enum(PAYMENT_OPTIONS).describe('The payment terms for the sale.'),
 });
 export type SuggestSalesImprovementsInput = z.infer<typeof SuggestSalesImprovementsInputSchema>;
@@ -87,3 +87,4 @@ const suggestSalesImprovementsFlow = ai.defineFlow(
     return output;
   }
 );
+

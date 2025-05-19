@@ -2,16 +2,16 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, DollarSign, ListChecks, TrendingUp, Printer, CalendarDays, Filter } from "lucide-react";
+import { BarChart, DollarSign, ListChecks, TrendingUp, Printer, CalendarDays, Filter, PlayCircle, CheckCircle, XCircle } from "lucide-react"; // Added PlayCircle, CheckCircle, XCircle
 import SalesCharts from "@/components/sales/sales-charts";
 import { useSales } from "@/hooks/use-sales";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker"; // Assume this component exists or will be created
+import { DatePickerWithRange } from "@/components/ui/date-range-picker"; 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { addDays, format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils"; // Added import for cn
+import { cn } from "@/lib/utils";
 
 // A simple DatePickerWithRange - you'd typically have a more robust one
 const SimpleDatePickerWithRange: React.FC<{
@@ -75,8 +75,15 @@ export default function DashboardPage() {
 
   const totalSalesValue = filteredSales.reduce((sum, sale) => sum + sale.salesValue, 0);
   const totalSalesCount = filteredSales.length;
-  const wonSales = filteredSales.filter(sale => sale.status === 'Ganha').length;
-  const openSales = filteredSales.filter(sale => sale.status === 'Aberta').length;
+  
+  const finalizedSalesCount = filteredSales.filter(sale => sale.status === 'FINALIZADO').length;
+  const inProgressSalesCount = filteredSales.filter(sale => sale.status === 'EM ANDAMENTO' || sale.status === 'Á INICAR').length;
+  const cancelledSalesCount = filteredSales.filter(sale => sale.status === 'CANCELADO').length;
+
+  const totalPaymentsReceived = filteredSales
+    .filter(sale => sale.status === 'FINALIZADO') 
+    .reduce((sum, sale) => sum + sale.salesValue, 0);
+
 
   const handlePrint = () => {
     window.print();
@@ -113,32 +120,54 @@ export default function DashboardPage() {
         </Card>
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Vendas</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Recebido (Finalizado)</CardTitle>
+            <TrendingUp className="h-5 w-5 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+             R$ {totalPaymentsReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground">Soma das vendas "FINALIZADO"</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Vendas Finalizadas</CardTitle>
+            <CheckCircle className="h-5 w-5 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{finalizedSalesCount}</div>
+            <p className="text-xs text-muted-foreground">Status "FINALIZADO"</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Vendas em Andamento</CardTitle>
+            <PlayCircle className="h-5 w-5 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{inProgressSalesCount}</div>
+            <p className="text-xs text-muted-foreground">Status "Á INICAR" ou "EM ANDAMENTO"</p>
+          </CardContent>
+        </Card>
+         <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Vendas Canceladas</CardTitle>
+            <XCircle className="h-5 w-5 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{cancelledSalesCount}</div>
+            <p className="text-xs text-muted-foreground">Status "CANCELADO"</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Registros</CardTitle>
             <BarChart className="h-5 w-5 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalSalesCount}</div>
-            <p className="text-xs text-muted-foreground">Número de vendas registradas</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas Ganhas</CardTitle>
-            <TrendingUp className="h-5 w-5 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{wonSales}</div>
-            <p className="text-xs text-muted-foreground">Status "Ganha"</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas Abertas</CardTitle>
-            <ListChecks className="h-5 w-5 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{openSales}</div>
-            <p className="text-xs text-muted-foreground">Status "Aberta"</p>
+            <p className="text-xs text-muted-foreground">Número de vendas no período</p>
           </CardContent>
         </Card>
       </div>
@@ -174,3 +203,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

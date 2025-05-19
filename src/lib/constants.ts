@@ -26,7 +26,7 @@ export const AREA_OPTIONS = [
 ] as const;
 export type AreaOption = (typeof AREA_OPTIONS)[number];
 
-export const STATUS_OPTIONS = ['Aberta', 'Ganha', 'Perdida'] as const;
+export const STATUS_OPTIONS = ["Á INICAR", "EM ANDAMENTO", "FINALIZADO", "CANCELADO"] as const;
 export type StatusOption = (typeof STATUS_OPTIONS)[number];
 
 export const PAYMENT_OPTIONS = ['À Vista', 'Parcelado', 'Financiado'] as const;

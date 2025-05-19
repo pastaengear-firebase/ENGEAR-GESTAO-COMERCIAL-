@@ -63,12 +63,13 @@ export default function SalesTable({ salesData }: SalesTableProps) {
 
   const getStatusBadgeVariant = (status: Sale['status']): React.ComponentProps<typeof Badge>['variant'] => {
     switch (status) {
-      case 'Ganha':
-        return 'default'; // default is primary
-      case 'Aberta':
-        return 'secondary';
-      case 'Perdida':
-        return 'destructive';
+      case 'FINALIZADO':
+        return 'default'; // default is primary (like 'Ganha')
+      case 'Á INICAR':
+      case 'EM ANDAMENTO':
+        return 'secondary'; // (like 'Aberta')
+      case 'CANCELADO':
+        return 'destructive'; // (like 'Perdida')
       default:
         return 'outline';
     }
@@ -205,3 +206,4 @@ export default function SalesTable({ salesData }: SalesTableProps) {
     </>
   );
 }
+
