@@ -8,27 +8,41 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function LoginPage() {
-  const { isAuthenticated, loading } = useAuth(); // Use loading state from useAuth
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Only redirect if not loading and isAuthenticated is true
+    // This effect handles redirection IF ALREADY AUTHENTICATED and not loading.
+    // The middleware should typically handle redirecting from /login if authenticated via cookie.
+    // This client-side redirect is a fallback or handles cases where direct navigation to /login occurs
+    // while the client-side AuthContext still believes the user is authenticated.
     if (!loading && isAuthenticated) {
       router.replace('/dashboard');
     }
   }, [isAuthenticated, loading, router]);
 
-  // Optional: Show a loading indicator or null while auth state is resolving
-  // to prevent brief flash of login form if already authenticated.
-  if (loading || (!loading && isAuthenticated)) {
+  // If AuthContext is still determining the auth state, show a loading message.
+  if (loading) {
      return (
       <div className="flex h-screen items-center justify-center bg-secondary">
-        {/* You can put a loader here if you want */}
         <p className="text-muted-foreground">Verificando autenticação...</p>
       </div>
     );
   }
 
+  // If AuthContext has loaded AND the user is authenticated,
+  // it means the useEffect above will trigger a redirect.
+  // While that redirect is happening, we can show a message or loader.
+  // This state should be brief.
+  if (isAuthenticated) { 
+     return (
+      <div className="flex h-screen items-center justify-center bg-secondary">
+        <p className="text-muted-foreground">Redirecionando para o painel...</p>
+      </div>
+    );
+  }
+
+  // If AuthContext has loaded and the user is NOT authenticated, render the login form.
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-secondary p-4">
       <div className="mb-8">

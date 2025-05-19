@@ -17,34 +17,59 @@ const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>(initialState);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start with loading true
   const router = useRouter();
 
   useEffect(() => {
-    let resolvedAuthState: AuthState = initialState;
-    let cookieValue = 'false';
-    let cookieMaxAge = 0;
+    setLoading(true);
+    let resolvedAuthState: AuthState = { isAuthenticated: false, user: null };
+    let cookieShouldBeSetToTrue = false;
 
     try {
-      const storedAuth = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
-      if (storedAuth) {
-        const parsedAuth: AuthState = JSON.parse(storedAuth);
-        if (parsedAuth.isAuthenticated && parsedAuth.user) {
-          resolvedAuthState = parsedAuth;
-          cookieValue = 'true';
-          cookieMaxAge = COOKIE_MAX_AGE_SECONDS;
+      const cookieAuth = document.cookie.split('; ').find(row => row.startsWith('isAuthenticated='));
+      const isCookieAuthenticated = cookieAuth ? cookieAuth.split('=')[1] === 'true' : false;
+
+      if (isCookieAuthenticated) {
+        // Cookie says authenticated. Check localStorage for user data.
+        const storedAuthData = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
+        if (storedAuthData) {
+          const parsedStorageAuth: AuthState = JSON.parse(storedAuthData);
+          if (parsedStorageAuth.isAuthenticated && parsedStorageAuth.user) {
+            // Both cookie and localStorage agree and have user data.
+            resolvedAuthState = parsedStorageAuth;
+            cookieShouldBeSetToTrue = true;
+          } else {
+            // Desync: Cookie true, but localStorage says not authenticated or missing user. Force logout.
+            console.warn("AuthContext: Cookie/localStorage desync (localStorage invalid while cookie true). Forcing logout.");
+            localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
+            // resolvedAuthState remains { isAuthenticated: false, user: null }
+            // cookieShouldBeSetToTrue will be false, leading to cookie deletion below.
+          }
         } else {
-          // Invalid or unauthenticated state in localStorage, ensure it's cleaned up.
+          // Desync: Cookie true, but no localStorage data. Force logout.
+          console.warn("AuthContext: Cookie true, localStorage empty. Forcing logout.");
           localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
+          // resolvedAuthState remains { isAuthenticated: false, user: null }
         }
+      } else {
+        // Cookie says not authenticated (or no cookie). Ensure localStorage is also cleared.
+        localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
+        // resolvedAuthState remains { isAuthenticated: false, user: null }
       }
     } catch (error) {
-      console.error("Failed to load auth state from localStorage", error);
-      localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
-      // resolvedAuthState remains initialState, cookieValue remains 'false'
+      console.error("AuthContext: Error during initial auth state resolution:", error);
+      localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY); // Clear possibly corrupted data
+      // resolvedAuthState remains { isAuthenticated: false, user: null }
     }
-    
-    document.cookie = `isAuthenticated=${cookieValue}; path=/; max-age=${cookieMaxAge}; SameSite=Lax`;
+
+    // Synchronize cookie based on the resolved state
+    if (cookieShouldBeSetToTrue) {
+      document.cookie = `isAuthenticated=true; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+    } else {
+      // Ensure cookie is cleared if resolved state is not authenticated
+      document.cookie = 'isAuthenticated=false; path=/; max-age=0; SameSite=Lax'; 
+    }
+
     setAuthState(resolvedAuthState);
     setLoading(false);
   }, []);
@@ -65,17 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     router.push('/login');
   }, [router]);
 
-  if (loading) {
-    // Este é o loader do AuthProvider, se ele ficar preso aqui, as páginas não renderizam.
-    // A mensagem do usuário "Verificando autenticação..." é da LoginPage,
-    // o que significa que este 'loading' do AuthProvider tornou-se 'false'.
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">Inicializando autenticação...</p>
-      </div>
-    );
-  }
-
+  // Removed the direct loading JSX from here. Consumers will use the 'loading' state.
   return (
     <AuthContext.Provider value={{ ...authState, login, logout, loading }}>
       {children}
