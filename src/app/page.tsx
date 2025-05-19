@@ -6,28 +6,25 @@ import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 export default function HomePage() {
-  const { isAuthenticated, loading } = useAuth(); // Agora usa o estado de 'loading'
+  const { loading } = useAuth(); // AuthContext loading still relevant for its internal setup
   const router = useRouter();
 
   useEffect(() => {
-    // Se o AuthContext ainda estiver carregando, não faz nada ainda.
+    // If AuthContext is still doing its initial setup (even if we force auth later), wait.
     if (loading) {
       return;
     }
 
-    // Agora que o AuthContext carregou, decide para onde redirecionar.
-    if (isAuthenticated) {
-      router.replace('/dashboard');
-    } else {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, loading, router]); // Adiciona 'loading' às dependências
+    // TEMPORARILY REDIRECTING ALWAYS TO DASHBOARD FOR TESTING
+    router.replace('/dashboard');
+    
+  }, [loading, router]);
 
   // Exibe um loader enquanto o AuthContext está carregando ou durante o redirecionamento.
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      <p className="ml-4 text-lg text-foreground">Carregando...</p>
+      <p className="ml-4 text-lg text-foreground">Carregando aplicação...</p>
     </div>
   );
 }
