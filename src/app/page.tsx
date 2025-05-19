@@ -2,29 +2,22 @@
 "use client";
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 export default function HomePage() {
-  const { loading } = useAuth(); // AuthContext loading still relevant for its internal setup
   const router = useRouter();
 
   useEffect(() => {
-    // If AuthContext is still doing its initial setup (even if we force auth later), wait.
-    if (loading) {
-      return;
-    }
-
-    // TEMPORARILY REDIRECTING ALWAYS TO DASHBOARD FOR TESTING
+    // Forçar redirecionamento para /dashboard para fins de teste
+    console.log("HomePage: Forcing redirect to /dashboard for testing.");
     router.replace('/dashboard');
-    
-  }, [loading, router]);
+  }, [router]);
 
-  // Exibe um loader enquanto o AuthContext está carregando ou durante o redirecionamento.
+  // Exibe um loader enquanto o redirecionamento está ocorrendo.
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      <p className="ml-4 text-lg text-foreground">Carregando aplicação...</p>
+      <p className="ml-4 text-lg text-foreground">Redirecionando para o painel...</p>
     </div>
   );
 }
