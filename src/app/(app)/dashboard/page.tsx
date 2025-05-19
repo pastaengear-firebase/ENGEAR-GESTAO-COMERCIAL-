@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { addDays, format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils"; // Added import for cn
 
 // A simple DatePickerWithRange - you'd typically have a more robust one
 const SimpleDatePickerWithRange: React.FC<{
