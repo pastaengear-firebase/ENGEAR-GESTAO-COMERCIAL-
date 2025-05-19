@@ -21,40 +21,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     setLoading(true);
-    let cookieAuthValue = document.cookie.split('; ').find(row => row.startsWith('isAuthenticated='));
-    let isCookieAuthenticated = cookieAuthValue ? cookieAuthValue.split('=')[1] === 'true' : false;
-
-    let userFromStorage: User | null = null;
+    let newAuthState: AuthState;
+    const cookieAuthValue = document.cookie.split('; ').find(row => row.startsWith('isAuthenticated='));
+    const isCookieAuthenticated = cookieAuthValue ? cookieAuthValue.split('=')[1] === 'true' : false;
 
     if (isCookieAuthenticated) {
-        // Cookie indica autenticado. Este é o estado de autenticação primário.
-        const storedAuthData = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
-        if (storedAuthData) {
-            try {
-                const parsedData: AuthState = JSON.parse(storedAuthData);
-                // Se o localStorage também diz autenticado e tem um usuário, use esse usuário.
-                if (parsedData.isAuthenticated && parsedData.user) {
-                    userFromStorage = parsedData.user;
-                }
-                // Se o localStorage estiver dessincronizado (ex: diz não autenticado),
-                // ainda respeitamos o cookie para isAuthenticated, mas o usuário pode ser nulo.
-            } catch (e) {
-                // localStorage está corrompido, ignore-o para dados do usuário.
-                localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
-            }
+      // Cookie diz que está autenticado. Esta é nossa principal fonte de verdade.
+      let userFromStorage: User | null = null;
+      const storedAuthData = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
+      if (storedAuthData) {
+        try {
+          const parsedData: AuthState = JSON.parse(storedAuthData);
+          // Se o localStorage também diz autenticado e tem um usuário, use esse usuário.
+          if (parsedData.isAuthenticated && parsedData.user) {
+            userFromStorage = parsedData.user;
+          }
+        } catch (e) {
+          // localStorage corrompido, será sobrescrito.
+          localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
         }
-        // Garante que o localStorage reflita o estado autenticado do cookie.
-        localStorage.setItem(LOCAL_STORAGE_AUTH_KEY, JSON.stringify({ isAuthenticated: true, user: userFromStorage }));
-        setAuthState({ isAuthenticated: true, user: userFromStorage });
+      }
+      newAuthState = { isAuthenticated: true, user: userFromStorage };
+      // Garante que o localStorage reflita o estado autenticado do cookie.
+      localStorage.setItem(LOCAL_STORAGE_AUTH_KEY, JSON.stringify(newAuthState));
     } else {
-        // Cookie indica não autenticado (ou não existe).
-        localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
-        // Garante explicitamente que o cookie também seja limpo se existia, mas não era 'true'.
-        if (cookieAuthValue) {
-             document.cookie = `isAuthenticated=false; path=/; expires=${EXPIRE_COOKIE_STRING}; SameSite=Lax`;
-        }
-        setAuthState({ isAuthenticated: false, user: null });
+      // Cookie indica não autenticado (ou não existe).
+      newAuthState = { isAuthenticated: false, user: null };
+      localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
+      // Garante explicitamente que o cookie também seja limpo se existia, mas não era 'true'.
+      if (cookieAuthValue) {
+         document.cookie = `isAuthenticated=false; path=/; expires=${EXPIRE_COOKIE_STRING}; SameSite=Lax`;
+      }
     }
+    
+    setAuthState(newAuthState);
     setLoading(false);
   }, []);
 
@@ -89,3 +89,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
