@@ -112,19 +112,30 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
         return;
     }
 
-    if (Object.values(formData).some(val => val !== '' && val !== 0 && !(val instanceof Date && isNaN(val.getTime())))) {
+    // Check if any field relevant for AI suggestion has a value
+    const relevantFieldsFilled = Object.entries(formData).some(([key, value]) => {
+        if (key === 'date' && value instanceof Date && !isNaN(value.getTime())) return true;
+        if (typeof value === 'string' && value.trim() !== '') return true;
+        if (typeof value === 'number' && value !== 0) return true;
+        // Check for enum fields (company, area, status)
+        if (['company', 'area', 'status'].includes(key) && value !== undefined) return true;
+        return false;
+    });
+
+
+    if (relevantFieldsFilled) {
       setIsFetchingSuggestions(true);
       try {
         const aiInput: SuggestSalesImprovementsInput = {
           date: format(formData.date, 'yyyy-MM-dd'),
           company: formData.company,
           project: formData.project,
-          os: formData.os,
+          os: formData.os, // os can be empty or "0000"
           area: formData.area,
           clientService: formData.clientService,
           salesValue: formData.salesValue,
           status: formData.status,
-          payment: formData.payment, // Pass payment as number
+          payment: formData.payment, 
         };
         const suggestions = await suggestSalesImprovements(aiInput);
         if (onSuggestionsFetched) {
@@ -139,6 +150,15 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
       } finally {
         setIsFetchingSuggestions(false);
       }
+    } else {
+         toast({
+            title: "Dados Insuficientes para IA",
+            description: "Preencha mais campos para obter sugestões da IA.",
+            variant: "default",
+        });
+        if (onSuggestionsFetched) {
+          onSuggestionsFetched(null);
+        }
     }
   };
 
@@ -164,7 +184,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
         addSale(salePayload);
         toast({ title: "Sucesso!", description: "Nova venda registrada com sucesso." });
       }
-      form.reset({ // Reset with default values including payment: 0
+      form.reset({ 
           date: new Date(),
           company: undefined,
           project: '',
@@ -175,9 +195,9 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
           status: undefined,
           payment: 0,
       });
-      setAssignedSeller(SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined); // Reset seller based on global
+      setAssignedSeller(SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined); 
       if (onSuggestionsFetched) onSuggestionsFetched(null);
-      router.push('/dados'); // Navigate to data view after saving
+      router.push('/dados'); 
     } catch (error) {
       console.error("Error saving sale:", error);
       toast({ title: "Erro ao Salvar", description: (error as Error).message || "Não foi possível salvar a venda.", variant: "destructive" });
@@ -236,8 +256,8 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
           { (globalSelectedSeller === ALL_SELLERS_OPTION || editSaleId) && (
              <FormField
               control={form.control}
-              name="seller" // This field is not in SalesFormSchema, used for UI only
-              render={({ field }) => ( // field is not directly used for Select's value/onChange here
+              name="seller" 
+              render={({ field }) => ( 
                 <FormItem>
                   <FormLabel>Vendedor</FormLabel>
                   <Select 
@@ -310,7 +330,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
               <FormItem>
                 <FormLabel>O.S. (Ordem de Serviço)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Número da Ordem de Serviço" {...field} disabled={isSubmitting} />
+                  <Input placeholder="Número da O.S. ou 0000" {...field} disabled={isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -437,7 +457,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
             type="button"
             variant="ghost"
             onClick={() => {
-              form.reset({ // Reset with default values including payment: 0
+              form.reset({ 
                 date: new Date(),
                 company: undefined,
                 project: '',
@@ -450,7 +470,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
               });
               setAssignedSeller(SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined);
               if (onSuggestionsFetched) onSuggestionsFetched(null);
-              if (editSaleId) router.push('/inserir-venda'); // Clear editId from URL
+              if (editSaleId) router.push('/inserir-venda'); 
             }}
             disabled={isSubmitting}
             className="w-full sm:w-auto"
@@ -464,7 +484,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
           </Button>
         </div>
         {!assignedSeller && (
-          <FormItem className="mt-2"> {/* Explicitly handling the seller requirement message if needed outside the form field context */}
+          <FormItem className="mt-2"> 
              <p className="text-sm font-medium text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/> Selecione um vendedor para salvar.</p>
           </FormItem>
         )}
@@ -472,3 +492,4 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
     </Form>
   );
 }
+

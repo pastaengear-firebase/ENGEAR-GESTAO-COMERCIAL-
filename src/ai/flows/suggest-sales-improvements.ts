@@ -18,12 +18,12 @@ const SuggestSalesImprovementsInputSchema = z.object({
   date: z.string().describe('The date of the sale (YYYY-MM-DD).'),
   company: z.enum(COMPANY_OPTIONS).describe('The name of the company sold to.'),
   project: z.string().describe('The project name associated with the sale.'),
-  os: z.string().describe('The order sheet number.'),
+  os: z.string().describe('The order sheet number (can be "0000" or empty if not applicable).'), // Descrição atualizada
   area: z.enum(AREA_OPTIONS).describe('The area of the sale (e.g., INST. AC, MANUT. AC).'),
   clientService: z.string().describe('The type of client or service provided.'),
   salesValue: z.number().describe('The monetary value of the sale.'),
   status: z.enum(STATUS_OPTIONS).describe('The current status of the sale (e.g., Á INICAR, EM ANDAMENTO, FINALIZADO, CANCELADO).'),
-  payment: z.number().describe('The payment value related to the sale, in BRL.'), // Changed from z.enum to z.number
+  payment: z.number().describe('The payment value related to the sale, in BRL.'),
 });
 export type SuggestSalesImprovementsInput = z.infer<typeof SuggestSalesImprovementsInputSchema>;
 
@@ -68,6 +68,7 @@ const prompt = ai.definePrompt({
   If a combination of fields seems unlikely (e.g. a very high sales value for a small project), suggest reviewing it.
   If the payment value seems inconsistent with the sales value (e.g., much higher or significantly lower without clear reason), suggest reviewing it.
   Ensure dates are logical (e.g., not in the distant future or past unless justified).
+  If the OS field is "0000" or empty, consider if this is appropriate for the type of project or company. For example, large projects for 'ENGEAR' typically have an OS.
 
   Format your output as a JSON array of objects, where each object has the keys 'field', 'suggestion', and 'reason'.
   If no specific suggestions are found, return an empty array for suggestions.
@@ -88,3 +89,4 @@ const suggestSalesImprovementsFlow = ai.defineFlow(
     return output;
   }
 );
+
