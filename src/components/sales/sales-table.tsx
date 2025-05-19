@@ -1,8 +1,7 @@
-
 // src/components/sales/sales-table.tsx
 "use client";
 import type { Sale } from '@/lib/types';
-import { useSales } from '@/hooks/use-sales';
+// import { useSales } from '@/hooks/use-sales'; // No longer needed for deleteSale
 import {
   Table,
   TableBody,
@@ -11,56 +10,40 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button'; // No longer needed for actions
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit3, Trash2, Eye } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+// import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'; // No longer needed
+// import { MoreHorizontal, Edit3, Trash2 } from 'lucide-react'; // No longer needed for actions
+import { Eye } from 'lucide-react'; // Keep Eye for empty state
+// import { useRouter } from 'next/navigation'; // No longer needed for edit navigation
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useToast } from '@/hooks/use-toast';
+// import { useToast } from '@/hooks/use-toast'; // No longer needed for delete toast
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { useState } from 'react';
+// import {
+//   AlertDialog,
+//   AlertDialogAction,
+//   AlertDialogCancel,
+//   AlertDialogContent,
+//   AlertDialogDescription,
+//   AlertDialogFooter,
+//   AlertDialogHeader,
+//   AlertDialogTitle,
+// } from "@/components/ui/alert-dialog" // No longer needed here
+// import { useState } from 'react'; // No longer needed for dialog state
 
 interface SalesTableProps {
   salesData: Sale[];
 }
 
 export default function SalesTable({ salesData }: SalesTableProps) {
-  const { deleteSale } = useSales();
-  const router = useRouter();
-  const { toast } = useToast();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [saleToDelete, setSaleToDelete] = useState<string | null>(null);
+  // const { deleteSale } = useSales(); // Moved to EditarVendaPage
+  // const router = useRouter(); // Moved to EditarVendaPage
+  // const { toast } = useToast(); // Moved to EditarVendaPage
+  // const [dialogOpen, setDialogOpen] = useState(false); // Moved to EditarVendaPage
+  // const [saleToDelete, setSaleToDelete] = useState<string | null>(null); // Moved to EditarVendaPage
 
-
-  const handleEdit = (id: string) => {
-    router.push(`/inserir-venda?editId=${id}`);
-  };
-
-  const confirmDelete = (id: string) => {
-    setSaleToDelete(id);
-    setDialogOpen(true);
-  };
-  
-  const handleDelete = () => {
-    if (saleToDelete) {
-      deleteSale(saleToDelete);
-      toast({ title: "Sucesso!", description: "Venda cancelada/excluída com sucesso." });
-      setSaleToDelete(null);
-    }
-    setDialogOpen(false);
-  };
+  // Edit and Delete handlers are removed as actions are moved to EditarVendaPage
 
   const getStatusBadgeVariant = (status: Sale['status']): React.ComponentProps<typeof Badge>['variant'] => {
     switch (status) {
@@ -104,7 +87,7 @@ export default function SalesTable({ salesData }: SalesTableProps) {
             <TableHead className="text-right">Valor Venda (R$)</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Pagamento (R$)</TableHead> 
-            <TableHead className="text-right print-hide">Ações</TableHead>
+            {/* <TableHead className="text-right print-hide">Ações</TableHead> */} {/* Actions column removed */}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -128,48 +111,14 @@ export default function SalesTable({ salesData }: SalesTableProps) {
               <TableCell className="text-right">
                 {sale.payment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </TableCell>
-              <TableCell className="text-right print-hide">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Abrir menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(sale.id)}>
-                      <Edit3 className="mr-2 h-4 w-4" />
-                      Modificar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => confirmDelete(sale.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Cancelar/Excluir
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+              {/* Action cell removed */}
             </TableRow>
           ))}
         </TableBody>
       </Table>
       <ScrollBar orientation="horizontal" />
     </ScrollArea>
-    <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir esta venda? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSaleToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+    {/* AlertDialog moved to EditarVendaPage */}
       <style jsx global>{`
         @media print {
           body * {
@@ -209,4 +158,3 @@ export default function SalesTable({ salesData }: SalesTableProps) {
     </>
   );
 }
-

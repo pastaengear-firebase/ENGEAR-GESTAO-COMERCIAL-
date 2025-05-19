@@ -1,4 +1,3 @@
-
 // src/components/sales/sales-form.tsx
 "use client";
 import type React from 'react';
@@ -21,7 +20,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { suggestSalesImprovements, type SuggestSalesImprovementsInput, type SuggestSalesImprovementsOutput } from '@/ai/flows/suggest-sales-improvements';
-import { useRouter, useSearchParams } from 'next/navigation'; 
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'; 
 import type { Sale } from '@/lib/types';
 
 interface SalesFormProps {
@@ -34,6 +33,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const editSaleId = searchParams.get('editId');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,10 +76,25 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
         setAssignedSeller(saleToEdit.seller);
       } else {
         toast({ title: "Erro", description: "Venda não encontrada para edição.", variant: "destructive" });
-        router.push('/inserir-venda'); 
+        // Redirect to the base page of the current route (inserir-venda or editar-venda)
+        router.push(pathname); 
       }
+    } else {
+      // Reset form if editSaleId is not present (e.g., URL changed)
+      form.reset({
+        date: new Date(),
+        company: undefined,
+        project: '',
+        os: '',
+        area: undefined,
+        clientService: '',
+        salesValue: 0,
+        status: undefined,
+        payment: 0,
+      });
+      setAssignedSeller(SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined);
     }
-  }, [editSaleId, getSaleById, form, toast, router]);
+  }, [editSaleId, getSaleById, form, toast, router, globalSelectedSeller, pathname]);
   
   useEffect(() => {
     if (!editSaleId && SELLERS.includes(globalSelectedSeller as Seller)) {
@@ -124,13 +139,13 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
       try {
         const aiInput: SuggestSalesImprovementsInput = {
           date: format(formData.date, 'yyyy-MM-dd'),
-          company: formData.company!, // Add non-null assertion as it's checked above
+          company: formData.company!, 
           project: formData.project,
           os: formData.os, 
-          area: formData.area!, // Add non-null assertion
+          area: formData.area!, 
           clientService: formData.clientService,
           salesValue: formData.salesValue,
-          status: formData.status!, // Add non-null assertion
+          status: formData.status!, 
           payment: formData.payment, 
         };
         const suggestions = await suggestSalesImprovements(aiInput);
@@ -180,6 +195,8 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
         addSale(salePayload);
         toast({ title: "Sucesso!", description: "Nova venda registrada com sucesso." });
       }
+      
+      // Reset form and navigate after submission
       form.reset({ 
           date: new Date(),
           company: undefined,
@@ -193,7 +210,13 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
       });
       setAssignedSeller(SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined); 
       if (onSuggestionsFetched) onSuggestionsFetched(null);
-      router.push('/dados'); 
+      
+      if (pathname.startsWith('/editar-venda') && editSaleId) {
+        router.push('/editar-venda'); // Clear editId, stay on page
+      } else {
+        router.push('/dados'); // Default redirect for new sales or edits from other contexts
+      }
+
     } catch (error) {
       console.error("Error saving sale:", error);
       toast({ title: "Erro ao Salvar", description: (error as Error).message || "Não foi possível salvar a venda.", variant: "destructive" });
@@ -251,9 +274,9 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
 
           { (globalSelectedSeller === ALL_SELLERS_OPTION || editSaleId) && (
              <FormField
-              control={form.control} // This field is not directly part of SalesFormSchema, managed by local state 'assignedSeller'
-              name="seller" // Placeholder name, actual value from assignedSeller
-              render={({ field }) => (  // field is not directly used for value here, but for context
+              control={form.control} 
+              name="seller" 
+              render={({ field }) => ( 
                 <FormItem>
                   <FormLabel>Vendedor</FormLabel>
                   <Select 
@@ -453,20 +476,11 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
             type="button"
             variant="ghost"
             onClick={() => {
-              form.reset({ 
-                date: new Date(),
-                company: undefined,
-                project: '',
-                os: '',
-                area: undefined,
-                clientService: '',
-                salesValue: 0,
-                status: undefined,
-                payment: 0,
-              });
+              const targetPath = pathname.startsWith('/editar-venda') ? '/editar-venda' : '/inserir-venda';
+              router.push(targetPath); // This will clear editId from URL due to useEffect dependency
+              // Form reset is handled by useEffect when editSaleId changes to null
               setAssignedSeller(SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined);
               if (onSuggestionsFetched) onSuggestionsFetched(null);
-              if (editSaleId) router.push('/inserir-venda'); 
             }}
             disabled={isSubmitting}
             className="w-full sm:w-auto"

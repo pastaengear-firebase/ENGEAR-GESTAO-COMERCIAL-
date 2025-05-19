@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
-import { LayoutDashboard, FilePlus, Database, Settings } from 'lucide-react';
+import { LayoutDashboard, FilePlus, Database, FileEdit, Settings } from 'lucide-react'; // Added FileEdit
 import Logo from '@/components/common/logo';
 
 const navItems: NavItem[] = [
@@ -25,6 +25,12 @@ const navItems: NavItem[] = [
     href: '/dados',
     icon: Database,
     isActive: (pathname) => pathname.startsWith('/dados'),
+  },
+  {
+    title: 'Editar Venda',
+    href: '/editar-venda',
+    icon: FileEdit, // New icon for the new page
+    isActive: (pathname) => pathname.startsWith('/editar-venda'),
   },
   // {
   //   title: 'Configurações',
