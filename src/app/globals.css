@@ -49,11 +49,11 @@ body {
 
     /* Sidebar specific colors (always white background) */
     --sidebar-background: 0 0% 100%; /* White */
-    --sidebar-foreground: 0 0% 15%;    /* Dark Gray */
+    --sidebar-foreground: 353 60% 25%;    /* Dark Maroon #661923 */
     --sidebar-primary: 43 88% 63%;     /* Golden Yellow for active/selection */
-    --sidebar-primary-foreground: 345 35% 10%; /* Very Dark Maroon for text on yellow */
+    --sidebar-primary-foreground: 353 60% 25%; /* Dark Maroon #661923 for text on yellow */
     --sidebar-accent: 0 0% 92%;     /* Light Gray for hover background */
-    --sidebar-accent-foreground: 0 0% 15%;  /* Dark Gray for hover text */
+    --sidebar-accent-foreground: 353 60% 25%;  /* Dark Maroon #661923 for hover text */
     --sidebar-border: 0 0% 85%; /* Light Gray border */
     --sidebar-ring: 43 88% 63%;        /* Golden Yellow ring */
   }
@@ -97,11 +97,11 @@ body {
 
     /* Sidebar specific colors (always white background, consistent with light theme) */
     --sidebar-background: 0 0% 100%; 
-    --sidebar-foreground: 0 0% 15%;   
+    --sidebar-foreground: 353 60% 25%;   /* Dark Maroon #661923 */
     --sidebar-primary: 43 88% 63%;    
-    --sidebar-primary-foreground: 345 35% 10%; 
+    --sidebar-primary-foreground: 353 60% 25%; /* Dark Maroon #661923 for text on yellow */
     --sidebar-accent: 0 0% 92%;    
-    --sidebar-accent-foreground: 0 0% 15%; 
+    --sidebar-accent-foreground: 353 60% 25%; /* Dark Maroon #661923 for hover text */
     --sidebar-border: 0 0% 85%;
     --sidebar-ring: 43 88% 63%;
   }
