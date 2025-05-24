@@ -11,14 +11,27 @@ interface LogoProps {
 const Logo: React.FC<LogoProps> = ({ className, width = 280, height = 80 }) => {
   // ATENÇÃO CRÍTICA - POR FAVOR, LEIA E AJUSTE SE NECESSÁRIO:
   //
-  // 1. LOCALIZAÇÃO DO ARQUIVO:
-  //    O arquivo da sua imagem do logo (agora definido como `NEWLOGO.jpg`) DEVE estar na pasta `public`.
-  //    Esta pasta `public` PRECISA estar na RAIZ do seu projeto (junto com `src`, `package.json`).
+  // 1. PASTA 'public' OBRIGATÓRIA NA RAIZ DO PROJETO:
+  //    Para que o Next.js encontre imagens estáticas como o seu logo,
+  //    DEVE existir uma pasta chamada 'public' na RAIZ do seu projeto.
+  //    A raiz do projeto é onde ficam arquivos como 'package.json' e a pasta 'src'.
   //
-  // 2. CAMINHO DA IMAGEM ABAIXO:
+  //    Se a pasta 'public' NÃO EXISTE na raiz do seu projeto,
+  //    VOCÊ PRECISA CRIÁ-LA MANUALMENTE.
+  //
+  // 2. LOCALIZAÇÃO DO ARQUIVO DA IMAGEM DO LOGO:
+  //    O arquivo da sua imagem do logo (agora definido como `NEWLOGO.jpg`)
+  //    DEVE estar DENTRO desta pasta `public`.
+  //    Caminho esperado: `public/NEWLOGO.jpg`
+  //
+  // 3. CAMINHO DA IMAGEM ABAIXO:
   //    A variável `logoImagePath` foi definida para "/NEWLOGO.jpg".
+  //    Isso significa que o Next.js procurará por `NEWLOGO.jpg` diretamente
+  //    dentro da pasta `public`.
+  //
   //    Se o seu arquivo real na pasta `public` tiver um nome ou extensão diferente
-  //    (ex: "newlogo.png", "Newlogo.jpg", "NEWLOGO.jpeg"), você DEVE ajustar a linha abaixo para corresponder.
+  //    (ex: "newlogo.png", "Newlogo.jpg", "NEWLOGO.jpeg"), você DEVE ajustar
+  //    a linha abaixo para corresponder.
   //
   //    Certifique-se de que a extensão do arquivo (.jpg, .png, .svg, etc.) está correta.
   //    VERIFIQUE TAMBÉM AS LETRAS MAIÚSCULAS E MINÚSCULAS NO NOME DO ARQUIVO.
