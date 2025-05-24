@@ -1,3 +1,4 @@
+
 import type { Seller, AreaOption, StatusOption, CompanyOption } from './constants';
 import type { ALL_SELLERS_OPTION } from './constants'; // Import específico
 
@@ -13,7 +14,7 @@ export interface Sale {
   clientService: string;
   salesValue: number;
   status: StatusOption;
-  payment: number; 
+  payment: number;
   createdAt: number; // timestamp
   updatedAt?: number; // timestamp
 }
@@ -33,27 +34,26 @@ export type UnauthenticatedState = {
 export type AuthState = AuthenticatedState | UnauthenticatedState;
 
 export type AuthContextType = AuthState & {
-  login: (username: string, token?: string) => void; 
+  login: (username: string, token?: string) => void;
   logout: () => void;
-  loading: boolean; 
+  loading: boolean;
 };
 
 export type SalesFilters = {
   searchTerm?: string;
-  startDate?: Date;
-  endDate?: Date;
+  selectedYear?: number | 'all'; // 'all' ou um ano específico
 };
 
 export type SalesContextType = {
-  sales: Sale[];
-  filteredSales: Sale[];
+  sales: Sale[]; // Todas as vendas, não filtradas por data/ano globalmente aqui
+  filteredSales: Sale[]; // Vendas filtradas por vendedor, termo de busca E ano selecionado globalmente
   selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
   setSelectedSeller: (seller: Seller | typeof ALL_SELLERS_OPTION) => void;
   addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>) => Sale;
   updateSale: (id: string, saleData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => Sale | undefined;
   deleteSale: (id: string) => void;
   getSaleById: (id: string) => Sale | undefined;
-  setFilters: (filters: SalesFilters) => void;
+  setFilters: (filters: Partial<SalesFilters>) => void; // Permitir atualização parcial dos filtros
   filters: SalesFilters;
   loading: boolean;
 };

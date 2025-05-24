@@ -1,75 +1,24 @@
+
 // src/app/(app)/dashboard/page.tsx
 "use client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, ListChecks, TrendingUp, Printer, CalendarDays, Banknote } from "lucide-react";
+import { DollarSign, ListChecks, TrendingUp, Printer, CalendarDays, Banknote, BarChart3, Filter } from "lucide-react";
 import SalesCharts from "@/components/sales/sales-charts";
 import { useSales } from "@/hooks/use-sales";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker"; 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { addDays, format, differenceInCalendarDays } from "date-fns";
-import type { DateRange } from "react-day-picker";
 import { useState, useEffect, useMemo } from "react";
-import { cn } from "@/lib/utils";
+import type { Sale } from '@/lib/types';
 import { ALL_SELLERS_OPTION } from "@/lib/constants";
-
-// A simple DatePickerWithRange - you'd typically have a more robust one
-const SimpleDatePickerWithRange: React.FC<{
-  date: DateRange | undefined;
-  setDate: (date: DateRange | undefined) => void;
-  className?: string;
-}> = ({ date, setDate, className }) => {
-  return (
-    <div className={cn("grid gap-2", className)}>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            id="date"
-            variant={"outline"}
-            className={cn(
-              "w-[300px] justify-start text-left font-normal",
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarDays className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
-                <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
-                </>
-              ) : (
-                format(date.from, "LLL dd, y")
-              )
-            ) : (
-              <span>Selecione um período</span>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <DatePickerWithRange
-            initialFocus
-            mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={setDate}
-            numberOfMonths={2}
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-};
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 
 const calculateWorkingDays = (from: Date, to: Date): number => {
   let count = 0;
   const currentDate = new Date(from);
-  // Ensure 'to' date is inclusive by setting its time to end of day for comparison,
-  // or just iterate while currentDate <= to (if 'to' is already start of day)
   const endDate = new Date(to);
   
   while (currentDate <= endDate) {
-    const dayOfWeek = currentDate.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const dayOfWeek = currentDate.getDay();
     if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
       count++;
     }
@@ -78,20 +27,52 @@ const calculateWorkingDays = (from: Date, to: Date): number => {
   return count;
 };
 
+const getDisplayYears = (allSales: Sale[]): Array<{ value: string; label: string }> => {
+  const years = new Set<number>();
+  allSales.forEach(sale => {
+    const year = new Date(sale.date).getFullYear();
+    if (year >= 2025) {
+      years.add(year);
+    }
+  });
+  const sortedYears = Array.from(years).sort((a, b) => b - a); // Descending for display
+  const options = [{ value: 'all', label: 'Todos os Anos' }];
+  sortedYears.forEach(year => {
+    options.push({ value: String(year), label: String(year) });
+  });
+  return options;
+};
+
 
 export default function DashboardPage() {
-  const { filteredSales, setFilters, filters, selectedSeller } = useSales();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-    const today = new Date();
-    const fromDate = filters.startDate ? new Date(filters.startDate) : addDays(today, -30);
-    const toDate = filters.endDate ? new Date(filters.endDate) : today;
-    return { from: fromDate, to: toDate };
-  });
+  const { sales: allSales, filteredSales, setFilters, selectedSeller } = useSales();
+  const [displayYear, setDisplayYear] = useState<string>('all'); 
+  
+  const yearOptions = useMemo(() => getDisplayYears(allSales), [allSales]);
+
+  // Initialize displayYear to the most recent valid year (>=2025) or 'all'
+  useEffect(() => {
+    const validYearValues = yearOptions
+      .map(opt => opt.value)
+      .filter(val => val !== 'all' && parseInt(val) >= 2025);
+
+    if (validYearValues.length > 0) {
+      const latestValidYearOption = yearOptions.find(opt => opt.value !== 'all' && parseInt(opt.value) >= 2025);
+      if (latestValidYearOption) {
+        setDisplayYear(latestValidYearOption.value);
+      } else {
+        setDisplayYear('all'); // Fallback if no specific year found after filtering
+      }
+    } else {
+      setDisplayYear('all'); // Default to 'all' if no years >= 2025
+    }
+  }, [yearOptions]);
 
 
   useEffect(() => {
-    setFilters({ startDate: dateRange?.from, endDate: dateRange?.to });
-  }, [dateRange, setFilters]);
+    const yearToFilter = displayYear === 'all' ? 'all' : parseInt(displayYear, 10);
+    setFilters({ selectedYear: yearToFilter });
+  }, [displayYear, setFilters]);
 
   const dashboardSubtitle = selectedSeller === ALL_SELLERS_OPTION 
     ? "Visão geral do desempenho da equipe comercial." 
@@ -100,21 +81,37 @@ export default function DashboardPage() {
   const totalSalesValue = filteredSales.reduce((sum, sale) => sum + sale.salesValue, 0);
   const totalSalesCount = filteredSales.length;
   const totalPaymentsAllStatuses = filteredSales.reduce((sum, sale) => sum + sale.payment, 0);
+  const totalPaymentsFinalizado = filteredSales
+    .filter(sale => sale.status === 'FINALIZADO')
+    .reduce((sum, sale) => sum + sale.payment, 0);
 
-  const workingDaysInRange = useMemo(() => {
-    if (dateRange?.from && dateRange?.to) {
-      // Create new Date objects to avoid mutating the original dateRange state
-      return calculateWorkingDays(new Date(dateRange.from), new Date(dateRange.to));
+
+  const workingDaysInPeriod = useMemo(() => {
+    if (displayYear === 'all') {
+      if (allSales.length === 0) return 0;
+      const yearsInSales = allSales
+        .map(s => new Date(s.date).getFullYear())
+        .filter(y => y >= 2025);
+      if (yearsInSales.length === 0) return 0;
+      
+      const minYear = Math.min(...yearsInSales);
+      const maxYear = Math.max(...yearsInSales);
+      
+      if (minYear === Infinity || maxYear === -Infinity || minYear > maxYear) return 0;
+      return calculateWorkingDays(new Date(minYear, 0, 1), new Date(maxYear, 11, 31));
+    } else {
+      const yearNum = parseInt(displayYear, 10);
+      if (isNaN(yearNum)) return 0;
+      return calculateWorkingDays(new Date(yearNum, 0, 1), new Date(yearNum, 11, 31));
     }
-    return 0;
-  }, [dateRange]);
+  }, [displayYear, allSales]);
 
   const averageSalesPerWorkingDay = useMemo(() => {
-    if (workingDaysInRange > 0 && totalSalesCount > 0) {
-      return (totalSalesCount / workingDaysInRange).toFixed(2);
+    if (workingDaysInPeriod > 0 && totalSalesCount > 0) {
+      return (totalSalesCount / workingDaysInPeriod).toFixed(2);
     }
     return "0.00";
-  }, [totalSalesCount, workingDaysInRange]);
+  }, [totalSalesCount, workingDaysInPeriod]);
 
 
   const handlePrint = () => {
@@ -128,9 +125,29 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard de Vendas</h1>
           <p className="text-muted-foreground">{dashboardSubtitle}</p>
         </div>
-        <div className="flex items-center gap-2">
-           <SimpleDatePickerWithRange date={dateRange} setDate={setDateRange} />
-          <Button onClick={handlePrint} variant="outline" size="icon" className="print-hide">
+        <div className="flex items-center gap-2 print-hide">
+           <div className="flex items-center space-x-2">
+            <Filter className="h-5 w-5 text-muted-foreground" />
+            <Label htmlFor="year-select-dashboard" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              Filtrar por Ano:
+            </Label>
+            <Select
+              value={displayYear}
+              onValueChange={setDisplayYear}
+            >
+              <SelectTrigger id="year-select-dashboard" className="w-[180px] bg-background hover:bg-muted transition-colors duration-150 focus:ring-primary">
+                <SelectValue placeholder="Selecionar ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={handlePrint} variant="outline" size="icon">
             <Printer className="h-4 w-4" />
             <span className="sr-only">Imprimir Dashboard</span>
           </Button>
@@ -147,19 +164,21 @@ export default function DashboardPage() {
             <div className="text-2xl font-bold">
               {totalSalesValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
-            <p className="text-xs text-muted-foreground">No período selecionado</p>
+            <p className="text-xs text-muted-foreground">
+              {displayYear === 'all' ? 'Em todos os anos (desde 2025)' : `No ano de ${displayYear}`}
+            </p>
           </CardContent>
         </Card>
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Recebido</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Recebido (Geral)</CardTitle>
             <Banknote className="h-5 w-5 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
              {totalPaymentsAllStatuses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
-            <p className="text-xs text-muted-foreground">Soma de todos os pagamentos</p>
+            <p className="text-xs text-muted-foreground">Soma de todos os pagamentos no período</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm hover:shadow-md transition-shadow">
@@ -175,11 +194,13 @@ export default function DashboardPage() {
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Média de Vendas / Dia Útil</CardTitle>
-            <TrendingUp className="h-5 w-5 text-accent" />
+            <BarChart3 className="h-5 w-5 text-accent" /> {/* Changed icon */}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{averageSalesPerWorkingDay}</div>
-            <p className="text-xs text-muted-foreground">Vendas por dia útil no período</p>
+            <p className="text-xs text-muted-foreground">
+              {displayYear === 'all' ? 'Considerando todos os dias úteis nos anos com vendas (desde 2025)' : `Em dias úteis de ${displayYear}`}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -205,7 +226,6 @@ export default function DashboardPage() {
           .print-hide {
             display: none !important;
           }
-          /* Add more print-specific styles here */
           @page {
             size: A4 landscape;
             margin: 10mm;
