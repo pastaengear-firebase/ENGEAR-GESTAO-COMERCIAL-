@@ -16,8 +16,8 @@ const Logo: React.FC<LogoProps> = ({ className, width = 280, height = 80 }) => {
   //    DEVE existir uma pasta chamada 'public' na RAIZ do seu projeto.
   //    A raiz do projeto é onde ficam arquivos como 'package.json' e a pasta 'src'.
   //
-  //    Se a pasta 'public' NÃO EXISTE na raiz do seu projeto,
-  //    VOCÊ PRECISA CRIÁ-LA MANUALMENTE.
+  //    Se a pasta 'public' NÃO EXISTE na raiz do seu projeto (como confirmado pela sua imagem),
+  //    VOCÊ PRECISA CRIÁ-LA MANUALMENTE USANDO AS FERRAMENTAS DO SEU AMBIENTE (Firebase Studio).
   //
   // 2. LOCALIZAÇÃO DO ARQUIVO DA IMAGEM DO LOGO:
   //    O arquivo da sua imagem do logo (agora definido como `NEWLOGO.jpg`)
@@ -37,7 +37,7 @@ const Logo: React.FC<LogoProps> = ({ className, width = 280, height = 80 }) => {
   //    VERIFIQUE TAMBÉM AS LETRAS MAIÚSCULAS E MINÚSCULAS NO NOME DO ARQUIVO.
   //    O nome do arquivo é SENSÍVEL A MAIÚSCULAS/MINÚSCULAS em muitos sistemas.
 
-  const logoImagePath = "/NEWLOGO.jpg"; // <--- VERIFIQUE ESTE CAMINHO E NOME DE ARQUIVO!
+  const logoImagePath = "/NEWLOGO.jpg"; // <--- ESTE CAMINHO ESPERA QUE 'NEWLOGO.jpg' ESTEJA EM 'public/NEWLOGO.jpg'
 
   return (
     <div className={className ? `${className} bg-white` : "bg-white"} style={{ display: 'inline-block', padding: '5px', borderRadius: '4px' }}>
