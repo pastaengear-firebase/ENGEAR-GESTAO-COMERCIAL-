@@ -10,7 +10,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // ThemeProvider foi removido daqui
     <div className="flex min-h-screen flex-col"> {/* Removed bg-secondary/50 from here */}
       <SidebarNav />
-      <div className="flex flex-1 flex-col md:pl-64 page-bg-pattern"> {/* Added page-bg-pattern */}
+      <div className="flex flex-1 flex-col md:pl-64"> {/* No page-bg-pattern */}
         <HeaderContent />
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-full"> {/* Ensure content can be full width */}

@@ -53,7 +53,7 @@ export default function SidebarNav() {
   return (
     <aside className={cn(
       "fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r text-sidebar-foreground shadow-lg md:flex",
-      "bg-sidebar sidebar-bg-pattern" // Applied bg-sidebar for base white and sidebar-bg-pattern for the pattern
+      "bg-sidebar" // Apenas bg-sidebar aqui
     )}>
       <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6 bg-white dark:bg-white">
         <Logo />
