@@ -14,21 +14,23 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { CalendarIcon, DollarSign, Save, RotateCcw, Sparkles, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert
+import { CalendarIcon, DollarSign, Save, RotateCcw, Sparkles, AlertCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { suggestSalesImprovements, type SuggestSalesImprovementsInput, type SuggestSalesImprovementsOutput } from '@/ai/flows/suggest-sales-improvements';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'; 
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { Sale } from '@/lib/types';
 
 interface SalesFormProps {
   onFormChange?: (data: Partial<SalesFormData>) => void;
   onSuggestionsFetched?: (suggestions: SuggestSalesImprovementsOutput | null) => void;
+  showReadOnlyAlert?: boolean; // Prop to control alert display from parent page
 }
 
-export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesFormProps) {
+export default function SalesForm({ onFormChange, onSuggestionsFetched, showReadOnlyAlert }: SalesFormProps) {
   const { addSale, getSaleById, updateSale, selectedSeller: globalSelectedSeller } = useSales();
   const { toast } = useToast();
   const router = useRouter();
@@ -38,10 +40,13 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
-  const [assignedSeller, setAssignedSeller] = useState<Seller | undefined>(
-    SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined
-  );
+  
+  // This state primarily reflects the seller of the sale being edited,
+  // or the globally selected seller if it's a new sale by SERGIO/RODRIGO.
+  // It's mostly for display in the disabled seller field within the form.
+  const [displayedSeller, setDisplayedSeller] = useState<Seller | typeof ALL_SELLERS_OPTION | undefined>(undefined);
 
+  const isEffectivelyReadOnly = globalSelectedSeller === ALL_SELLERS_OPTION;
 
   const form = useForm<SalesFormData>({
     resolver: zodResolver(SalesFormSchema),
@@ -54,7 +59,9 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
       clientService: '',
       salesValue: 0,
       status: undefined,
-      payment: 0, 
+      payment: 0,
+      // seller field in form data is not directly used for saving,
+      // actual seller comes from globalSelectedSeller or saleToEdit.seller
     },
   });
 
@@ -71,16 +78,15 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
           clientService: saleToEdit.clientService,
           salesValue: saleToEdit.salesValue,
           status: saleToEdit.status,
-          payment: saleToEdit.payment, 
+          payment: saleToEdit.payment,
         });
-        setAssignedSeller(saleToEdit.seller);
+        setDisplayedSeller(saleToEdit.seller);
       } else {
         toast({ title: "Erro", description: "Venda não encontrada para edição.", variant: "destructive" });
-        // Redirect to the base page of the current route (inserir-venda or editar-venda)
-        router.push(pathname); 
+        router.push(pathname);
       }
     } else {
-      // Reset form if editSaleId is not present (e.g., URL changed)
+      // New sale
       form.reset({
         date: new Date(),
         company: undefined,
@@ -92,17 +98,13 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
         status: undefined,
         payment: 0,
       });
-      setAssignedSeller(SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined);
+      if (SELLERS.includes(globalSelectedSeller as Seller)) {
+        setDisplayedSeller(globalSelectedSeller as Seller);
+      } else {
+        setDisplayedSeller(ALL_SELLERS_OPTION); // Or undefined, to show placeholder
+      }
     }
   }, [editSaleId, getSaleById, form, toast, router, globalSelectedSeller, pathname]);
-  
-  useEffect(() => {
-    if (!editSaleId && SELLERS.includes(globalSelectedSeller as Seller)) {
-      setAssignedSeller(globalSelectedSeller as Seller);
-    } else if (!editSaleId && globalSelectedSeller === ALL_SELLERS_OPTION) {
-      setAssignedSeller(undefined); 
-    }
-  }, [globalSelectedSeller, editSaleId]);
 
 
   const handleDataChange = () => {
@@ -113,7 +115,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
 
   const fetchSuggestions = async () => {
     const formData = form.getValues();
-    if (!formData.company || !formData.area || !formData.status ) { 
+    if (!formData.company || !formData.area || !formData.status ) {
         toast({
             title: "Campos Incompletos",
             description: "Por favor, preencha todos os campos obrigatórios (Empresa, Área, Status) antes de verificar com IA.",
@@ -124,7 +126,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
         }
         return;
     }
-
+    // ... (rest of fetchSuggestions logic remains same)
     const relevantFieldsFilled = Object.entries(formData).some(([key, value]) => {
         if (key === 'date' && value instanceof Date && !isNaN(value.getTime())) return true;
         if (typeof value === 'string' && value.trim() !== '') return true;
@@ -133,20 +135,19 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
         return false;
     });
 
-
     if (relevantFieldsFilled) {
       setIsFetchingSuggestions(true);
       try {
         const aiInput: SuggestSalesImprovementsInput = {
           date: format(formData.date, 'yyyy-MM-dd'),
-          company: formData.company!, 
+          company: formData.company!,
           project: formData.project,
-          os: formData.os, 
-          area: formData.area!, 
+          os: formData.os,
+          area: formData.area!,
           clientService: formData.clientService,
           salesValue: formData.salesValue,
-          status: formData.status!, 
-          payment: formData.payment, 
+          status: formData.status!,
+          payment: formData.payment,
         };
         const suggestions = await suggestSalesImprovements(aiInput);
         if (onSuggestionsFetched) {
@@ -174,17 +175,34 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
   };
 
   const onSubmit = async (data: SalesFormData) => {
-    if (!assignedSeller) {
-      toast({ title: "Erro de Validação", description: "Por favor, selecione um vendedor.", variant: "destructive" });
+    if (isEffectivelyReadOnly) {
+      toast({ title: "Ação Não Permitida", description: "Selecione um vendedor específico (SERGIO ou RODRIGO) para salvar.", variant: "destructive" });
       return;
     }
+
+    let sellerForPayload: Seller;
+    if (editSaleId) {
+      const saleToEdit = getSaleById(editSaleId);
+      if (!saleToEdit) { // Should not happen if form is populated
+        toast({ title: "Erro", description: "Venda original não encontrada.", variant: "destructive" });
+        return;
+      }
+      sellerForPayload = saleToEdit.seller; // Seller of an existing sale cannot be changed
+    } else {
+      if (!SELLERS.includes(globalSelectedSeller as Seller)) {
+        toast({ title: "Erro de Validação", description: "Selecione SERGIO ou RODRIGO no seletor global para registrar uma nova venda.", variant: "destructive" });
+        return;
+      }
+      sellerForPayload = globalSelectedSeller as Seller;
+    }
+
     setIsSubmitting(true);
     
     const salePayload: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'> = {
       ...data,
-      date: format(data.date, 'yyyy-MM-dd'), 
-      seller: assignedSeller,
-      payment: Number(data.payment) 
+      date: format(data.date, 'yyyy-MM-dd'),
+      seller: sellerForPayload,
+      payment: Number(data.payment)
     };
 
     try {
@@ -196,8 +214,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
         toast({ title: "Sucesso!", description: "Nova venda registrada com sucesso." });
       }
       
-      // Reset form and navigate after submission
-      form.reset({ 
+      form.reset({
           date: new Date(),
           company: undefined,
           project: '',
@@ -208,19 +225,19 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
           status: undefined,
           payment: 0,
       });
-      setAssignedSeller(SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined); 
+      if (SELLERS.includes(globalSelectedSeller as Seller)) {
+        setDisplayedSeller(globalSelectedSeller as Seller);
+      } else {
+        setDisplayedSeller(ALL_SELLERS_OPTION);
+      }
       if (onSuggestionsFetched) onSuggestionsFetched(null);
       
       if (pathname.startsWith('/editar-venda') && editSaleId) {
-        router.push('/editar-venda'); // Clear editId, stay on page
+        router.push('/editar-venda'); 
+      } else if (pathname.startsWith('/inserir-venda') && !editSaleId) {
+        // Stay on page
       } else {
-        // For new sales on /inserir-venda, stay on the page to allow further entries
-        if (pathname.startsWith('/inserir-venda') && !editSaleId) {
-          // Optionally, keep the user on the /inserir-venda page
-          // router.push('/inserir-venda'); // This would keep them on the page
-        } else {
-            router.push('/dados'); // Default redirect for edits from other contexts or if desired for new sales
-        }
+        router.push('/dados');
       }
 
     } catch (error) {
@@ -234,6 +251,15 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8" onChange={handleDataChange}>
+        {showReadOnlyAlert && isEffectivelyReadOnly && (
+           <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
+            <Info className="h-4 w-4 !text-amber-600" />
+            <AlertTitle>Modo Somente Leitura</AlertTitle>
+            <AlertDescription>
+              Para {editSaleId ? 'modificar esta venda' : 'inserir uma nova venda'}, por favor, selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -250,7 +276,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
                           "w-full pl-3 text-left font-normal",
                           !field.value && "text-muted-foreground"
                         )}
-                        disabled={isSubmitting}
+                        disabled={isEffectivelyReadOnly || isSubmitting}
                       >
                         {field.value ? (
                           format(field.value, "PPP", { locale: ptBR })
@@ -267,7 +293,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
                       selected={field.value}
                       onSelect={field.onChange}
                       disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01") || isSubmitting
+                        date > new Date() || date < new Date("1900-01-01") || isEffectivelyReadOnly || isSubmitting
                       }
                       initialFocus
                     />
@@ -278,32 +304,24 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
             )}
           />
 
-          { (globalSelectedSeller === ALL_SELLERS_OPTION || editSaleId) && (
-             <FormField
-              control={form.control} 
-              name="seller" 
-              render={({ field }) => ( 
-                <FormItem>
-                  <FormLabel>Vendedor</FormLabel>
-                  <Select 
-                    onValueChange={(value: Seller) => setAssignedSeller(value)} 
-                    value={assignedSeller}
-                    disabled={isSubmitting || (!!editSaleId && !!getSaleById(editSaleId)?.seller)}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o vendedor" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {SELLERS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  {!assignedSeller && <FormDescription className="text-destructive">Vendedor é obrigatório.</FormDescription>}
-                </FormItem>
-              )}
-            />
-          )}
+          <FormItem>
+            <FormLabel>Vendedor</FormLabel>
+            <Select value={displayedSeller || ""} disabled>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Vendedor definido no cabeçalho" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {SELLERS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                <SelectItem value={ALL_SELLERS_OPTION}>{ALL_SELLERS_OPTION}</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              {editSaleId ? "Vendedor original da venda (não pode ser alterado)." : "Para nova venda, use o seletor no cabeçalho."}
+            </FormDescription>
+          </FormItem>
+
 
           <FormField
             control={form.control}
@@ -311,10 +329,10 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Empresa</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  value={field.value} 
-                  disabled={isSubmitting}
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={isEffectivelyReadOnly || isSubmitting}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -341,7 +359,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
               <FormItem>
                 <FormLabel>Projeto</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome ou Descrição do Projeto" {...field} disabled={isSubmitting} />
+                  <Input placeholder="Nome ou Descrição do Projeto" {...field} disabled={isEffectivelyReadOnly || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -355,7 +373,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
               <FormItem>
                 <FormLabel>O.S. (Ordem de Serviço)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Número da O.S., 0000 ou deixe em branco" {...field} disabled={isSubmitting} />
+                  <Input placeholder="Número da O.S., 0000 ou deixe em branco" {...field} disabled={isEffectivelyReadOnly || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -368,7 +386,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Área</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isEffectivelyReadOnly || isSubmitting}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a Área" />
@@ -382,7 +400,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="clientService"
@@ -390,7 +408,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
               <FormItem>
                 <FormLabel>Cliente/Serviço</FormLabel>
                 <FormControl>
-                  <Input placeholder="Tipo de Cliente ou Serviço Prestado" {...field} disabled={isSubmitting} />
+                  <Input placeholder="Tipo de Cliente ou Serviço Prestado" {...field} disabled={isEffectivelyReadOnly || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -406,7 +424,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
                 <FormControl>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input type="number" placeholder="0.00" className="pl-8" {...field} disabled={isSubmitting} step="0.01" 
+                    <Input type="number" placeholder="0.00" className="pl-8" {...field} disabled={isEffectivelyReadOnly || isSubmitting} step="0.01"
                       onChange={e => field.onChange(parseFloat(e.target.value))}
                     />
                   </div>
@@ -422,7 +440,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isEffectivelyReadOnly || isSubmitting}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o Status da Venda" />
@@ -446,12 +464,12 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
                 <FormControl>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
-                      className="pl-8" 
-                      {...field} 
-                      disabled={isSubmitting} 
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      className="pl-8"
+                      {...field}
+                      disabled={isEffectivelyReadOnly || isSubmitting}
                       step="0.01"
                       onChange={e => field.onChange(parseFloat(e.target.value))}
                     />
@@ -462,13 +480,13 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
             )}
           />
         </div>
-        
+
         <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
           <Button
             type="button"
             variant="outline"
             onClick={fetchSuggestions}
-            disabled={isFetchingSuggestions || isSubmitting}
+            disabled={isEffectivelyReadOnly || isFetchingSuggestions || isSubmitting}
             className="w-full sm:w-auto"
           >
             {isFetchingSuggestions ? (
@@ -483,27 +501,23 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched }: SalesF
             variant="ghost"
             onClick={() => {
               const targetPath = pathname.startsWith('/editar-venda') ? '/editar-venda' : '/inserir-venda';
-              router.push(targetPath); // This will clear editId from URL due to useEffect dependency
-              // Form reset is handled by useEffect when editSaleId changes to null
-              setAssignedSeller(SELLERS.includes(globalSelectedSeller as Seller) ? globalSelectedSeller as Seller : undefined);
+              router.push(targetPath);
+              // Form reset and displayedSeller update handled by useEffect when editSaleId changes
               if (onSuggestionsFetched) onSuggestionsFetched(null);
             }}
-            disabled={isSubmitting}
+            disabled={isEffectivelyReadOnly || isSubmitting} // also disable if readonly
             className="w-full sm:w-auto"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Limpar / Cancelar Edição
           </Button>
-          <Button type="submit" disabled={isSubmitting || !assignedSeller} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white">
+          <Button type="submit"
+            disabled={isEffectivelyReadOnly || isSubmitting }
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white">
             <Save className="mr-2 h-4 w-4" />
             {isSubmitting ? 'Salvando...' : (editSaleId ? 'Atualizar Venda' : 'Salvar Venda')}
           </Button>
         </div>
-        {!assignedSeller && (
-          <FormItem className="mt-2"> 
-             <p className="text-sm font-medium text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/> Selecione um vendedor para salvar.</p>
-          </FormItem>
-        )}
       </form>
     </Form>
   );

@@ -15,9 +15,10 @@ import { useToast } from '@/hooks/use-toast';
 import type { Sale } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ALL_SELLERS_OPTION } from '@/lib/constants'; // Import ALL_SELLERS_OPTION
 
 export default function EditarVendaPage() {
-  const { sales, deleteSale, getSaleById, loading: salesLoading } = useSales();
+  const { sales, deleteSale, getSaleById, loading: salesLoading, selectedSeller } = useSales(); // Added selectedSeller
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -30,13 +31,13 @@ export default function EditarVendaPage() {
   const [saleToDelete, setSaleToDelete] = useState<string | null>(null);
 
   const editIdFromUrl = searchParams.get('editId');
+  const isGlobalSellerEquipeComercial = selectedSeller === ALL_SELLERS_OPTION;
 
-  // Effect to set selectedSaleIdForForm based on URL, which drives the SalesForm
   useEffect(() => {
     if (editIdFromUrl) {
       setSelectedSaleIdForForm(editIdFromUrl);
     } else {
-      setSelectedSaleIdForForm(null); // Clear form if editId is removed from URL
+      setSelectedSaleIdForForm(null); 
     }
   }, [editIdFromUrl]);
 
@@ -60,6 +61,14 @@ export default function EditarVendaPage() {
   };
 
   const confirmDelete = (id: string) => {
+    if (isGlobalSellerEquipeComercial) {
+      toast({
+        title: "Ação Não Permitida",
+        description: "Selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho para excluir vendas.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSaleToDelete(id);
     setDialogOpen(true);
   };
@@ -68,11 +77,11 @@ export default function EditarVendaPage() {
     if (saleToDelete) {
       deleteSale(saleToDelete);
       toast({ title: "Sucesso!", description: "Venda excluída com sucesso." });
-      setSaleToDelete(null);
-      setSearchResults(prevResults => prevResults.filter(s => s.id !== saleToDelete)); // Update search results
-      if (selectedSaleIdForForm === saleToDelete) { // If the deleted sale was being edited
-        router.push('/editar-venda'); // Clear editId from URL and reset form
+      setSearchResults(prevResults => prevResults.filter(s => s.id !== saleToDelete)); 
+      if (selectedSaleIdForForm === saleToDelete) { 
+        router.push('/editar-venda'); 
       }
+      setSaleToDelete(null); // Clear saleToDelete after successful deletion
     }
     setDialogOpen(false);
   };
@@ -81,7 +90,7 @@ export default function EditarVendaPage() {
     setSearchTerm('');
     setSearchResults([]);
     if (editIdFromUrl) {
-      router.push('/editar-venda'); // This will clear editId from URL, SalesForm will reset
+      router.push('/editar-venda'); 
     }
   };
 
@@ -153,10 +162,22 @@ export default function EditarVendaPage() {
                       <TableCell>{sale.os}</TableCell>
                       <TableCell>{sale.salesValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleEditClick(sale.id)} className="mr-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleEditClick(sale.id)} 
+                          className="mr-1"
+                          // disabled={isGlobalSellerEquipeComercial} // Modification disabled by SalesForm
+                        >
                           <Edit3 className="h-4 w-4 mr-1" /> Modificar
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => confirmDelete(sale.id)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => confirmDelete(sale.id)} 
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={isGlobalSellerEquipeComercial} // Explicitly disable delete if EQUIPE COMERCIAL
+                        >
                           <Trash2 className="h-4 w-4 mr-1" /> Excluir
                         </Button>
                       </TableCell>
@@ -174,11 +195,15 @@ export default function EditarVendaPage() {
         <Card className="shadow-lg mt-6">
           <CardHeader>
             <CardTitle>Modificando Venda: {getSaleById(editIdFromUrl)?.project || `OS ${getSaleById(editIdFromUrl)?.os}`}</CardTitle>
-            <CardDescription>Altere os campos abaixo e clique em "Atualizar Venda".</CardDescription>
+            <CardDescription>
+              {isGlobalSellerEquipeComercial 
+                ? "Selecione SERGIO ou RODRIGO no cabeçalho para habilitar a modificação." 
+                : "Altere os campos abaixo e clique em 'Atualizar Venda'."
+              }
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* SalesForm will pick up editId from URL automatically */}
-            <SalesForm />
+            <SalesForm showReadOnlyAlert={true} />
           </CardContent>
         </Card>
       )}
@@ -188,7 +213,6 @@ export default function EditarVendaPage() {
             <p className="text-muted-foreground">Selecione uma venda da lista acima para editar.</p>
         </div>
       )}
-
 
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <AlertDialogContent>
