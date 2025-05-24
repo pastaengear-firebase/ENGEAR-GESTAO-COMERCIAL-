@@ -1,6 +1,9 @@
 // src/components/common/logo.tsx
+// VERSÃO SIMPLIFICADA PARA DIAGNÓSTICO DO ERRO 500
+// Esta versão NÃO tenta carregar NEWLOGO.JPG da pasta /public.
+// Exibe um SVG inline simples.
 import type React from 'react';
-import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 interface LogoProps {
   className?: string;
@@ -8,55 +11,42 @@ interface LogoProps {
   height?: number;
 }
 
-// CRITICAL INSTRUCTIONS FOR THE LOGO TO APPEAR:
-// 1. 'public' FOLDER REQUIRED AT PROJECT ROOT:
-//    For Next.js to find static images like your logo,
-//    there MUST be a folder named 'public' at the ROOT of your project
-//    (same level as 'src', 'package.json', etc.).
-//    YOU HAVE CONFIRMED THIS FOLDER EXISTS.
-//
-// 2. LOGO IMAGE FILE LOCATION:
-//    Your logo image file (e.g., NEWLOGO.JPG)
-//    MUST be INSIDE this 'public' folder.
-//    Expected path: public/NEWLOGO.JPG
-//
-// 3. IMAGE PATH BELOW:
-//    The `logoImagePath` variable is set to "/NEWLOGO.JPG".
-//    This means Next.js will look for NEWLOGO.JPG directly
-//    inside the 'public' folder.
-//
-//    Ensure the file extension (.JPG, .jpg, .png, etc.) is correct
-//    and the filename matches EXACTLY (case-sensitive).
-//    Based on your previous input, I'm using "NEWLOGO.JPG".
-
-const Logo: React.FC<LogoProps> = ({ className, width = 280, height = 80 }) => {
-  const logoImagePath = "/NEWLOGO.JPG"; // <--- CONFIRM THIS MATCHES YOUR FILE in public/
-
+const Logo: React.FC<LogoProps> = ({ className, width = 140, height = 40 }) => {
+  // Se o erro 500 persistir com esta versão, a causa NÃO está no código
+  // deste componente tentando carregar uma imagem da pasta /public.
+  // O problema é mais profundo, relacionado à própria pasta /public
+  // ou a configurações do servidor/ambiente.
   return (
-    <div 
-      className={cn("bg-white", className)} // Added cn for conditional class merging
-      style={{ 
-        display: 'inline-block', 
-        padding: '5px', 
-        borderRadius: '4px' 
-      }}
+    <div
+      className={cn(
+        'inline-flex items-center justify-center border border-dashed border-red-500 p-2',
+        className
+      )}
+      style={{ width: `${width}px`, height: `${height}px` }}
+      title="Logo Component (Debug Mode - SVG)"
     >
-      <div style={{ width: `${width}px`, height: `${height}px`, position: 'relative' }}>
-        <Image
-          src={logoImagePath}
-          alt="ENGEAR Logo"
-          fill // Use fill for responsive sizing within the parent div
-          style={{ objectFit: "contain" }} // Ensures the image scales correctly without cropping
-          priority // Load the logo image with priority
-          unoptimized={true} // Crucial to avoid Next.js image optimization issues if the image is problematic
-        />
-      </div>
+      <svg
+        viewBox="0 0 200 60"
+        width={width}
+        height={height}
+        xmlns="http://www.w3.org/2000/svg"
+        aria-label="ENGEAR Logo Placeholder"
+      >
+        <rect width="200" height="60" fill="white" />
+        <circle cx="30" cy="30" r="20" fill="#8A0F0F" /> {/* Maroon circle */}
+        <text
+          x="60"
+          y="35"
+          fontFamily="Arial, sans-serif"
+          fontSize="20"
+          fontWeight="bold"
+          fill="#D4AF37" // Golden Yellow
+        >
+          ENGEAR
+        </text>
+      </svg>
     </div>
   );
 };
-
-// Helper function for class names, if not already globally available via utils
-// (Assuming cn is available from "@/lib/utils")
-import { cn } from '@/lib/utils'; 
 
 export default Logo;
