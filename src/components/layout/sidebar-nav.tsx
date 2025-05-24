@@ -33,9 +33,9 @@ const navItems: NavItem[] = [
     isActive: (pathname) => pathname.startsWith('/editar-venda'),
   },
   {
-    title: 'FATURAMENTO',
+    title: 'Faturamento', // Alterado de FATURAMENTO para Faturamento
     href: '/faturamento',
-    icon: Receipt, // New icon for the new page
+    icon: Receipt,
     isActive: (pathname) => pathname.startsWith('/faturamento'),
   },
   // {
@@ -54,7 +54,7 @@ export default function SidebarNav() {
       <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
         {/* Use a white/light version of logo for dark sidebar */}
         {/* This will be handled by CSS variables if Logo uses fill="currentColor" or similar */}
-        <Logo width={140} height={40} /> 
+        <Logo /> 
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map((item) => (
