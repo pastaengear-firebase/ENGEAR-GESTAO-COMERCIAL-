@@ -2,15 +2,14 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, DollarSign, ListChecks, TrendingUp, Printer, CalendarDays, Filter, PlayCircle, CheckCircle, XCircle, Banknote, FileCheck2 } from "lucide-react"; // Added FileCheck2
+import { DollarSign, ListChecks, TrendingUp, Printer, CalendarDays, Banknote } from "lucide-react";
 import SalesCharts from "@/components/sales/sales-charts";
 import { useSales } from "@/hooks/use-sales";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"; 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
-import { addDays, format } from "date-fns";
+import { addDays, format, differenceInCalendarDays } from "date-fns";
 import type { DateRange } from "react-day-picker";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ALL_SELLERS_OPTION } from "@/lib/constants";
 
@@ -62,13 +61,33 @@ const SimpleDatePickerWithRange: React.FC<{
   );
 };
 
+const calculateWorkingDays = (from: Date, to: Date): number => {
+  let count = 0;
+  const currentDate = new Date(from);
+  // Ensure 'to' date is inclusive by setting its time to end of day for comparison,
+  // or just iterate while currentDate <= to (if 'to' is already start of day)
+  const endDate = new Date(to);
+  
+  while (currentDate <= endDate) {
+    const dayOfWeek = currentDate.getDay(); // 0 (Sunday) to 6 (Saturday)
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+      count++;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  return count;
+};
+
 
 export default function DashboardPage() {
   const { filteredSales, setFilters, filters, selectedSeller } = useSales();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: filters.startDate || addDays(new Date(), -30),
-    to: filters.endDate || new Date(),
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = new Date();
+    const fromDate = filters.startDate ? new Date(filters.startDate) : addDays(today, -30);
+    const toDate = filters.endDate ? new Date(filters.endDate) : today;
+    return { from: fromDate, to: toDate };
   });
+
 
   useEffect(() => {
     setFilters({ startDate: dateRange?.from, endDate: dateRange?.to });
@@ -80,15 +99,22 @@ export default function DashboardPage() {
 
   const totalSalesValue = filteredSales.reduce((sum, sale) => sum + sale.salesValue, 0);
   const totalSalesCount = filteredSales.length;
-  
-  const finalizedSalesCount = filteredSales.filter(sale => sale.status === 'FINALIZADO').length;
-  const inProgressSalesCount = filteredSales.filter(sale => sale.status === 'EM ANDAMENTO' || sale.status === 'Á INICAR').length;
-  const cancelledSalesCount = filteredSales.filter(sale => sale.status === 'CANCELADO').length;
-
   const totalPaymentsAllStatuses = filteredSales.reduce((sum, sale) => sum + sale.payment, 0);
-  const totalPaymentsFinalizado = filteredSales
-    .filter(sale => sale.status === 'FINALIZADO')
-    .reduce((sum, sale) => sum + sale.payment, 0);
+
+  const workingDaysInRange = useMemo(() => {
+    if (dateRange?.from && dateRange?.to) {
+      // Create new Date objects to avoid mutating the original dateRange state
+      return calculateWorkingDays(new Date(dateRange.from), new Date(dateRange.to));
+    }
+    return 0;
+  }, [dateRange]);
+
+  const averageSalesPerWorkingDay = useMemo(() => {
+    if (workingDaysInRange > 0 && totalSalesCount > 0) {
+      return (totalSalesCount / workingDaysInRange).toFixed(2);
+    }
+    return "0.00";
+  }, [totalSalesCount, workingDaysInRange]);
 
 
   const handlePrint = () => {
@@ -126,7 +152,7 @@ export default function DashboardPage() {
         </Card>
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Recebido (Geral)</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Recebido</CardTitle>
             <Banknote className="h-5 w-5 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -138,54 +164,22 @@ export default function DashboardPage() {
         </Card>
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Recebido (Finalizado)</CardTitle>
-            <FileCheck2 className="h-5 w-5 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-             {totalPaymentsFinalizado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </div>
-            <p className="text-xs text-muted-foreground">Soma dos pagamentos finalizados</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas Finalizadas</CardTitle>
-            <CheckCircle className="h-5 w-5 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{finalizedSalesCount}</div>
-            <p className="text-xs text-muted-foreground">Status "FINALIZADO"</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas em Andamento</CardTitle>
-            <PlayCircle className="h-5 w-5 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{inProgressSalesCount}</div>
-            <p className="text-xs text-muted-foreground">Status "Á INICAR" ou "EM ANDAMENTO"</p>
-          </CardContent>
-        </Card>
-         <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas Canceladas</CardTitle>
-            <XCircle className="h-5 w-5 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{cancelledSalesCount}</div>
-            <p className="text-xs text-muted-foreground">Status "CANCELADO"</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Registros</CardTitle>
-            <BarChart className="h-5 w-5 text-accent" />
+            <CardTitle className="text-sm font-medium">Vendas Efetuadas</CardTitle>
+            <ListChecks className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalSalesCount}</div>
             <p className="text-xs text-muted-foreground">Número de vendas no período</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Média de Vendas / Dia Útil</CardTitle>
+            <TrendingUp className="h-5 w-5 text-accent" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{averageSalesPerWorkingDay}</div>
+            <p className="text-xs text-muted-foreground">Vendas por dia útil no período</p>
           </CardContent>
         </Card>
       </div>
