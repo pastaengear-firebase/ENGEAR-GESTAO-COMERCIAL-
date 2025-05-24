@@ -35,7 +35,7 @@ const Logo: React.FC<LogoProps> = ({ className, width = 280, height = 80 }) => {
           layout="fill"
           objectFit="contain"
           priority // Carrega a imagem do logo com prioridade
-          unoptimized={true} // <--- ADICIONADO PARA EVITAR OTIMIZAÇÃO E CORRIGIR ERRO 400
+          unoptimized={true} // Adicionado para evitar otimização e corrigir erro 400
         />
       </div>
     </div>
