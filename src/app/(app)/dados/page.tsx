@@ -82,8 +82,8 @@ export default function DadosPage() {
         </CardContent>
         <CardFooter className="border-t p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-sm text-muted-foreground">
            <p className="flex-1">Total de Registros: <span className="font-semibold text-foreground">{filteredSales.length}</span></p>
-           <p className="flex-1">Valor Total em Vendas: <span className="font-semibold text-foreground">R$ {totalSalesValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
-           <p className="flex-1">Total Recebido: <span className="font-semibold text-foreground">R$ {totalPayments.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+           <p className="flex-1">Valor Total em Vendas: <span className="font-semibold text-foreground">{totalSalesValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
+           <p className="flex-1">Total Recebido: <span className="font-semibold text-foreground">{totalPayments.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
         </CardFooter>
       </Card>
     </div>
