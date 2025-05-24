@@ -1,8 +1,11 @@
 // src/components/common/logo.tsx
-// VERSÃO SIMPLIFICADA PARA DIAGNÓSTICO DO ERRO 500
-// Esta versão NÃO tenta carregar NEWLOGO.JPG da pasta /public.
-// Exibe um SVG inline simples.
+// Usando uma imagem de placeholder online temporariamente.
+// O erro 500 foi resolvido ao deletar a pasta /public.
+// Isso indica um problema em como a pasta /public ou seu conteúdo era tratado pelo servidor.
+// Estamos agora testando next/image com uma URL externa para isolar o problema.
+
 import type React from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface LogoProps {
@@ -12,39 +15,31 @@ interface LogoProps {
 }
 
 const Logo: React.FC<LogoProps> = ({ className, width = 140, height = 40 }) => {
-  // Se o erro 500 persistir com esta versão, a causa NÃO está no código
-  // deste componente tentando carregar uma imagem da pasta /public.
-  // O problema é mais profundo, relacionado à própria pasta /public
-  // ou a configurações do servidor/ambiente.
+  // Usaremos as dimensões fornecidas para o placeholder, ou os padrões.
+  const actualWidth = width || 140;
+  const actualHeight = height || 40;
+  const placeholderImageUrl = `https://placehold.co/${actualWidth}x${actualHeight}.png`;
+  const placeholderAiHint = "company logo";
+
   return (
     <div
       className={cn(
-        'inline-flex items-center justify-center border border-dashed border-red-500 p-2',
+        'inline-flex items-center justify-center bg-white p-1', // Fundo branco e padding
         className
       )}
-      style={{ width: `${width}px`, height: `${height}px` }}
-      title="Logo Component (Debug Mode - SVG)"
+      style={{ width: `${actualWidth}px`, height: `${actualHeight}px` }}
+      title="ENGEAR Logo Placeholder"
     >
-      <svg
-        viewBox="0 0 200 60"
-        width={width}
-        height={height}
-        xmlns="http://www.w3.org/2000/svg"
-        aria-label="ENGEAR Logo Placeholder"
-      >
-        <rect width="200" height="60" fill="white" />
-        <circle cx="30" cy="30" r="20" fill="#8A0F0F" /> {/* Maroon circle */}
-        <text
-          x="60"
-          y="35"
-          fontFamily="Arial, sans-serif"
-          fontSize="20"
-          fontWeight="bold"
-          fill="#D4AF37" // Golden Yellow
-        >
-          ENGEAR
-        </text>
-      </svg>
+      <Image
+        src={placeholderImageUrl}
+        alt="ENGEAR Logo Placeholder"
+        width={actualWidth}
+        height={actualHeight}
+        style={{ objectFit: 'contain' }} // Garante que a imagem se ajuste bem
+        data-ai-hint={placeholderAiHint}
+        // Se a imagem de placeholder também causar problemas, podemos adicionar unoptimized={true}
+        // mas o ideal é testar o comportamento padrão do next/image com URLs externas primeiro.
+      />
     </div>
   );
 };
