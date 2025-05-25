@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
     isActive: (pathname) => pathname.startsWith('/editar-venda'),
   },
   {
-    title: 'Faturamento',
+    title: 'Faturamento', // Changed from FATURAMENTO
     href: '/faturamento',
     icon: Receipt,
     isActive: (pathname) => pathname.startsWith('/faturamento'),
@@ -55,8 +55,8 @@ export default function SidebarNav() {
       "fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r text-sidebar-foreground shadow-lg md:flex",
       "bg-sidebar" 
     )}>
-      <div className="flex h-[72px] items-center justify-center border-b border-sidebar-border px-6 bg-white dark:bg-white">
-        <Logo width={224} height={64} />
+      <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6 bg-white dark:bg-white">
+        <Logo width={140} height={40} />
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map((item) => (
