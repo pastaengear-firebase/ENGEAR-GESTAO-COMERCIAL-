@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 "use client";
 import { useEffect } from 'react';
@@ -10,18 +11,13 @@ export default function HomePage() {
   const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    // console.log(`HomePage: loading=${loading}, isAuthenticated=${isAuthenticated}`);
+    console.log(`HomePage: AuthContext state - loading=${loading}, isAuthenticated=${isAuthenticated}`);
     if (!loading) {
       if (isAuthenticated) {
-        // console.log("HomePage: Authenticated, preparing to redirect to /dashboard.");
-        // Adiciona um pequeno atraso para tentar dar tempo ao cookie de se propagar
-        const timer = setTimeout(() => {
-          // console.log("HomePage: Timer expired, redirecting to /dashboard.");
-          router.replace('/dashboard');
-        }, 100); // Atraso de 100ms
-        return () => clearTimeout(timer); // Limpa o timer se o componente for desmontado
+        console.log("HomePage: Authenticated. Redirecting to /dashboard.");
+        router.replace('/dashboard');
       } else {
-        // console.log("HomePage: Not authenticated, redirecting to /login.");
+        console.log("HomePage: Not authenticated. Redirecting to /login.");
         router.replace('/login');
       }
     }
