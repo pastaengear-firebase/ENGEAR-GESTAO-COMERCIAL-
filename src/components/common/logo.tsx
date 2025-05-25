@@ -9,13 +9,13 @@ interface LogoProps {
   height?: number;
 }
 
-const Logo: React.FC<LogoProps> = ({ className, width = 140, height = 40 }) => {
+const Logo: React.FC<LogoProps> = ({ className, width = 210, height = 60 }) => {
   // URL da imagem do logo fornecida pelo usuário
   const logoImagePath = "https://storage.googleapis.com/ecdt-logo-saida/14f838ca6736777a8b269b79cae43b2b84900eb9dd53c910eef80890010193ea/ENGEAR.webp";
   const altText = "ENGEAR Logo";
 
-  const actualWidth = width || 140;
-  const actualHeight = height || 40;
+  const actualWidth = width || 210; // Default width 210px (140 * 1.5)
+  const actualHeight = height || 60; // Default height 60px (40 * 1.5)
 
   return (
     <div
@@ -29,11 +29,10 @@ const Logo: React.FC<LogoProps> = ({ className, width = 140, height = 40 }) => {
       <Image
         src={logoImagePath}
         alt={altText}
-        width={actualWidth} // Use width e height para aspect ratio inicial
+        width={actualWidth}
         height={actualHeight}
-        style={{ objectFit: 'contain', width: '100%', height: '100%' }} // Faz a imagem preencher o contêiner
-        // unoptimized={true} // Removido para tentar otimização padrão
-        priority // Pode ser útil para LCP (Largest Contentful Paint)
+        style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+        priority
       />
     </div>
   );
