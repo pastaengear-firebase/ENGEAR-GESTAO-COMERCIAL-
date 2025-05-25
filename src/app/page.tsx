@@ -10,26 +10,18 @@ export default function HomePage() {
   const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    // ---- INÍCIO: DESABILITAR LOGIN PARA TESTES ----
-    // Para desabilitar o login e ir direto ao dashboard:
-    console.log("HomePage: Forcing redirect to /dashboard for testing.");
-    router.replace('/dashboard');
-    return; // Importante para não executar a lógica abaixo
-    // ---- FIM: DESABILITAR LOGIN PARA TESTES ----
-
-    // Lógica original de redirecionamento (manter comentada se o acima estiver ativo)
-    // if (!loading) {
-    //   if (isAuthenticated) {
-    //     console.log("HomePage: Authenticated, redirecting to /dashboard.");
-    //     router.replace('/dashboard');
-    //   } else {
-    //     console.log("HomePage: Not authenticated, redirecting to /login.");
-    //     router.replace('/login');
-    //   }
-    // }
+    // console.log(`HomePage: loading=${loading}, isAuthenticated=${isAuthenticated}`);
+    if (!loading) {
+      if (isAuthenticated) {
+        // console.log("HomePage: Authenticated, redirecting to /dashboard.");
+        router.replace('/dashboard');
+      } else {
+        // console.log("HomePage: Not authenticated, redirecting to /login.");
+        router.replace('/login');
+      }
+    }
   }, [loading, isAuthenticated, router]);
 
-  // Exibe um loader enquanto a lógica de autenticação e redirecionamento está ocorrendo.
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <Loader2 className="h-12 w-12 animate-spin text-primary" />

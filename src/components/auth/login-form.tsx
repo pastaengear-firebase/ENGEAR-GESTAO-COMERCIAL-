@@ -4,18 +4,18 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoginSchema, type LoginFormData } from '@/lib/schemas';
-import { DEFAULT_LOGIN_CREDENTIALS, EMAIL_RECOVERY_ADDRESS } from '@/lib/constants';
+// DEFAULT_LOGIN_CREDENTIALS is used by AuthContext, not directly here for comparison
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Label } from '@/components/ui/label'; // Not used directly, FormLabel is
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, LogIn } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Adicionado
+// Card imports not needed here, already on login page
 
 export default function LoginForm() {
-  const { login } = useAuth();
+  const { login } = useAuth(); // AuthContext's login now handles credentials check
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,19 +30,15 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    if (
-      data.username === DEFAULT_LOGIN_CREDENTIALS.username &&
-      data.password === DEFAULT_LOGIN_CREDENTIALS.password
-    ) {
-      login(data.username);
-      // The AuthContext handles redirection
-    } else {
-      setError('Usuário ou senha inválidos.');
+    try {
+      // login function in AuthContext now throws an error on failure
+      await login(data.username, data.password);
+      // Redirection is handled by AuthContext's login via window.location.assign
+    } catch (authError: any) {
+      setError(authError.message || 'Falha na autenticação.');
+      setIsLoading(false);
     }
-    setIsLoading(false);
+    // setIsLoading(false) is called only on error, success leads to page reload
   };
 
   return (
