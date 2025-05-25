@@ -13,8 +13,13 @@ export default function HomePage() {
     // console.log(`HomePage: loading=${loading}, isAuthenticated=${isAuthenticated}`);
     if (!loading) {
       if (isAuthenticated) {
-        // console.log("HomePage: Authenticated, redirecting to /dashboard.");
-        router.replace('/dashboard');
+        // console.log("HomePage: Authenticated, preparing to redirect to /dashboard.");
+        // Adiciona um pequeno atraso para tentar dar tempo ao cookie de se propagar
+        const timer = setTimeout(() => {
+          // console.log("HomePage: Timer expired, redirecting to /dashboard.");
+          router.replace('/dashboard');
+        }, 100); // Atraso de 100ms
+        return () => clearTimeout(timer); // Limpa o timer se o componente for desmontado
       } else {
         // console.log("HomePage: Not authenticated, redirecting to /login.");
         router.replace('/login');

@@ -11,15 +11,15 @@ export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, loading } = useAuth();
 
-  // This useEffect handles the "Redirecionando..." message if AuthContext determines
-  // the user is already authenticated (e.g., after HomePage redirects here but cookie was set).
-  // However, middleware should ideally prevent authenticated users from reaching /login.
+  // Este useEffect apenas monitora, não redireciona mais ativamente daqui
+  // se o usuário já estiver autenticado. A HomePage deve tratar o redirecionamento inicial.
   useEffect(() => {
     // console.log(`LoginPage: loading=${loading}, isAuthenticated=${isAuthenticated}`);
     if (!loading && isAuthenticated) {
-      // console.log("LoginPage: Already authenticated (unexpectedly), redirecting to /dashboard.");
-      // This scenario should be rare if middleware and HomePage logic are correct.
-      router.replace('/dashboard');
+      // console.log("LoginPage: AuthContext reports authenticated. HomePage should handle redirect.");
+      // Não redirecionar daqui para evitar loops. Se o middleware nos enviou para /login,
+      // então o estado do cookie no servidor não está sincronizado.
+      // Forçar um redirecionamento para /dashboard daqui pode recriar o loop.
     }
   }, [loading, isAuthenticated, router]);
 
@@ -32,13 +32,14 @@ export default function LoginPage() {
       );
   }
   
-  // If middleware allowed access to /login, and AuthContext is !loading and !isAuthenticated, show form.
-  // If !loading and isAuthenticated (e.g. from a race condition or direct navigation), the useEffect above handles redirect.
+  // Se o middleware permitiu o acesso a /login, e AuthContext não está carregando 
+  // e não está autenticado, mostre o formulário.
+  // Se !loading e isAuthenticated (o que seria inesperado aqui se o middleware estiver funcionando),
+  // ainda mostraremos o formulário para quebrar o ciclo, permitindo uma nova tentativa de login.
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/20 p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          {/* Logo foi removido daqui, pois o layout principal o tem no HeaderContent */}
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Acesso ao Sistema
           </h1>
