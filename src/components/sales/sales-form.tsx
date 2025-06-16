@@ -442,8 +442,14 @@ Sistema de Controle de Vendas ENGEAR
                       type="number"
                       placeholder="0,00"
                       className="pl-8"
-                      value={field.value === undefined || isNaN(Number(field.value)) ? '' : field.value}
-                      onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                      value={field.value === undefined || field.value === null || isNaN(Number(field.value)) ? '' : String(field.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        field.onChange(val === '' ? undefined : parseFloat(val));
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                       disabled={isEffectivelyReadOnly || isSubmitting}
                       step="0.01"
                     />
@@ -488,8 +494,14 @@ Sistema de Controle de Vendas ENGEAR
                       type="number"
                       placeholder="0,00"
                       className="pl-8"
-                      value={field.value === undefined || isNaN(Number(field.value)) ? '' : field.value}
-                      onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                      value={field.value === undefined || field.value === null || isNaN(Number(field.value)) ? '' : String(field.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        field.onChange(val === '' ? undefined : parseFloat(val));
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                       disabled={isEffectivelyReadOnly || isSubmitting}
                       step="0.01"
                     />

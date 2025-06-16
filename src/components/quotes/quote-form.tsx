@@ -316,7 +316,21 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
                 <FormControl>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input type="number" placeholder="0,00" className="pl-8" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} disabled={isEffectivelyReadOnly || isSubmitting} step="0.01" />
+                    <Input 
+                      type="number" 
+                      placeholder="0,00" 
+                      className="pl-8" 
+                      value={field.value === undefined || field.value === null || isNaN(Number(field.value)) ? '' : String(field.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        field.onChange(val === '' ? undefined : parseFloat(val));
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                      disabled={isEffectivelyReadOnly || isSubmitting} 
+                      step="0.01"
+                    />
                   </div>
                 </FormControl>
                 <FormMessage />
