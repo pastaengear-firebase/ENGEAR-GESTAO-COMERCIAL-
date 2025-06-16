@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -8,7 +9,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  images: { 
+  images: {
     remotePatterns: [
       {
         protocol: 'https',
@@ -24,6 +25,9 @@ const nextConfig: NextConfig = {
       },
     ],
     // unoptimized: true, // Removida a desotimização global
+  },
+  devServer: {
+    allowedDevOrigins: ['https://6000-firebase-studio-1747639280840.cluster-etsqrqvqyvd4erxx7qq32imrjk.cloudworkstations.dev'],
   },
 };
 
