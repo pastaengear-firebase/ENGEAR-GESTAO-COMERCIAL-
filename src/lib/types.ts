@@ -1,5 +1,5 @@
 
-import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption } from './constants';
+import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption, FollowUpDaysOptionValue } from './constants';
 import type { ALL_SELLERS_OPTION } from './constants'; // Import específico
 
 
@@ -91,16 +91,17 @@ export interface Quote {
   proposedValue: number;
   status: ProposalStatusOption;
   notes?: string; // Opcional
+  followUpDate?: string | null; // Data ISO para o follow-up, pode ser null ou undefined
+  sendProposalNotification?: boolean; // Indica se a notificação deve ser enviada
   createdAt: number; // timestamp
   updatedAt?: number; // timestamp
 }
 
 export type QuotesContextType = {
   quotes: Quote[];
-  selectedSeller: Seller | typeof ALL_SELLERS_OPTION; // Compartilhado com Sales, mas gerenciado por SalesProvider
-  // setSelectedSeller: (seller: Seller | typeof ALL_SELLERS_OPTION) => void; // Gerenciado por SalesProvider
-  addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller'>) => Quote;
-  updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller'>>) => Quote | undefined;
+  selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
+  addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }) => Quote;
+  updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'>> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }) => Quote | undefined;
   deleteQuote: (id: string) => void;
   getQuoteById: (id: string) => Quote | undefined;
   loadingQuotes: boolean;

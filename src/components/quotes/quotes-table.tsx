@@ -1,3 +1,4 @@
+
 // src/components/quotes/quotes-table.tsx
 "use client";
 import type { Quote } from '@/lib/types';
@@ -12,10 +13,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit3, Trash2, Eye } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { MoreHorizontal, Edit3, Trash2, Eye, BellRing } from 'lucide-react';
+import { format, parseISO, isPast, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from '@/lib/utils';
 
 interface QuotesTableProps {
   quotesData: Quote[];
@@ -29,18 +31,31 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
   const getStatusBadgeVariant = (status: Quote['status']): React.ComponentProps<typeof Badge>['variant'] => {
     switch (status) {
       case 'Aceita':
-        return 'default'; // Verde (ou cor primária)
+        return 'default'; 
       case 'Enviada':
       case 'Em Negociação':
-        return 'secondary'; // Amarelo/Laranja
+        return 'secondary'; 
       case 'Recusada':
       case 'Cancelada':
-        return 'destructive'; // Vermelho
+        return 'destructive'; 
       case 'Pendente':
       default:
-        return 'outline'; // Cinza/Neutro
+        return 'outline'; 
     }
   };
+
+  const getFollowUpDateClass = (followUpDateStr?: string | null): string => {
+    if (!followUpDateStr) return "";
+    try {
+      const followUpD = parseISO(followUpDateStr);
+      if (isPast(followUpD) && !isToday(followUpD)) return "text-destructive font-semibold"; // Vencido
+      if (isToday(followUpD)) return "text-blue-600 font-semibold"; // Hoje
+      return "text-muted-foreground"; // Futuro
+    } catch {
+      return ""; // Data inválida
+    }
+  };
+
 
   if (!quotesData.length) {
     return (
@@ -59,12 +74,12 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
       <Table className="min-w-full">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Data</TableHead>
+            <TableHead className="w-[100px]">Data Prop.</TableHead>
             <TableHead>Cliente</TableHead>
             <TableHead>Vendedor</TableHead>
-            <TableHead>Área</TableHead>
             <TableHead className="text-right">Valor Proposto</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="w-[120px]">Follow-up</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -74,7 +89,6 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
               <TableCell>{format(parseISO(quote.proposalDate), 'dd/MM/yy', { locale: ptBR })}</TableCell>
               <TableCell className="font-medium max-w-[200px] truncate" title={quote.clientName}>{quote.clientName}</TableCell>
               <TableCell>{quote.seller}</TableCell>
-              <TableCell>{quote.area}</TableCell>
               <TableCell className="text-right">
                 {quote.proposedValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </TableCell>
@@ -82,6 +96,16 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
                 <Badge variant={getStatusBadgeVariant(quote.status)} className="capitalize text-xs px-2 py-0.5">
                   {quote.status}
                 </Badge>
+              </TableCell>
+              <TableCell className={cn("flex items-center", getFollowUpDateClass(quote.followUpDate))}>
+                 {quote.followUpDate ? (
+                    <>
+                        <BellRing className={cn("mr-1 h-3.5 w-3.5", getFollowUpDateClass(quote.followUpDate) === "text-muted-foreground" ? "text-muted-foreground/70" : "")} />
+                        {format(parseISO(quote.followUpDate), 'dd/MM/yy', { locale: ptBR })}
+                    </>
+                 ) : (
+                    <span className="text-xs text-muted-foreground/70 italic">Não agendado</span>
+                 )}
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
@@ -109,4 +133,3 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
     </ScrollArea>
   );
 }
-

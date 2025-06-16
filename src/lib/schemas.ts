@@ -1,6 +1,6 @@
 
 import { z } from 'zod';
-import { AREA_OPTIONS, STATUS_OPTIONS, COMPANY_OPTIONS, SELLERS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS } from './constants';
+import { AREA_OPTIONS, STATUS_OPTIONS, COMPANY_OPTIONS, SELLERS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, FOLLOW_UP_DAYS_OPTIONS } from './constants';
 
 export const LoginSchema = z.object({
   username: z.string().min(1, 'Usuário é obrigatório.'),
@@ -22,6 +22,8 @@ export const SalesFormSchema = z.object({
 });
 export type SalesFormData = z.infer<typeof SalesFormSchema>;
 
+const followUpDaysValues = FOLLOW_UP_DAYS_OPTIONS.map(opt => opt.value) as [number, ...number[]];
+
 export const QuoteFormSchema = z.object({
   clientName: z.string().min(1, 'Nome do cliente é obrigatório.'),
   proposalDate: z.date({ required_error: 'Data da proposta é obrigatória.' }),
@@ -33,6 +35,7 @@ export const QuoteFormSchema = z.object({
   proposedValue: z.coerce.number().positive('Valor proposto deve ser positivo.'),
   status: z.enum(PROPOSAL_STATUS_OPTIONS, { required_error: 'Status da proposta é obrigatório.'}),
   notes: z.string().optional(),
-  // seller é pego do contexto global, não incluído no formulário para o usuário preencher
+  followUpDaysOffset: z.enum(followUpDaysValues.map(String) as [string, ...string[]]).optional().transform(val => val ? parseInt(val, 10) : undefined),
+  sendProposalNotification: z.boolean().optional().default(false),
 });
 export type QuoteFormData = z.infer<typeof QuoteFormSchema>;

@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { QuoteFormSchema, type QuoteFormData } from '@/lib/schemas';
-import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_OPTIONS, SELLERS, ALL_SELLERS_OPTION } from '@/lib/constants';
-import type { Seller } from '@/lib/constants';
+import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_OPTIONS, SELLERS, ALL_SELLERS_OPTION, FOLLOW_UP_DAYS_OPTIONS, PROPOSAL_NOTIFICATION_EMAILS } from '@/lib/constants';
+import type { Seller, FollowUpDaysOptionValue } from '@/lib/constants';
 import { useQuotes } from '@/hooks/use-quotes';
 import { useSales } from '@/hooks/use-sales'; // Para pegar o vendedor global
 import { Button } from '@/components/ui/button';
@@ -16,11 +16,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarIcon, DollarSign, Save, RotateCcw, Info } from 'lucide-react';
+import { CalendarIcon, DollarSign, Save, RotateCcw, Info, BellRing, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import type { Quote } from '@/lib/types';
@@ -46,7 +47,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
     resolver: zodResolver(QuoteFormSchema),
     defaultValues: {
       clientName: '',
-      proposalDate: undefined, // Inicializa como undefined para evitar new Date() em SSR
+      proposalDate: undefined, 
       validityDate: undefined,
       company: undefined,
       area: undefined,
@@ -55,11 +56,24 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
       proposedValue: undefined,
       status: "Pendente",
       notes: '',
+      followUpDaysOffset: 0, // 'Não agendar' por padrão
+      sendProposalNotification: false,
     },
   });
 
   useEffect(() => {
     if (editMode && quoteToEdit) {
+      let followUpDaysOffset: FollowUpDaysOptionValue = 0;
+      if (quoteToEdit.followUpDate && quoteToEdit.proposalDate) {
+        const proposalD = parseISO(quoteToEdit.proposalDate);
+        const followUpD = parseISO(quoteToEdit.followUpDate);
+        const diffDays = Math.round((followUpD.getTime() - proposalD.getTime()) / (1000 * 60 * 60 * 24));
+        const validOffsets = FOLLOW_UP_DAYS_OPTIONS.map(opt => opt.value);
+        if (validOffsets.includes(diffDays as FollowUpDaysOptionValue)) {
+            followUpDaysOffset = diffDays as FollowUpDaysOptionValue;
+        }
+      }
+
       form.reset({
         clientName: quoteToEdit.clientName,
         proposalDate: parseISO(quoteToEdit.proposalDate),
@@ -71,13 +85,14 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
         proposedValue: quoteToEdit.proposedValue,
         status: quoteToEdit.status,
         notes: quoteToEdit.notes || '',
+        followUpDaysOffset: followUpDaysOffset,
+        sendProposalNotification: quoteToEdit.sendProposalNotification || false,
       });
       setDisplayedSeller(quoteToEdit.seller);
     } else if (!editMode) {
-      // Reset para novo formulário, SEM a data principal ainda
       form.reset({
         clientName: '',
-        proposalDate: undefined, // Mantém undefined aqui no reset inicial
+        proposalDate: undefined,
         validityDate: undefined,
         company: undefined,
         area: undefined,
@@ -86,8 +101,9 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
         proposedValue: undefined,
         status: "Pendente",
         notes: '',
+        followUpDaysOffset: 0,
+        sendProposalNotification: false,
       });
-      // Define a data APENAS NO CLIENTE após a montagem/reset inicial
       form.setValue('proposalDate', new Date(), { shouldValidate: true, shouldDirty: true });
       
       if (SELLERS.includes(globalSelectedSeller as Seller)) {
@@ -97,6 +113,46 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
       }
     }
   }, [quoteToEdit, editMode, form, globalSelectedSeller]);
+
+  const triggerProposalEmailNotification = (quote: Quote, isUpdate: boolean) => {
+    const recipients = PROPOSAL_NOTIFICATION_EMAILS.join(',');
+    const action = isUpdate ? 'Atualizada' : 'Registrada';
+    const subject = `Proposta Comercial ${action}: ${quote.clientName} / ${quote.description.substring(0,30)}...`;
+    const appBaseUrl = window.location.origin;
+    // Link para a proposta específica poderia ser /propostas/gerenciar?id=${quote.id} ou algo assim,
+    // mas por enquanto, vamos linkar para a página de gerenciamento.
+    const proposalLink = `${appBaseUrl}/propostas/gerenciar`;
+
+    const body = `
+Uma proposta comercial foi ${action.toLowerCase()} no sistema:
+
+Detalhes da Proposta:
+--------------------------------------------------
+ID da Proposta: ${quote.id}
+Cliente: ${quote.clientName}
+Data da Proposta: ${format(parseISO(quote.proposalDate), 'dd/MM/yyyy', { locale: ptBR })}
+${quote.validityDate ? `Data de Validade: ${format(parseISO(quote.validityDate), 'dd/MM/yyyy', { locale: ptBR })}\n` : ''}
+Vendedor: ${quote.seller}
+Empresa: ${quote.company}
+Área: ${quote.area}
+Valor Proposto: ${quote.proposedValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+Status: ${quote.status}
+Descrição: ${quote.description}
+${quote.followUpDate ? `Data de Follow-up: ${format(parseISO(quote.followUpDate), 'dd/MM/yyyy', { locale: ptBR })}\n` : ''}
+--------------------------------------------------
+
+Acesse a aplicação para mais detalhes: ${appBaseUrl}
+Link direto para gerenciamento de propostas: ${proposalLink}
+
+Atenciosamente,
+Sistema de Controle de Vendas ENGEAR
+    `;
+
+    const mailtoLink = `mailto:${recipients}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoLink, '_blank');
+    toast({ title: "Preparando E-mail", description: "Seu cliente de e-mail foi aberto para enviar a notificação da proposta." });
+  };
+
 
   const onSubmit = async (data: QuoteFormData) => {
     if (isEffectivelyReadOnly) {
@@ -122,21 +178,27 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
       proposalDate: format(data.proposalDate, 'yyyy-MM-dd'),
       validityDate: data.validityDate ? format(data.validityDate, 'yyyy-MM-dd') : undefined,
       proposedValue: Number(data.proposedValue) || 0,
+      // followUpDate será calculado e adicionado pelo context
     };
 
     try {
+      let savedQuote: Quote | undefined;
       if (editMode && quoteToEdit) {
-        updateQuote(quoteToEdit.id, quotePayload);
+        savedQuote = updateQuote(quoteToEdit.id, quotePayload);
         toast({ title: "Sucesso!", description: "Proposta atualizada com sucesso." });
       } else {
-        addQuote(quotePayload as Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller'>);
+        // Passamos o Omit com a adição dos campos que o contexto espera
+        savedQuote = addQuote(quotePayload as Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean });
         toast({ title: "Sucesso!", description: "Nova proposta registrada com sucesso." });
       }
+      
+      if (savedQuote && savedQuote.sendProposalNotification) {
+        triggerProposalEmailNotification(savedQuote, editMode);
+      }
 
-      // Reset para novo formulário
       form.reset({
         clientName: '',
-        proposalDate: undefined, // Reset para undefined
+        proposalDate: undefined, 
         validityDate: undefined,
         company: undefined,
         area: undefined,
@@ -145,9 +207,10 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
         proposedValue: undefined,
         status: "Pendente",
         notes: '',
+        followUpDaysOffset: 0,
+        sendProposalNotification: false,
       });
-      // Redefine a data no cliente para o próximo "novo" formulário
-      if (!editMode) { // Apenas se não estiver editando, para não sobrescrever uma edição
+      if (!editMode) {
         form.setValue('proposalDate', new Date(), { shouldValidate: true, shouldDirty: true });
       }
       
@@ -182,7 +245,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
           <FormField
             control={form.control}
             name="clientName"
@@ -211,7 +274,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
               </SelectContent>
             </Select>
             <FormDescription>
-              {editMode ? "Vendedor original da proposta (não pode ser alterado)." : "Para nova proposta, use o seletor no cabeçalho."}
+              {editMode ? "Vendedor original da proposta." : "Definido no cabeçalho."}
             </FormDescription>
           </FormItem>
 
@@ -237,7 +300,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar 
                         mode="single" 
-                        selected={field.value || undefined} // field.value pode ser null
+                        selected={field.value || undefined}
                         onSelect={field.onChange} 
                         initialFocus 
                         disabled={isEffectivelyReadOnly || isSubmitting} />
@@ -272,7 +335,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
                         mode="single" 
                         selected={field.value || undefined}
                         onSelect={field.onChange} 
-                        disabled={(date) => date < new Date() || isEffectivelyReadOnly || isSubmitting} />
+                        disabled={(date) => date < (form.getValues("proposalDate") || new Date()) || isEffectivelyReadOnly || isSubmitting} />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -355,12 +418,11 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
               </FormItem>
             )}
           />
-
-          <FormField
+           <FormField
             control={form.control}
             name="status"
             render={({ field }) => (
-              <FormItem className="md:col-span-2">
+              <FormItem>
                 <FormLabel>Status da Proposta</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value} disabled={isEffectivelyReadOnly || isSubmitting}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione o Status" /></SelectTrigger></FormControl>
@@ -370,12 +432,13 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
               </FormItem>
             )}
           />
+        </div>
           
-          <FormField
+        <FormField
             control={form.control}
             name="description"
             render={({ field }) => (
-              <FormItem className="md:col-span-2">
+              <FormItem>
                 <FormLabel>Descrição/Escopo da Proposta</FormLabel>
                 <FormControl>
                   <Textarea placeholder="Detalhe o que está sendo proposto..." {...field} disabled={isEffectivelyReadOnly || isSubmitting} rows={3} />
@@ -383,13 +446,57 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
                 <FormMessage />
               </FormItem>
             )}
-          />
+        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <FormField
+                control={form.control}
+                name="followUpDaysOffset"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="flex items-center"><BellRing className="mr-2 h-4 w-4" /> Follow-up</FormLabel>
+                    <Select 
+                        onValueChange={(value) => field.onChange(parseInt(value,10))} 
+                        value={String(field.value ?? 0)} 
+                        disabled={isEffectivelyReadOnly || isSubmitting}
+                    >
+                    <FormControl><SelectTrigger><SelectValue placeholder="Agendar follow-up" /></SelectTrigger></FormControl>
+                    <SelectContent>{FOLLOW_UP_DAYS_OPTIONS.map(opt => <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormDescription>Define um lembrete de follow-up (interno).</FormDescription>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
 
-          <FormField
+            <FormField
+                control={form.control}
+                name="sendProposalNotification"
+                render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-4 md:mt-0 shadow-sm bg-muted/30">
+                     <FormControl>
+                        <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={isEffectivelyReadOnly || isSubmitting}
+                        />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                    <FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4 text-primary" />Notificar equipe por e-mail?</FormLabel>
+                    <FormDescription>
+                        Se marcado, um e-mail com os dados da proposta será preparado para envio.
+                    </FormDescription>
+                    </div>
+                </FormItem>
+                )}
+            />
+        </div>
+
+        <FormField
             control={form.control}
             name="notes"
             render={({ field }) => (
-              <FormItem className="md:col-span-2">
+              <FormItem>
                 <FormLabel>Observações (Opcional)</FormLabel>
                 <FormControl>
                   <Textarea placeholder="Qualquer informação adicional relevante..." {...field} disabled={isEffectivelyReadOnly || isSubmitting} rows={3} />
@@ -397,15 +504,14 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
                 <FormMessage />
               </FormItem>
             )}
-          />
-        </div>
+        />
 
         <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
           <Button
             type="button"
             variant="ghost"
             onClick={() => {
-              form.reset({ // Reset para valores vazios
+              form.reset({ 
                 clientName: '',
                 proposalDate: undefined, 
                 validityDate: undefined,
@@ -416,8 +522,9 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
                 proposedValue: undefined,
                 status: "Pendente",
                 notes: '',
+                followUpDaysOffset: 0,
+                sendProposalNotification: false,
               });
-              // Redefine a data no cliente para o próximo "novo" formulário
               if (!editMode) {
                  form.setValue('proposalDate', new Date(), { shouldValidate: true, shouldDirty: true });
               }
