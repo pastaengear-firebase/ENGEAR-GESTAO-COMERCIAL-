@@ -9,18 +9,19 @@ import QuoteForm from '@/components/quotes/quote-form';
 import QuotesTable from '@/components/quotes/quotes-table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'; // Removido DialogClose não utilizado
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Importação adicionada
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, FileText, PlusCircle, RotateCcw, AlertTriangle, Info } from 'lucide-react';
+import { Search, FileText, PlusCircle, RotateCcw, Info } from 'lucide-react'; // Removido AlertTriangle não utilizado
 import { useToast } from '@/hooks/use-toast';
 import type { Quote } from '@/lib/types';
 import { ALL_SELLERS_OPTION } from '@/lib/constants';
 
 export default function GerenciarPropostasPage() {
-  const { quotes, deleteQuote, loadingQuotes, selectedSeller: quoteSellerContext } = useQuotes(); // selectedSeller aqui é do QuoteContext, derivado do SalesContext
-  const { selectedSeller: globalSelectedSeller } = useSales(); // Este é o seletor global
+  const { quotes, deleteQuote, loadingQuotes } = useQuotes();
+  const { selectedSeller: globalSelectedSeller } = useSales();
   const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -182,7 +183,7 @@ export default function GerenciarPropostasPage() {
               <QuoteForm 
                 quoteToEdit={editingQuote} 
                 onFormSubmit={handleFormSubmitted}
-                showReadOnlyAlert={true} // O alerta de read-only será mostrado dentro do form se necessário
+                showReadOnlyAlert={true} 
               />
             </div>
           </ScrollArea>
