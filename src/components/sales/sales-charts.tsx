@@ -1,4 +1,3 @@
-
 // src/components/sales/sales-charts.tsx
 "use client";
 import type { Sale } from '@/lib/types';
@@ -58,7 +57,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
       if (!acc[status]) {
         acc[status] = { name: status, value: 0 };
       }
-      acc[status].value += 1;
+      acc[status].value += 1; // Aqui 'value' é contagem
       return acc;
     }, {} as Record<string, { name: string; value: number }>);
     return Object.values(data);
@@ -112,7 +111,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
 
 
   const barChartConfig = {
-    totalValue: { label: "Valor Total (R$)" },
+    totalValue: { label: "Valor Total" }, // Removido (R$) do label, pois o tooltip/eixo já formatarão
   } satisfies ChartConfig;
 
   const pieChartConfigStatus = {
@@ -132,12 +131,19 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
   } satisfies ChartConfig;
   
   const areaChartConfig = {
-     totalValue: { label: "Valor Total (R$)" },
+     totalValue: { label: "Valor Total" }, // Removido (R$)
      ...AREA_OPTIONS.reduce((acc, area, index) => {
       acc[area] = { label: area, color: categoryColorsArray[index % categoryColorsArray.length] };
       return acc;
     }, {} as Record<string, {label: string, color: string}>)
   } satisfies ChartConfig;
+
+  const currencyFormatter = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const compactCurrencyFormatter = (value: number) => {
+    if (value >= 1000000) return `R$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `R$${(value / 1000).toFixed(0)}K`;
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
 
 
   if (!salesData.length) {
@@ -164,9 +170,9 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
         <CardContent>
           <ChartContainer config={barChartConfig} className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesBySeller} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+              <BarChart data={salesBySeller} margin={{ top: 5, right: 20, left: 30, bottom: 5 }}>
                 <XAxis dataKey="name" stroke="hsl(var(--foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickFormatter={(value) => `R$${value/1000}k`} />
+                <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickFormatter={compactCurrencyFormatter} />
                 <Tooltip
                   content={<ChartTooltipContent />}
                   cursor={{ fill: "hsl(var(--muted))" }}
@@ -192,7 +198,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
            <ChartContainer config={pieChartConfigStatus} className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Tooltip content={<ChartTooltipContent nameKey="name" />} />
+                <Tooltip content={<ChartTooltipContent />} />
                 <Legend 
                   formatter={(value, entry) => {
                      const color = CHART_COLORS[entry.payload.name as keyof typeof CHART_COLORS] || CHART_COLORS.default;
@@ -201,7 +207,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
                 />
                 <Pie
                   data={salesByStatus}
-                  dataKey="value"
+                  dataKey="value" // 'value' aqui é contagem
                   nameKey="name"
                   cx="50%"
                   cy="50%"
@@ -227,17 +233,17 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
         <CardContent>
           <ChartContainer config={barChartConfig} className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlySales} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+              <BarChart data={monthlySales} margin={{ top: 5, right: 20, left: 30, bottom: 5 }}>
                 <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={50} stroke="hsl(var(--foreground))" fontSize={10} />
-                <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickFormatter={(value) => `R$${value/1000}k`} />
+                <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickFormatter={compactCurrencyFormatter} />
                 <Tooltip
                   content={<ChartTooltipContent />}
                   cursor={{ fill: "hsl(var(--muted))" }}
                 />
                 <Legend />
                 <Bar dataKey="totalValue" name="Valor Total Mensal" radius={[4, 4, 0, 0]}>
-                   {monthlySales.map((entry) => (
-                    <Cell key={`cell-month-${entry.name}`} fill={categoryColorsArray[monthlySales.indexOf(entry) % categoryColorsArray.length]} />
+                   {monthlySales.map((entry, index) => ( // Adicionado index para key
+                    <Cell key={`cell-month-${entry.name}-${index}`} fill={categoryColorsArray[monthlySales.indexOf(entry) % categoryColorsArray.length]} />
                   ))}
                 </Bar>
               </BarChart>
@@ -255,7 +261,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
           <ChartContainer config={areaChartConfig} className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesByArea} layout="vertical" margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
-                <XAxis type="number" stroke="hsl(var(--foreground))" fontSize={12} tickFormatter={(value) => `R$${value/1000}k`} />
+                <XAxis type="number" stroke="hsl(var(--foreground))" fontSize={12} tickFormatter={compactCurrencyFormatter} />
                 <YAxis dataKey="name" type="category" stroke="hsl(var(--foreground))" fontSize={10} width={80} interval={0} />
                 <Tooltip
                   content={<ChartTooltipContent />}
@@ -263,8 +269,8 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
                 />
                 <Legend />
                 <Bar dataKey="totalValue" name="Valor Total" radius={[0, 4, 4, 0]} >
-                   {salesByArea.map((entry) => (
-                    <Cell key={`cell-area-${entry.name}`} fill={categoryColorsArray[salesByArea.indexOf(entry) % categoryColorsArray.length]} />
+                   {salesByArea.map((entry, index) => ( // Adicionado index para key
+                    <Cell key={`cell-area-${entry.name}-${index}`} fill={categoryColorsArray[salesByArea.indexOf(entry) % categoryColorsArray.length]} />
                   ))}
                 </Bar>
               </BarChart>
@@ -291,13 +297,13 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
                 />
                 <Pie
                   data={salesByCompany}
-                  dataKey="totalValue"
+                  dataKey="totalValue" // 'totalValue' aqui é monetário
                   nameKey="name"
                   cx="50%"
                   cy="50%"
                   outerRadius={100}
                   labelLine={false}
-                  label={({ name, value, percent }) => `${name}: ${value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} (${(percent * 100).toFixed(0)}%)`}
+                  label={({ name, value, percent }) => `${name}: ${currencyFormatter(Number(value))} (${(percent * 100).toFixed(0)}%)`}
                 >
                   {salesByCompany.map((entry) => (
                     <Cell key={`cell-company-${entry.name}`} fill={CHART_COLORS[entry.name as keyof typeof CHART_COLORS] || CHART_COLORS.default} />
@@ -312,3 +318,4 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
     </div>
   );
 }
+

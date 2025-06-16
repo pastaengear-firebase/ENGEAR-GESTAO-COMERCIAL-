@@ -84,9 +84,9 @@ export default function SalesTable({ salesData }: SalesTableProps) {
             <TableHead>O.S.</TableHead>
             <TableHead>Área</TableHead>
             <TableHead>Cliente/Serviço</TableHead>
-            <TableHead className="text-right">Valor Venda (R$)</TableHead>
+            <TableHead className="text-right">Valor Venda</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Pagamento (R$)</TableHead> 
+            <TableHead className="text-right">Pagamento</TableHead> 
             {/* <TableHead className="text-right print-hide">Ações</TableHead> */} {/* Actions column removed */}
           </TableRow>
         </TableHeader>
@@ -158,3 +158,4 @@ export default function SalesTable({ salesData }: SalesTableProps) {
     </>
   );
 }
+

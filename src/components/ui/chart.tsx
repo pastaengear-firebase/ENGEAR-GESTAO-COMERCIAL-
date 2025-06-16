@@ -189,6 +189,12 @@ const ChartTooltipContent = React.forwardRef<
             const key = `${nameKey || item.name || item.dataKey || "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
             const indicatorColor = color || item.payload.fill || item.color
+            
+            // Format value as BRL currency if dataKey is 'totalValue'
+            const formattedValue = (item.dataKey === 'totalValue' && typeof item.value === 'number')
+              ? item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+              : (typeof item.value === 'number' ? item.value.toLocaleString() : item.value);
+
 
             return (
               <div
@@ -238,9 +244,9 @@ const ChartTooltipContent = React.forwardRef<
                           {itemConfig?.label || item.name}
                         </span>
                       </div>
-                      {item.value && (
+                      {item.value !== undefined && (
                         <span className="font-mono font-medium tabular-nums text-foreground">
-                          {item.value.toLocaleString()}
+                          {formattedValue}
                         </span>
                       )}
                     </div>
@@ -363,3 +369,4 @@ export {
   ChartLegendContent,
   ChartStyle,
 }
+

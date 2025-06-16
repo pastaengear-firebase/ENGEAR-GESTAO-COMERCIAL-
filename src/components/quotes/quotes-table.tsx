@@ -1,4 +1,3 @@
-
 // src/components/quotes/quotes-table.tsx
 "use client";
 import type { Quote } from '@/lib/types';
@@ -64,7 +63,7 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
             <TableHead>Cliente</TableHead>
             <TableHead>Vendedor</TableHead>
             <TableHead>Área</TableHead>
-            <TableHead className="text-right">Valor Proposto (R$)</TableHead>
+            <TableHead className="text-right">Valor Proposto</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
@@ -110,3 +109,4 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
     </ScrollArea>
   );
 }
+

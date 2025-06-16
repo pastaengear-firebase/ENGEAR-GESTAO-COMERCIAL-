@@ -240,14 +240,14 @@ Equipe Comercial ENGEAR
               </div>
 
               <div>
-                <Label htmlFor="billingAmount" className="text-base font-semibold">VALOR Á FATURAR (R$)</Label>
+                <Label htmlFor="billingAmount" className="text-base font-semibold">VALOR Á FATURAR</Label>
                 <div className="relative mt-1">
                     <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="billingAmount"
                       type="number"
                       step="0.01"
-                      placeholder="0.00"
+                      placeholder="0,00"
                       value={billingAmount}
                       onChange={(e) => setBillingAmount(e.target.value)}
                       className="pl-8"
@@ -325,3 +325,4 @@ Equipe Comercial ENGEAR
     </div>
   );
 }
+
