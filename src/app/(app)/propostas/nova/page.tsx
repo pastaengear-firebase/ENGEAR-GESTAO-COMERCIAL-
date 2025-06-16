@@ -1,0 +1,60 @@
+
+// src/app/(app)/propostas/nova/page.tsx
+"use client";
+import QuoteForm from '@/components/quotes/quote-form';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useSales } from '@/hooks/use-sales'; // Para verificar o vendedor selecionado
+import { ALL_SELLERS_OPTION } from '@/lib/constants';
+import { FilePlus, Info } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+
+export default function NovaPropostaPage() {
+  const { selectedSeller } = useSales();
+  const isGlobalSellerEquipeComercial = selectedSeller === ALL_SELLERS_OPTION;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center">
+            <FilePlus className="mr-3 h-8 w-8" /> Nova Proposta Comercial
+          </h1>
+          <p className="text-muted-foreground">
+            Preencha os detalhes abaixo para registrar uma nova proposta.
+          </p>
+        </div>
+         <Button asChild variant="outline">
+            <Link href="/propostas/gerenciar">Ver Todas as Propostas</Link>
+        </Button>
+      </div>
+      
+      {isGlobalSellerEquipeComercial && (
+        <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
+          <Info className="h-4 w-4 !text-amber-600" />
+          <AlertTitle>Modo Somente Leitura Ativado</AlertTitle>
+          <AlertDescription>
+            Para criar uma nova proposta, por favor, selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho.
+            O formulário abaixo está desabilitado.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Detalhes da Proposta</CardTitle>
+          <CardDescription>
+            {isGlobalSellerEquipeComercial 
+              ? "Selecione SERGIO ou RODRIGO no cabeçalho para habilitar." 
+              : "Todos os campos marcados com * são obrigatórios."
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <QuoteForm showReadOnlyAlert={false} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

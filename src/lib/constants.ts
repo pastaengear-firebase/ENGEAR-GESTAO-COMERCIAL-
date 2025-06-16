@@ -29,12 +29,20 @@ export type AreaOption = (typeof AREA_OPTIONS)[number];
 export const STATUS_OPTIONS = ["Á INICAR", "EM ANDAMENTO", "FINALIZADO", "CANCELADO"] as const;
 export type StatusOption = (typeof STATUS_OPTIONS)[number];
 
+// Novas Constantes para Propostas
+export const PROPOSAL_STATUS_OPTIONS = ["Pendente", "Enviada", "Em Negociação", "Aceita", "Recusada", "Cancelada"] as const;
+export type ProposalStatusOption = (typeof PROPOSAL_STATUS_OPTIONS)[number];
+
+export const CONTACT_SOURCE_OPTIONS = ["E-mail", "Telefone", "Presencial", "Indicação", "Website", "Outro"] as const;
+export type ContactSourceOption = (typeof CONTACT_SOURCE_OPTIONS)[number];
+
 export const LOCAL_STORAGE_AUTH_KEY = 'salesAppAuthState';
 export const LOCAL_STORAGE_SALES_KEY = 'salesAppData';
 export const LOCAL_STORAGE_SETTINGS_KEY = 'salesAppSettings';
+export const LOCAL_STORAGE_QUOTES_KEY = 'salesAppQuotesData'; // Nova chave para propostas
 
 // Constantes para cookies de autenticação
 export const COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // 7 dias em segundos
 export const EXPIRE_COOKIE_STRING = 'Thu, 01 Jan 1970 00:00:00 GMT'; // Data no passado para expirar cookies
 
-export const SESSION_STORAGE_LOGIN_FLAG = 'salesAppJustLoggedIn'; // Nova constante
+export const SESSION_STORAGE_LOGIN_FLAG = 'salesAppJustLoggedIn';

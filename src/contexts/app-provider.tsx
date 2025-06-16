@@ -4,17 +4,20 @@
 import type React from 'react';
 import { AuthProvider } from './auth-context';
 import { SalesProvider } from './sales-context';
-import { SettingsProvider } from './settings-context'; // Importar SettingsProvider
+import { SettingsProvider } from './settings-context';
+import { QuotesProvider } from './quotes-context'; // Importar QuotesProvider
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <AuthProvider>
       <SalesProvider>
-        <SettingsProvider> {/* Adicionar SettingsProvider */}
-          <TooltipProvider>
-            {children}
-          </TooltipProvider>
+        <SettingsProvider>
+          <QuotesProvider> {/* Adicionar QuotesProvider */}
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
+          </QuotesProvider>
         </SettingsProvider>
       </SalesProvider>
     </AuthProvider>

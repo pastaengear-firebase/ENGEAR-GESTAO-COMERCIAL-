@@ -1,5 +1,6 @@
+
 import { z } from 'zod';
-import { AREA_OPTIONS, STATUS_OPTIONS, COMPANY_OPTIONS, SELLERS } from './constants';
+import { AREA_OPTIONS, STATUS_OPTIONS, COMPANY_OPTIONS, SELLERS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS } from './constants';
 
 export const LoginSchema = z.object({
   username: z.string().min(1, 'Usuário é obrigatório.'),
@@ -20,3 +21,18 @@ export const SalesFormSchema = z.object({
   seller: z.enum(SELLERS).optional(), // Adicionado para validação, mas será definido via estado
 });
 export type SalesFormData = z.infer<typeof SalesFormSchema>;
+
+export const QuoteFormSchema = z.object({
+  clientName: z.string().min(1, 'Nome do cliente é obrigatório.'),
+  proposalDate: z.date({ required_error: 'Data da proposta é obrigatória.' }),
+  validityDate: z.date().optional(),
+  company: z.enum(COMPANY_OPTIONS, { required_error: 'Empresa é obrigatória.' }),
+  area: z.enum(AREA_OPTIONS, { required_error: 'Área é obrigatória.' }),
+  contactSource: z.enum(CONTACT_SOURCE_OPTIONS, { required_error: 'Fonte do contato é obrigatória.'}),
+  description: z.string().min(1, 'Descrição/Escopo é obrigatório.'),
+  proposedValue: z.coerce.number().positive('Valor proposto deve ser positivo.'),
+  status: z.enum(PROPOSAL_STATUS_OPTIONS, { required_error: 'Status da proposta é obrigatório.'}),
+  notes: z.string().optional(),
+  // seller é pego do contexto global, não incluído no formulário para o usuário preencher
+});
+export type QuoteFormData = z.infer<typeof QuoteFormSchema>;

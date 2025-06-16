@@ -1,5 +1,5 @@
 
-import type { Seller, AreaOption, StatusOption, CompanyOption } from './constants';
+import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption } from './constants';
 import type { ALL_SELLERS_OPTION } from './constants'; // Import específico
 
 
@@ -75,4 +75,33 @@ export type SettingsContextType = {
   settings: AppSettings;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   loadingSettings: boolean;
+};
+
+// Tipos para Propostas (Quotes)
+export interface Quote {
+  id: string;
+  seller: Seller;
+  clientName: string;
+  proposalDate: string; // ISO string
+  validityDate?: string; // ISO string, opcional
+  company: CompanyOption;
+  area: AreaOption;
+  contactSource: ContactSourceOption;
+  description: string;
+  proposedValue: number;
+  status: ProposalStatusOption;
+  notes?: string; // Opcional
+  createdAt: number; // timestamp
+  updatedAt?: number; // timestamp
+}
+
+export type QuotesContextType = {
+  quotes: Quote[];
+  selectedSeller: Seller | typeof ALL_SELLERS_OPTION; // Compartilhado com Sales, mas gerenciado por SalesProvider
+  // setSelectedSeller: (seller: Seller | typeof ALL_SELLERS_OPTION) => void; // Gerenciado por SalesProvider
+  addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller'>) => Quote;
+  updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller'>>) => Quote | undefined;
+  deleteQuote: (id: string) => void;
+  getQuoteById: (id: string) => Quote | undefined;
+  loadingQuotes: boolean;
 };
