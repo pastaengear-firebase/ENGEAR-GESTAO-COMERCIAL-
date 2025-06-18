@@ -2,10 +2,10 @@
 // src/contexts/quotes-context.tsx
 "use client";
 import type React from 'react';
-import { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { LOCAL_STORAGE_QUOTES_KEY, ALL_SELLERS_OPTION, SELLERS } from '@/lib/constants';
-import type { Quote, QuotesContextType, Seller, FollowUpDaysOptionValue } from '@/lib/types';
-import { SalesContext } from './sales-context'; // Para acessar selectedSeller
+import type { Quote, QuotesContextType, Seller, FollowUpDaysOptionValue, QuoteDashboardFilters } from '@/lib/types';
+import { SalesContext } from './sales-context'; 
 import { v4 as uuidv4 } from 'uuid';
 import { format, parseISO, addDays } from 'date-fns';
 
@@ -14,8 +14,14 @@ export const QuotesContext = createContext<QuotesContextType | undefined>(undefi
 export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(true);
-  const salesContext = useContext(SalesContext);
+  
+  // Filtros para a página de Gerenciamento de Propostas
+  const [managementSearchTerm, setManagementSearchTermState] = useState<string>('');
+  
+  // Filtros para o Dashboard
+  const [dashboardFilters, setDashboardFiltersState] = useState<QuoteDashboardFilters>({ selectedYear: 'all' });
 
+  const salesContext = useContext(SalesContext);
   if (!salesContext) {
     throw new Error("QuotesProvider must be used within a SalesProvider");
   }
@@ -29,7 +35,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (storedQuotes) {
         const parsedQuotes = JSON.parse(storedQuotes);
          if (Array.isArray(parsedQuotes)) {
-            setQuotes(parsedQuotes.map(q => ({...q, followUpDone: q.followUpDone || false })).sort((a,b) => new Date(b.proposalDate).getTime() - new Date(a.proposalDate).getTime()));
+            setQuotes(parsedQuotes.map((q: any) => ({...q, followUpDone: q.followUpDone || false })).sort((a:Quote,b:Quote) => new Date(b.proposalDate).getTime() - new Date(a.proposalDate).getTime()));
         } else {
             setQuotes([]); 
         }
@@ -77,7 +83,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       id: uuidv4(),
       seller: selectedSeller as Seller,
       followUpDate: finalFollowUpDate,
-      followUpDone: false, // Default para nova proposta
+      followUpDone: false, 
       sendProposalNotification: quoteData.sendProposalNotification || false,
       createdAt: Date.now(),
     };
@@ -97,13 +103,10 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       prevQuotes.map(quote => {
         if (quote.id === id) {
           const currentProposalDate = quoteUpdateData.proposalDate || quote.proposalDate;
-          let finalFollowUpDate = quote.followUpDate; // Mantem o existente por padrão
-          // Recalcula a data de follow-up apenas se followUpDaysOffset for fornecido e diferente do que geraria a data atual
-          // Ou se a data da proposta mudou, é bom recalcular
+          let finalFollowUpDate = quote.followUpDate; 
           if (quoteUpdateData.followUpDaysOffset !== undefined || quoteUpdateData.proposalDate) {
              finalFollowUpDate = calculateFollowUpDate(currentProposalDate, quoteUpdateData.followUpDaysOffset);
           }
-
 
           updatedQuote = {
             ...quote,
@@ -145,11 +148,62 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   }, []);
 
+  // Filtros para a página Gerenciar Propostas
+  const setManagementSearchTerm = useCallback((term: string) => {
+    setManagementSearchTermState(term);
+  }, []);
+
+  const managementFilteredQuotes = useMemo(() => {
+    return quotes
+      .filter(quote => {
+        if (selectedSeller === ALL_SELLERS_OPTION) return true;
+        return quote.seller === selectedSeller;
+      })
+      .filter(quote => {
+        if (!managementSearchTerm.trim()) return true;
+        const lowerSearchTerm = managementSearchTerm.toLowerCase();
+        return (
+          quote.clientName.toLowerCase().includes(lowerSearchTerm) ||
+          quote.description.toLowerCase().includes(lowerSearchTerm) ||
+          quote.area.toLowerCase().includes(lowerSearchTerm) ||
+          String(quote.proposedValue).includes(lowerSearchTerm)
+        );
+      });
+  }, [quotes, selectedSeller, managementSearchTerm]);
+
+  // Filtros para o Dashboard
+  const setDashboardFilters = useCallback((newFilters: Partial<QuoteDashboardFilters>) => {
+    setDashboardFiltersState(prevFilters => ({ ...prevFilters, ...newFilters }));
+  }, []);
+
+  const dashboardFilteredQuotes = useMemo(() => {
+    return quotes
+      .filter(quote => {
+        if (selectedSeller === ALL_SELLERS_OPTION) return true;
+        return quote.seller === selectedSeller;
+      })
+      .filter(quote => {
+        if (!dashboardFilters.selectedYear || dashboardFilters.selectedYear === 'all') return true;
+        const quoteYear = new Date(quote.proposalDate).getFullYear();
+        return quoteYear === dashboardFilters.selectedYear;
+      });
+  }, [quotes, selectedSeller, dashboardFilters]);
+
+
   return (
     <QuotesContext.Provider
       value={{
         quotes,
         selectedSeller, 
+        
+        managementFilteredQuotes,
+        setManagementSearchTerm,
+        managementSearchTerm,
+
+        dashboardFilteredQuotes,
+        setDashboardFilters,
+        dashboardFilters,
+        
         addQuote,
         updateQuote,
         deleteQuote,
@@ -162,4 +216,3 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     </QuotesContext.Provider>
   );
 };
-

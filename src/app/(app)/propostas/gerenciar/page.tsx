@@ -4,27 +4,32 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useQuotes } from '@/hooks/use-quotes';
-import { useSales } from '@/hooks/use-sales'; // Para selectedSeller
+import { useSales } from '@/hooks/use-sales'; 
 import QuoteForm from '@/components/quotes/quote-form';
 import QuotesTable from '@/components/quotes/quotes-table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'; // Removido DialogClose não utilizado
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Importação adicionada
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, FileText, PlusCircle, RotateCcw, Info } from 'lucide-react'; // Removido AlertTriangle não utilizado
+import { Search, FileText, PlusCircle, RotateCcw, Info } from 'lucide-react'; 
 import { useToast } from '@/hooks/use-toast';
 import type { Quote } from '@/lib/types';
 import { ALL_SELLERS_OPTION } from '@/lib/constants';
 
 export default function GerenciarPropostasPage() {
-  const { quotes, deleteQuote, loadingQuotes } = useQuotes();
+  const { 
+    managementFilteredQuotes, 
+    setManagementSearchTerm, 
+    managementSearchTerm,
+    deleteQuote, 
+    loadingQuotes 
+  } = useQuotes(); // Usar as propriedades específicas para gerenciamento
   const { selectedSeller: globalSelectedSeller } = useSales();
   const { toast } = useToast();
 
-  const [searchTerm, setSearchTerm] = useState('');
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   
@@ -33,26 +38,9 @@ export default function GerenciarPropostasPage() {
 
   const isEffectivelyReadOnly = globalSelectedSeller === ALL_SELLERS_OPTION;
 
-  const filteredQuotes = useMemo(() => {
-    let results = quotes;
-
-    // Filtro por vendedor selecionado globalmente
-    if (globalSelectedSeller !== ALL_SELLERS_OPTION) {
-      results = results.filter(quote => quote.seller === globalSelectedSeller);
-    }
-
-    // Filtro por termo de busca
-    if (searchTerm.trim()) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      results = results.filter(quote =>
-        quote.clientName.toLowerCase().includes(lowerSearchTerm) ||
-        quote.description.toLowerCase().includes(lowerSearchTerm) ||
-        quote.area.toLowerCase().includes(lowerSearchTerm) ||
-        String(quote.proposedValue).includes(lowerSearchTerm)
-      );
-    }
-    return results;
-  }, [quotes, searchTerm, globalSelectedSeller]);
+  // A filtragem agora é feita no contexto, usando managementFilteredQuotes
+  // O useEffect para searchTerm local e filteredQuotes local não é mais necessário aqui
+  // pois managementFilteredQuotes já considera o searchTerm do contexto.
 
   const handleEditClick = (quote: Quote) => {
     if (isEffectivelyReadOnly) {
@@ -94,7 +82,7 @@ export default function GerenciarPropostasPage() {
   };
   
   const handleClearSearch = () => {
-    setSearchTerm('');
+    setManagementSearchTerm(''); // Limpar o termo de busca no contexto
   };
 
   const handleFormSubmitted = () => {
@@ -141,8 +129,8 @@ export default function GerenciarPropostasPage() {
               <Input
                 type="search"
                 placeholder="Buscar propostas..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={managementSearchTerm} // Usar o termo de busca do contexto
+                onChange={(e) => setManagementSearchTerm(e.target.value)} // Atualizar o termo de busca no contexto
                 className="pl-10 w-full"
               />
             </div>
@@ -155,7 +143,7 @@ export default function GerenciarPropostasPage() {
           {loadingQuotes && <p className="p-4 text-center">Carregando propostas...</p>}
           {!loadingQuotes && (
             <QuotesTable 
-              quotesData={filteredQuotes} 
+              quotesData={managementFilteredQuotes} // Usar as propostas filtradas pelo contexto
               onEdit={handleEditClick} 
               onDelete={confirmDelete}
               disabledActions={isEffectivelyReadOnly}
@@ -163,7 +151,7 @@ export default function GerenciarPropostasPage() {
           )}
         </CardContent>
          <CardFooter className="border-t p-4 text-sm text-muted-foreground">
-            Total de Propostas Encontradas: <span className="font-semibold text-foreground">{filteredQuotes.length}</span>
+            Total de Propostas Encontradas: <span className="font-semibold text-foreground">{managementFilteredQuotes.length}</span>
         </CardFooter>
       </Card>
 

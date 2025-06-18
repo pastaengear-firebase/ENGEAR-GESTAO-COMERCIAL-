@@ -46,14 +46,14 @@ export type SalesFilters = {
 
 export type SalesContextType = {
   sales: Sale[];
-  filteredSales: Sale[];
+  filteredSales: Sale[]; // Filtrado por selectedSeller, searchTerm, selectedYear (para dashboard)
   selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
   setSelectedSeller: (seller: Seller | typeof ALL_SELLERS_OPTION) => void;
   addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>) => Sale;
   updateSale: (id: string, saleData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => Sale | undefined;
   deleteSale: (id: string) => void;
   getSaleById: (id: string) => Sale | undefined;
-  setFilters: (filters: Partial<SalesFilters>) => void;
+  setFilters: (filters: Partial<SalesFilters>) => void; // Para filtros gerais, incluindo dashboard
   filters: SalesFilters;
   loading: boolean;
 };
@@ -80,6 +80,11 @@ export type SettingsContextType = {
 };
 
 // Tipos para Propostas (Quotes)
+
+// Filtros específicos para o dashboard de propostas
+export type QuoteDashboardFilters = Pick<SalesFilters, 'selectedYear'>;
+
+
 export interface Quote {
   id: string;
   seller: Seller;
@@ -101,14 +106,24 @@ export interface Quote {
 }
 
 export type QuotesContextType = {
-  quotes: Quote[];
-  selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
+  quotes: Quote[]; // Todas as propostas
+  selectedSeller: Seller | typeof ALL_SELLERS_OPTION; // Vem do SalesContext, mas é útil ter aqui
+  
+  // Para a página Gerenciar Propostas (filtra por searchTerm e selectedSeller)
+  managementFilteredQuotes: Quote[]; 
+  setManagementSearchTerm: (term: string) => void;
+  managementSearchTerm: string;
+
+  // Para o Dashboard (filtra por selectedSeller e selectedYear)
+  dashboardFilteredQuotes: Quote[]; 
+  setDashboardFilters: (filters: Partial<QuoteDashboardFilters>) => void;
+  dashboardFilters: QuoteDashboardFilters;
+  
   addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpDone'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }) => Quote;
   updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'>> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean, followUpDone?: boolean }) => Quote | undefined;
   deleteQuote: (id: string) => void;
   getQuoteById: (id: string) => Quote | undefined;
-  toggleFollowUpDone: (quoteId: string) => void; // Nova função
+  toggleFollowUpDone: (quoteId: string) => void; 
   loadingQuotes: boolean;
 };
-
 
