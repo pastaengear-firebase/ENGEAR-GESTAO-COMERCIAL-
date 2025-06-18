@@ -141,7 +141,7 @@ Equipe Comercial ENGEAR
         <CardHeader>
           <CardTitle>Buscar Venda</CardTitle>
           <CardDescription>Digite termos como nome do projeto, O.S., empresa ou cliente.</CardDescription>
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -150,10 +150,10 @@ Equipe Comercial ENGEAR
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10"
+                className="pl-10 w-full"
               />
             </div>
-            <Button onClick={handleSearch}>
+            <Button onClick={handleSearch} className="w-full sm:w-auto">
               <Search className="mr-2 h-4 w-4" /> Buscar
             </Button>
           </div>
@@ -184,11 +184,11 @@ Equipe Comercial ENGEAR
                               className={`cursor-pointer hover:bg-muted ${selectedSale?.id === sale.id ? 'bg-muted font-semibold' : ''}`}
                               onClick={() => handleSelectSale(sale)}>
                       <TableCell>{format(parseISO(sale.date), 'dd/MM/yy', { locale: ptBR })}</TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={sale.project}>{sale.project}</TableCell>
+                      <TableCell className="max-w-[150px] sm:max-w-[200px] truncate" title={sale.project}>{sale.project}</TableCell>
                       <TableCell>{sale.company}</TableCell>
                       <TableCell>{formatCurrency(sale.salesValue)}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant={selectedSale?.id === sale.id ? "default" : "outline"} size="sm">
+                        <Button variant={selectedSale?.id === sale.id ? "default" : "outline"} size="sm" className="w-full sm:w-auto">
                           {selectedSale?.id === sale.id ? <CheckCircle className="mr-1 h-4 w-4" /> : <Info className="mr-1 h-4 w-4" />}
                           {selectedSale?.id === sale.id ? "Selecionada" : "Selecionar"}
                         </Button>
@@ -325,4 +325,3 @@ Equipe Comercial ENGEAR
     </div>
   );
 }
-

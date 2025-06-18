@@ -112,7 +112,7 @@ export default function EditarVendaPage() {
         <CardHeader>
           <CardTitle>Buscar Venda</CardTitle>
           <CardDescription>Digite termos como nome do projeto, O.S., empresa ou cliente para encontrar a venda.</CardDescription>
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -121,13 +121,13 @@ export default function EditarVendaPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10"
+                className="pl-10 w-full"
               />
             </div>
-            <Button onClick={handleSearch}>
+            <Button onClick={handleSearch} className="w-full sm:w-auto">
               <Search className="mr-2 h-4 w-4" /> Buscar
             </Button>
-            <Button variant="outline" onClick={handleClearSearchAndForm}>
+            <Button variant="outline" onClick={handleClearSearchAndForm} className="w-full sm:w-auto">
               <RotateCcw className="mr-2 h-4 w-4" /> Limpar Busca / Formulário
             </Button>
           </div>
@@ -157,29 +157,31 @@ export default function EditarVendaPage() {
                   {searchResults.map((sale) => (
                     <TableRow key={sale.id}>
                       <TableCell>{format(parseISO(sale.date), 'dd/MM/yy', { locale: ptBR })}</TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={sale.project}>{sale.project}</TableCell>
+                      <TableCell className="max-w-[150px] sm:max-w-[200px] truncate" title={sale.project}>{sale.project}</TableCell>
                       <TableCell>{sale.company}</TableCell>
                       <TableCell>{sale.os}</TableCell>
                       <TableCell>{sale.salesValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleEditClick(sale.id)} 
-                          className="mr-1"
-                          // disabled={isGlobalSellerEquipeComercial} // Modification disabled by SalesForm
-                        >
-                          <Edit3 className="h-4 w-4 mr-1" /> Modificar
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => confirmDelete(sale.id)} 
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          disabled={isGlobalSellerEquipeComercial} // Explicitly disable delete if EQUIPE COMERCIAL
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" /> Excluir
-                        </Button>
+                        <div className="flex flex-col sm:flex-row justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEditClick(sale.id)} 
+                            className="w-full sm:w-auto"
+                            // disabled={isGlobalSellerEquipeComercial} // Modification disabled by SalesForm
+                          >
+                            <Edit3 className="h-4 w-4 mr-1" /> Modificar
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => confirmDelete(sale.id)} 
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full sm:w-auto"
+                            disabled={isGlobalSellerEquipeComercial} // Explicitly disable delete if EQUIPE COMERCIAL
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

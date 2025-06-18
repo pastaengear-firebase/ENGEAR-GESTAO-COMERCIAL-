@@ -124,8 +124,8 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard de Vendas</h1>
           <p className="text-muted-foreground">{dashboardSubtitle}</p>
         </div>
-        <div className="flex items-center gap-2 print-hide">
-           <div className="flex items-center space-x-2">
+        <div className="flex flex-col sm:flex-row items-center gap-2 print-hide w-full sm:w-auto">
+           <div className="flex items-center space-x-2 w-full sm:w-auto">
             <Filter className="h-5 w-5 text-muted-foreground" />
             <Label htmlFor="year-select-dashboard" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
               Filtrar por Ano:
@@ -134,7 +134,7 @@ export default function DashboardPage() {
               value={displayYear}
               onValueChange={setDisplayYear}
             >
-              <SelectTrigger id="year-select-dashboard" className="w-[180px] bg-background hover:bg-muted transition-colors duration-150 focus:ring-primary">
+              <SelectTrigger id="year-select-dashboard" className="w-full sm:w-[180px] bg-background hover:bg-muted transition-colors duration-150 focus:ring-primary">
                 <SelectValue placeholder="Selecionar ano" />
               </SelectTrigger>
               <SelectContent>
@@ -146,14 +146,14 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handlePrint} variant="outline" size="icon">
+          <Button onClick={handlePrint} variant="outline" size="icon" className="w-full sm:w-auto mt-2 sm:mt-0">
             <Printer className="h-4 w-4" />
             <span className="sr-only">Imprimir Dashboard</span>
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Valor Total de Vendas</CardTitle>
@@ -234,4 +234,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

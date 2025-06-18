@@ -161,7 +161,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+    <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Vendas por Vendedor</CardTitle>
@@ -279,7 +279,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
         </CardContent>
       </Card>
 
-      <Card className="lg:col-span-2 shadow-sm">
+      <Card className="col-span-1 lg:col-span-2 shadow-sm"> {/* Alterado para col-span-1 por padrão */}
         <CardHeader>
           <CardTitle>Distribuição de Vendas por Empresa</CardTitle>
           <CardDescription>Participação de ENGEAR e CLIMAZONE no valor total de vendas.</CardDescription>
@@ -318,4 +318,3 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
     </div>
   );
 }
-

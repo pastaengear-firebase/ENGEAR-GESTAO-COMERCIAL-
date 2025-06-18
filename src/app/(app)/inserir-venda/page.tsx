@@ -52,7 +52,7 @@ export default function InserirVendaPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg"> {/* This card will be full width on small screens, and 1/3 on lg screens */}
           <CardHeader className="flex flex-row items-center space-x-2">
             <Lightbulb className="h-6 w-6 text-primary" />
             <div>
