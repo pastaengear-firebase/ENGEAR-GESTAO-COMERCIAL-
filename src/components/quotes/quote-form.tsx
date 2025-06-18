@@ -9,8 +9,8 @@ import { QuoteFormSchema, type QuoteFormData } from '@/lib/schemas';
 import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_OPTIONS, SELLERS, ALL_SELLERS_OPTION, FOLLOW_UP_DAYS_OPTIONS, PROPOSAL_NOTIFICATION_EMAILS } from '@/lib/constants';
 import type { Seller, FollowUpDaysOptionValue } from '@/lib/constants';
 import { useQuotes } from '@/hooks/use-quotes';
-import { useSales } from '@/hooks/use-sales'; // Para pegar o vendedor global
-import { useSettings } from '@/hooks/use-settings'; // Importar useSettings
+import { useSales } from '@/hooks/use-sales'; 
+import { useSettings } from '@/hooks/use-settings'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,14 +29,14 @@ import type { Quote } from '@/lib/types';
 
 interface QuoteFormProps {
   quoteToEdit?: Quote | null;
-  onFormSubmit?: () => void; // Callback para fechar modal ou redirecionar
+  onFormSubmit?: () => void; 
   showReadOnlyAlert?: boolean;
 }
 
 export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert }: QuoteFormProps) {
   const { addQuote, updateQuote } = useQuotes();
   const { selectedSeller: globalSelectedSeller } = useSales();
-  const { settings: appSettings, loadingSettings } = useSettings(); // Usar configurações
+  const { settings: appSettings, loadingSettings } = useSettings(); 
   const { toast } = useToast();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -219,7 +219,7 @@ Sistema de Controle de Vendas ENGEAR
       proposalDate: format(data.proposalDate, 'yyyy-MM-dd'), 
       validityDate: data.validityDate ? format(data.validityDate, 'yyyy-MM-dd') : undefined,
       proposedValue: Number(data.proposedValue) || 0,
-      sendProposalNotification: data.sendProposalNotification || false, // Certificar que está incluído
+      sendProposalNotification: data.sendProposalNotification || false, 
     };
     console.log('Quote payload to be sent to context:', quotePayload);
 
@@ -600,4 +600,3 @@ Sistema de Controle de Vendas ENGEAR
     </Form>
   );
 }
-

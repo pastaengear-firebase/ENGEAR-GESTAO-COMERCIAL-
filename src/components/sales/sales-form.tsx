@@ -50,7 +50,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched, showRead
   const form = useForm<SalesFormData>({
     resolver: zodResolver(SalesFormSchema),
     defaultValues: {
-      date: undefined, // Inicializa como undefined para evitar new Date() em SSR
+      date: undefined, 
       company: undefined,
       project: '',
       os: '',
@@ -67,7 +67,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched, showRead
       const saleToEdit = getSaleById(editSaleId);
       if (saleToEdit) {
         form.reset({
-          date: parseISO(saleToEdit.date), // Usar parseISO para consistência
+          date: parseISO(saleToEdit.date), 
           company: saleToEdit.company,
           project: saleToEdit.project,
           os: saleToEdit.os,
@@ -83,9 +83,8 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched, showRead
         router.push(pathname.startsWith('/editar-venda') ? '/editar-venda' : '/inserir-venda');
       }
     } else if (!editSaleId) {
-      // Reset para novo formulário, SEM a data principal ainda
       form.reset({
-        date: undefined, // Mantém undefined aqui no reset inicial
+        date: undefined, 
         company: undefined,
         project: '',
         os: '',
@@ -95,7 +94,6 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched, showRead
         status: undefined,
         payment: undefined,
       });
-      // Define a data APENAS NO CLIENTE após a montagem/reset inicial
       form.setValue('date', new Date(), { shouldValidate: true, shouldDirty: true });
       
       if (SELLERS.includes(globalSelectedSeller as Seller)) {
@@ -114,7 +112,7 @@ export default function SalesForm({ onFormChange, onSuggestionsFetched, showRead
 
   const fetchSuggestions = async () => {
     const formData = form.getValues();
-    if (!formData.company || !formData.area || !formData.status || !formData.date) { // Adicionado !formData.date
+    if (!formData.company || !formData.area || !formData.status || !formData.date) { 
       toast({
         title: "Campos Incompletos",
         description: "Por favor, preencha todos os campos obrigatórios (Data, Empresa, Área, Status) antes de verificar com IA.",
@@ -193,7 +191,7 @@ Sistema de Controle de Vendas ENGEAR
       toast({ title: "Ação Não Permitida", description: "Selecione um vendedor específico (SERGIO ou RODRIGO) para salvar.", variant: "destructive" });
       return;
     }
-    if (!data.date) { // Validação extra para a data, caso o setValue não tenha ocorrido
+    if (!data.date) { 
         toast({ title: "Erro de Validação", description: "Data da venda é obrigatória.", variant: "destructive" });
         return;
     }
@@ -236,9 +234,8 @@ Sistema de Controle de Vendas ENGEAR
         triggerEmailNotification(newSale); 
       }
 
-      // Reset para novo formulário
       form.reset({
-        date: undefined, // Reset para undefined
+        date: undefined,
         company: undefined,
         project: '',
         os: '',
@@ -248,7 +245,6 @@ Sistema de Controle de Vendas ENGEAR
         status: undefined,
         payment: undefined,
       });
-      // Redefine a data no cliente para o próximo "novo" formulário
       if(!editSaleId) {
         form.setValue('date', new Date(), { shouldValidate: true, shouldDirty: true });
       }
@@ -318,7 +314,7 @@ Sistema de Controle de Vendas ENGEAR
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={field.value || undefined} // field.value pode ser null
+                      selected={field.value || undefined} 
                       onSelect={field.onChange}
                       disabled={(date) =>
                         date > new Date() || date < new Date("1900-01-01") || isEffectivelyReadOnly || isSubmitting
@@ -546,7 +542,7 @@ Sistema de Controle de Vendas ENGEAR
             variant="ghost"
             onClick={() => {
               const isEditing = !!editSaleId;
-              form.reset({ // Reset para valores vazios
+              form.reset({ 
                 date: undefined,
                 company: undefined,
                 project: '',
@@ -557,11 +553,9 @@ Sistema de Controle de Vendas ENGEAR
                 status: undefined,
                 payment: undefined,
               });
-              // Redefine a data no cliente para o próximo "novo" formulário se não estiver editando
               if (!isEditing) {
                  form.setValue('date', new Date(), { shouldValidate: true, shouldDirty: true });
               } else {
-                 // Se estava editando, limpar a URL do editId
                  router.push(pathname.startsWith('/editar-venda') ? '/editar-venda' : '/inserir-venda');
               }
               if (onSuggestionsFetched) onSuggestionsFetched(null);
@@ -574,7 +568,7 @@ Sistema de Controle de Vendas ENGEAR
           </Button>
           <Button type="submit"
             disabled={isEffectivelyReadOnly || isSubmitting}
-            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white">
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
             <Save className="mr-2 h-4 w-4" />
             {isSubmitting ? 'Salvando...' : (editSaleId ? 'Atualizar Venda' : 'Salvar Venda')}
           </Button>
