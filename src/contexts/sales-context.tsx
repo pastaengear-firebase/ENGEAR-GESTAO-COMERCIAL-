@@ -86,7 +86,6 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [filters, setFiltersState] = useState<SalesFilters>({ selectedYear: 'all' });
   const [loading, setLoading] = useState(true);
 
-  // Efeito para carregar a preferência do vendedor selecionado do localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedSeller = localStorage.getItem(LOCAL_STORAGE_SELECTED_SELLER_KEY);
@@ -94,34 +93,37 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSelectedSellerState(storedSeller as Seller | typeof ALL_SELLERS_OPTION);
       }
     }
-  }, []); // Array de dependências vazio: roda uma vez na montagem do cliente
+  }, []);
 
-  // Efeito para carregar os dados de vendas
   useEffect(() => {
     setLoading(true);
     let dataToLoad: Sale[] = [];
     let loadedFromStorage = false;
+    
     try {
       const storedSales = localStorage.getItem(LOCAL_STORAGE_SALES_KEY);
       if (storedSales) {
         const parsedSales = JSON.parse(storedSales);
-        if (Array.isArray(parsedSales) && parsedSales.length > 0) {
-            dataToLoad = parsedSales;
-            loadedFromStorage = true;
+        if (Array.isArray(parsedSales)) {
+          dataToLoad = parsedSales; 
+          loadedFromStorage = true;
+        } else {
+          console.warn("SalesContext: Stored sales data is not an array. Clearing and falling back.");
+          localStorage.removeItem(LOCAL_STORAGE_SALES_KEY);
         }
       }
 
       if (!loadedFromStorage) {
         dataToLoad = Array.isArray(exampleSalesForSergio) ? [...exampleSalesForSergio] : [];
-        if (dataToLoad.length > 0) {
+        if (dataToLoad.length > 0) { // Only save if there's example data
           localStorage.setItem(LOCAL_STORAGE_SALES_KEY, JSON.stringify(dataToLoad));
         }
       }
     } catch (error) {
-      console.error("SalesContext: Error during initial data load. Falling back to example data.", error);
+      console.error("SalesContext: Error loading or parsing sales from localStorage. Falling back to example data.", error);
       localStorage.removeItem(LOCAL_STORAGE_SALES_KEY); 
       dataToLoad = Array.isArray(exampleSalesForSergio) ? [...exampleSalesForSergio] : [];
-      if (dataToLoad.length > 0) {
+      if (dataToLoad.length > 0) { // Only save if there's example data
         try {
           localStorage.setItem(LOCAL_STORAGE_SALES_KEY, JSON.stringify(dataToLoad));
         } catch (saveError) {
@@ -134,7 +136,6 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  // Efeito para persistir vendas no localStorage quando 'sales' ou 'loading' mudam
   useEffect(() => {
     if (!loading) { 
       localStorage.setItem(LOCAL_STORAGE_SALES_KEY, JSON.stringify(sales));
@@ -233,3 +234,4 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </SalesContext.Provider>
   );
 };
+
