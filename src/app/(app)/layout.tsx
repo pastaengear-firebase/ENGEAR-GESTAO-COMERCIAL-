@@ -1,19 +1,29 @@
 
 // src/app/(app)/layout.tsx
+"use client"; // Adicionar "use client" para usar useState
 import type React from 'react';
+import { useState } from 'react'; // Importar useState
 import SidebarNav from '@/components/layout/sidebar-nav';
 import HeaderContent from '@/components/layout/header-content';
-// ThemeProvider foi movido para src/app/layout.tsx
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
-    // ThemeProvider foi removido daqui
-    <div className="flex min-h-screen flex-col"> {/* Removed bg-secondary/50 from here */}
-      <SidebarNav />
-      <div className="flex flex-1 flex-col md:pl-64"> {/* No page-bg-pattern */}
-        <HeaderContent />
+    <div className="flex min-h-screen flex-col">
+      <SidebarNav isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />
+      <div className="flex flex-1 flex-col md:pl-64">
+        <HeaderContent toggleMobileMenu={toggleMobileMenu} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-full"> {/* Ensure content can be full width */}
+          <div className="mx-auto max-w-full">
             {children}
           </div>
         </main>

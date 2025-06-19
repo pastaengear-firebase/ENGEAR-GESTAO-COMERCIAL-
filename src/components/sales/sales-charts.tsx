@@ -1,3 +1,4 @@
+
 // src/components/sales/sales-charts.tsx
 "use client";
 import type { Sale } from '@/lib/types';
@@ -18,8 +19,8 @@ const CHART_COLORS = {
   RODRIGO: 'hsl(var(--chart-2))',
   "Á INICAR": 'hsl(var(--chart-3))',
   "EM ANDAMENTO": 'hsl(var(--chart-4))',
-  "FINALIZADO": 'hsl(var(--chart-5))', // Use chart-5 for "FINALIZADO"
-  "CANCELADO": 'hsl(var(--destructive))', // Use destructive for "CANCELADO"
+  "FINALIZADO": 'hsl(var(--chart-5))', 
+  "CANCELADO": 'hsl(var(--destructive))', 
   ENGEAR: 'hsl(var(--chart-1))',
   CLIMAZONE: 'hsl(var(--chart-2))',
   default: 'hsl(var(--muted-foreground))'
@@ -57,7 +58,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
       if (!acc[status]) {
         acc[status] = { name: status, value: 0 };
       }
-      acc[status].value += 1; // Aqui 'value' é contagem
+      acc[status].value += 1; 
       return acc;
     }, {} as Record<string, { name: string; value: number }>);
     return Object.values(data);
@@ -111,7 +112,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
 
 
   const barChartConfig = {
-    totalValue: { label: "Valor Total" }, // Removido (R$) do label, pois o tooltip/eixo já formatarão
+    totalValue: { label: "Valor Total" },
   } satisfies ChartConfig;
 
   const pieChartConfigStatus = {
@@ -131,7 +132,7 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
   } satisfies ChartConfig;
   
   const areaChartConfig = {
-     totalValue: { label: "Valor Total" }, // Removido (R$)
+     totalValue: { label: "Valor Total" }, 
      ...AREA_OPTIONS.reduce((acc, area, index) => {
       acc[area] = { label: area, color: categoryColorsArray[index % categoryColorsArray.length] };
       return acc;
@@ -159,25 +160,27 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
       </Card>
     );
   }
+  
+  const chartHeight = "h-[280px]"; // Altura reduzida para melhor adaptação
 
   return (
-    <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+    <div className="grid gap-6 grid-cols-1 md:grid-cols-2"> {/* Ajustado para md:grid-cols-2 para telas um pouco maiores */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Vendas por Vendedor</CardTitle>
           <CardDescription>Valor total de vendas por vendedor.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={barChartConfig} className="h-[300px] w-full">
+          <ChartContainer config={barChartConfig} className={`${chartHeight} w-full`}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesBySeller} margin={{ top: 5, right: 20, left: 30, bottom: 5 }}>
-                <XAxis dataKey="name" stroke="hsl(var(--foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickFormatter={compactCurrencyFormatter} />
+              <BarChart data={salesBySeller} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}> {/* Reduzido left margin */}
+                <XAxis dataKey="name" stroke="hsl(var(--foreground))" fontSize={10} /> {/* Reduzido font-size */}
+                <YAxis stroke="hsl(var(--foreground))" fontSize={10} tickFormatter={compactCurrencyFormatter} /> {/* Reduzido font-size */}
                 <Tooltip
                   content={<ChartTooltipContent />}
                   cursor={{ fill: "hsl(var(--muted))" }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: "10px" }} /> {/* Reduzido font-size da legenda */}
                 <Bar dataKey="totalValue" name="Valor Total" radius={[4, 4, 0, 0]} >
                    {salesBySeller.map((entry) => (
                     <Cell key={`cell-seller-${entry.name}`} fill={CHART_COLORS[entry.name as keyof typeof CHART_COLORS] || CHART_COLORS.default} />
@@ -195,25 +198,21 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
           <CardDescription>Número de vendas por status.</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center">
-           <ChartContainer config={pieChartConfigStatus} className="h-[300px] w-full">
+           <ChartContainer config={pieChartConfigStatus} className={`${chartHeight} w-full`}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Tooltip content={<ChartTooltipContent />} />
-                <Legend 
-                  formatter={(value, entry) => {
-                     const color = CHART_COLORS[entry.payload.name as keyof typeof CHART_COLORS] || CHART_COLORS.default;
-                     return <span style={{ color }}>{value}</span>;
-                  }}
-                />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
                 <Pie
                   data={salesByStatus}
-                  dataKey="value" // 'value' aqui é contagem
+                  dataKey="value" 
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  outerRadius="80%" // Raio percentual
                   labelLine={false}
-                  label={({ name, value }) => `${name} (${value})`}
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} // Label mais conciso
+                  fontSize={10} // Reduzido font-size do label
                 >
                   {salesByStatus.map((entry) => (
                     <Cell key={`cell-status-${entry.name}`} fill={CHART_COLORS[entry.name as keyof typeof CHART_COLORS] || CHART_COLORS.default} />
@@ -231,18 +230,18 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
           <CardDescription>Valor total de vendas ao longo dos meses.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={barChartConfig} className="h-[300px] w-full">
+          <ChartContainer config={barChartConfig} className={`${chartHeight} w-full`}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlySales} margin={{ top: 5, right: 20, left: 30, bottom: 5 }}>
-                <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={50} stroke="hsl(var(--foreground))" fontSize={10} />
-                <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickFormatter={compactCurrencyFormatter} />
+              <BarChart data={monthlySales} margin={{ top: 5, right: 20, left: 20, bottom: 30 }}> {/* Aumentado bottom margin para XAxis labels */}
+                <XAxis dataKey="name" interval={0} angle={-45} textAnchor="end" height={40} stroke="hsl(var(--foreground))" fontSize={9} /> {/* Ajustado ângulo e font-size */}
+                <YAxis stroke="hsl(var(--foreground))" fontSize={10} tickFormatter={compactCurrencyFormatter} />
                 <Tooltip
                   content={<ChartTooltipContent />}
                   cursor={{ fill: "hsl(var(--muted))" }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
                 <Bar dataKey="totalValue" name="Valor Total Mensal" radius={[4, 4, 0, 0]}>
-                   {monthlySales.map((entry, index) => ( // Adicionado index para key
+                   {monthlySales.map((entry, index) => ( 
                     <Cell key={`cell-month-${entry.name}-${index}`} fill={categoryColorsArray[monthlySales.indexOf(entry) % categoryColorsArray.length]} />
                   ))}
                 </Bar>
@@ -258,18 +257,18 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
           <CardDescription>Valor total de vendas para cada área de negócio.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={areaChartConfig} className="h-[300px] w-full">
+          <ChartContainer config={areaChartConfig} className={`${chartHeight} w-full`}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesByArea} layout="vertical" margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
-                <XAxis type="number" stroke="hsl(var(--foreground))" fontSize={12} tickFormatter={compactCurrencyFormatter} />
-                <YAxis dataKey="name" type="category" stroke="hsl(var(--foreground))" fontSize={10} width={80} interval={0} />
+              <BarChart data={salesByArea} layout="vertical" margin={{ top: 5, right: 25, left: 10, bottom: 5 }}> {/* Ajustado margins */}
+                <XAxis type="number" stroke="hsl(var(--foreground))" fontSize={10} tickFormatter={compactCurrencyFormatter} />
+                <YAxis dataKey="name" type="category" stroke="hsl(var(--foreground))" fontSize={9} width={65} interval={0} /> {/* Reduzido width e font-size */}
                 <Tooltip
                   content={<ChartTooltipContent />}
                   cursor={{ fill: "hsl(var(--muted))" }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
                 <Bar dataKey="totalValue" name="Valor Total" radius={[0, 4, 4, 0]} >
-                   {salesByArea.map((entry, index) => ( // Adicionado index para key
+                   {salesByArea.map((entry, index) => ( 
                     <Cell key={`cell-area-${entry.name}-${index}`} fill={categoryColorsArray[salesByArea.indexOf(entry) % categoryColorsArray.length]} />
                   ))}
                 </Bar>
@@ -279,31 +278,27 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
         </CardContent>
       </Card>
 
-      <Card className="col-span-1 lg:col-span-2 shadow-sm"> {/* Alterado para col-span-1 por padrão */}
+      <Card className="col-span-1 md:col-span-2 shadow-sm"> 
         <CardHeader>
           <CardTitle>Distribuição de Vendas por Empresa</CardTitle>
           <CardDescription>Participação de ENGEAR e CLIMAZONE no valor total de vendas.</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center">
-           <ChartContainer config={pieChartConfigCompany} className="h-[300px] w-full">
+           <ChartContainer config={pieChartConfigCompany} className={`${chartHeight} w-full`}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Tooltip content={<ChartTooltipContent nameKey="name" />} />
-                <Legend 
-                  formatter={(value, entry) => {
-                     const color = CHART_COLORS[entry.payload.name as keyof typeof CHART_COLORS] || CHART_COLORS.default;
-                     return <span style={{ color }}>{value}</span>;
-                  }}
-                />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
                 <Pie
                   data={salesByCompany}
-                  dataKey="totalValue" // 'totalValue' aqui é monetário
+                  dataKey="totalValue" 
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  outerRadius="80%" // Raio percentual
                   labelLine={false}
-                  label={({ name, value, percent }) => `${name}: ${currencyFormatter(Number(value))} (${(percent * 100).toFixed(0)}%)`}
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} // Label mais conciso
+                  fontSize={10} // Reduzido font-size do label
                 >
                   {salesByCompany.map((entry) => (
                     <Cell key={`cell-company-${entry.name}`} fill={CHART_COLORS[entry.name as keyof typeof CHART_COLORS] || CHART_COLORS.default} />
@@ -314,7 +309,6 @@ export default function SalesCharts({ salesData }: SalesChartsProps) {
           </ChartContainer>
         </CardContent>
       </Card>
-
     </div>
   );
 }

@@ -1,3 +1,4 @@
+
 // src/components/layout/header-content.tsx
 "use client";
 import { useAuth } from '@/hooks/use-auth';
@@ -13,19 +14,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, UserCircle, Moon, Sun } from 'lucide-react';
+import { LogOut, UserCircle, Moon, Sun, Menu } from 'lucide-react'; // Adicionado Menu
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { EMAIL_RECOVERY_ADDRESS } from '@/lib/constants';
 
-export default function HeaderContent() {
+interface HeaderContentProps {
+  toggleMobileMenu: () => void;
+}
+
+export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
-
 
   const getInitials = (name: string | undefined) => {
     if (!name) return 'U';
@@ -33,13 +37,19 @@ export default function HeaderContent() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-white dark:bg-white">
+    <header className="sticky top-0 z-30 w-full border-b bg-white dark:bg-white"> {/* z-index ajustado para ficar abaixo da sidebar mobile */}
       <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/dashboard" className="flex items-center">
-          <Logo width={100} height={32} />
-        </Link>
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" onClick={toggleMobileMenu} className="mr-2 md:hidden text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Abrir menu</span>
+          </Button>
+          <Link href="/dashboard" className="flex items-center">
+            <Logo width={100} height={32} />
+          </Link>
+        </div>
         
-        <div className="flex flex-1 items-center justify-end space-x-4">
+        <div className="flex flex-1 items-center justify-end space-x-2 sm:space-x-4">
           <div className="hidden md:block">
             <SellerSelector />
           </div>
@@ -50,6 +60,7 @@ export default function HeaderContent() {
               size="icon"
               onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
               aria-label="Toggle theme"
+              className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             >
               {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </Button>
@@ -58,10 +69,8 @@ export default function HeaderContent() {
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
                   <Avatar className="h-9 w-9">
-                    {/* Placeholder for user avatar image */}
-                    {/* <AvatarImage src="/avatars/01.png" alt={user.username} /> */}
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {getInitials(user.username)}
                     </AvatarFallback>
@@ -78,10 +87,6 @@ export default function HeaderContent() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {/* <DropdownMenuItem>
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  <span>Perfil</span>
-                </DropdownMenuItem> */}
                 <DropdownMenuItem onClick={logout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sair</span>
