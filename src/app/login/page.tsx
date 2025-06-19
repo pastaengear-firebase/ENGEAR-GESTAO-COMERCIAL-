@@ -14,13 +14,18 @@ export default function LoginPage() {
   const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    // Só tenta redirecionar se o loading terminou e o usuário está autenticado.
+    const justLoggedIn = sessionStorage.getItem(SESSION_STORAGE_LOGIN_FLAG);
+
     if (!loading && isAuthenticated) {
-      const justLoggedIn = sessionStorage.getItem(SESSION_STORAGE_LOGIN_FLAG);
       if (justLoggedIn) {
-        sessionStorage.removeItem(SESSION_STORAGE_LOGIN_FLAG); // Limpa o flag após o uso
+        // Se acabou de logar, o AuthContext cuidou do redirect com window.location.assign.
+        // Apenas removemos o flag. A página será recarregada de qualquer forma.
+        sessionStorage.removeItem(SESSION_STORAGE_LOGIN_FLAG);
+      } else {
+        // Se já estava autenticado (ex: refresh, bookmark) e não acabou de logar,
+        // então a LoginPage redireciona.
+        router.replace('/dashboard');
       }
-      router.replace('/dashboard');
     }
   }, [isAuthenticated, loading, router]);
 
@@ -58,8 +63,10 @@ export default function LoginPage() {
     );
   }
   
-  // Estado 3: AuthContext carregado, usuário autenticado -> useEffect está redirecionando.
-  // Mostra uma mensagem de "Redirecionando" enquanto o router.replace faz seu trabalho.
+  // Estado 3: AuthContext carregado, usuário autenticado.
+  // Se acabou de logar, window.location.assign está em progresso.
+  // Se já estava autenticado, o useEffect acima está redirecionando.
+  // Mostra uma mensagem de "Redirecionando" enquanto isso acontece.
   return (
     <div className="flex h-screen items-center justify-center bg-secondary">
       <p className="text-muted-foreground">Redirecionando para o painel...</p>

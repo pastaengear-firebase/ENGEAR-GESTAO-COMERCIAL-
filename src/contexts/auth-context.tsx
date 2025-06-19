@@ -47,11 +47,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = useCallback(async (username: string, passwordAttempt: string) => {
     if (username === DEFAULT_LOGIN_CREDENTIALS.username && passwordAttempt === DEFAULT_LOGIN_CREDENTIALS.password) {
       const newAuthenticatedState: AuthState = { isAuthenticated: true, user: { username } };
+      // Ordem é importante: sessionStorage flag primeiro
+      sessionStorage.setItem(SESSION_STORAGE_LOGIN_FLAG, 'true');
       setAuthState(newAuthenticatedState);
       localStorage.setItem(LOCAL_STORAGE_AUTH_KEY, JSON.stringify(newAuthenticatedState));
       document.cookie = `${COOKIE_AUTH_FLAG}=true; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}`;
-      sessionStorage.setItem(SESSION_STORAGE_LOGIN_FLAG, 'true'); // Sinaliza um login recente
-      // Redirecionamento removido daqui, será tratado pela LoginPage
+      window.location.assign('/dashboard'); // Força recarregamento e navegação
     } else {
       throw new Error('Credenciais inválidas.');
     }
