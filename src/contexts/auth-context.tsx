@@ -26,13 +26,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parsedState.isAuthenticated && parsedState.user) {
           setAuthState(parsedState);
         } else {
-          // Limpar estado inválido e cookie se houver
           localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
           document.cookie = `${COOKIE_AUTH_FLAG}=; path=/; expires=${EXPIRE_COOKIE_STRING}`;
           setAuthState(initialAuthState);
         }
       } else {
-        // Se não há estado no localStorage, garantir que o cookie também não exista
         document.cookie = `${COOKIE_AUTH_FLAG}=; path=/; expires=${EXPIRE_COOKIE_STRING}`;
         setAuthState(initialAuthState);
       }
@@ -53,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(LOCAL_STORAGE_AUTH_KEY, JSON.stringify(newAuthenticatedState));
       document.cookie = `${COOKIE_AUTH_FLAG}=true; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}`;
       sessionStorage.setItem(SESSION_STORAGE_LOGIN_FLAG, 'true'); // Sinaliza um login recente
-      window.location.assign('/dashboard'); // Redireciona após o login
+      // Redirecionamento removido daqui, será tratado pela LoginPage
     } else {
       throw new Error('Credenciais inválidas.');
     }
@@ -64,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
     document.cookie = `${COOKIE_AUTH_FLAG}=; path=/; expires=${EXPIRE_COOKIE_STRING}`;
     sessionStorage.removeItem(SESSION_STORAGE_LOGIN_FLAG);
-    window.location.assign('/login'); // Redireciona para a página de login
+    window.location.assign('/login'); 
   }, []);
 
   return (
@@ -73,4 +71,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
-

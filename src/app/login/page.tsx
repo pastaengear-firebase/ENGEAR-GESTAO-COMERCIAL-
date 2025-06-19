@@ -14,22 +14,23 @@ export default function LoginPage() {
   const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    // Se autenticado e não acabou de fazer login (para evitar loop na primeira renderização pós-login)
-    // O middleware já deve ter redirecionado, mas isso é uma segurança extra.
-    if (!loading && isAuthenticated) {
-        const justLoggedIn = sessionStorage.getItem(SESSION_STORAGE_LOGIN_FLAG);
-        if (!justLoggedIn) {
-          router.replace('/dashboard');
-        } else {
-          // Limpa o flag para permitir que o middleware redirecione em futuras visitas diretas a /login
-          // ou para permitir que o usuário acesse /login se deslogar e voltar.
-          sessionStorage.removeItem(SESSION_STORAGE_LOGIN_FLAG);
-        }
+    if (loading) {
+      return; // Aguarda o carregamento do estado de autenticação
     }
+
+    if (isAuthenticated) {
+      // Se autenticado, sempre redireciona para o dashboard.
+      const justLoggedIn = sessionStorage.getItem(SESSION_STORAGE_LOGIN_FLAG);
+      if (justLoggedIn) {
+        sessionStorage.removeItem(SESSION_STORAGE_LOGIN_FLAG); // Limpa o flag após o uso
+      }
+      router.replace('/dashboard');
+    }
+    // Se não estiver autenticado e não estiver carregando, o formulário de login será exibido.
   }, [isAuthenticated, loading, router]);
 
-  // Se estiver carregando o estado de autenticação, não renderiza o formulário ainda
-  if (loading) {
+  if (loading || (!loading && isAuthenticated)) {
+    // Enquanto carrega, ou se já está autenticado e esperando o redirecionamento do useEffect, mostra um loader
     return (
       <div className="flex h-screen items-center justify-center bg-secondary">
         <p className="text-muted-foreground">Verificando autenticação...</p>
@@ -37,8 +38,6 @@ export default function LoginPage() {
     );
   }
 
-  // Se já estiver autenticado (e não apenas logado), o useEffect acima já deve ter redirecionado.
-  // Este return é principalmente para o caso de não autenticado.
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/20 via-background to-background p-4">
       <Card className="w-full max-w-md shadow-2xl">
@@ -61,4 +60,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
