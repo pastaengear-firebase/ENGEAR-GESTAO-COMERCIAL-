@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(LOCAL_STORAGE_AUTH_KEY, JSON.stringify(newAuthenticatedState));
       document.cookie = `${COOKIE_AUTH_FLAG}=true; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}`;
       sessionStorage.setItem(SESSION_STORAGE_LOGIN_FLAG, 'true');
-      // window.location.assign('/dashboard'); // Removido - LoginPage cuidará do redirecionamento
+      window.location.assign('/dashboard'); // Forçar redirecionamento
     } else {
       throw new Error('Credenciais inválidas.');
     }
@@ -72,3 +72,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+

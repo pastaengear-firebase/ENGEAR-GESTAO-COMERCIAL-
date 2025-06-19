@@ -10,15 +10,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { SESSION_STORAGE_LOGIN_FLAG } from '@/lib/constants';
 
 export default function LoginPage() {
-  const router = useRouter();
+  const router = useRouter(); // Mantido para referência, mas não usado para redirecionamento ativo aqui.
   const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    // Este useEffect lida com o redirecionamento se o usuário já está autenticado
-    // ou se o estado de autenticação muda para autenticado (após o login).
+    // Este useEffect é principalmente para limpar o flag se o usuário
+    // de alguma forma voltar para a página de login enquanto autenticado,
+    // mas o redirecionamento principal é esperado do AuthContext ou middleware.
     if (!loading && isAuthenticated) {
-      sessionStorage.removeItem(SESSION_STORAGE_LOGIN_FLAG); // Limpa o flag, pois o redirecionamento vai ocorrer
-      router.replace('/dashboard');
+      const justLoggedIn = sessionStorage.getItem(SESSION_STORAGE_LOGIN_FLAG);
+      if (justLoggedIn) {
+        sessionStorage.removeItem(SESSION_STORAGE_LOGIN_FLAG);
+      }
+      // Não redireciona ativamente daqui se o AuthContext já está fazendo window.location.assign
+      // O middleware também deve pegar este caso e redirecionar.
     }
   }, [isAuthenticated, loading, router]);
 
@@ -33,11 +38,11 @@ export default function LoginPage() {
 
   if (isAuthenticated) {
     // Estado 2: AuthContext carregado, usuário autenticado.
-    // O useEffect acima cuidará do redirecionamento via router.replace.
-    // Mostra uma mensagem enquanto isso acontece.
+    // O AuthContext deve ter redirecionado com window.location.assign.
+    // Se ainda estiver aqui, o middleware deve pegar.
     return (
       <div className="flex h-screen items-center justify-center bg-secondary">
-        <p className="text-muted-foreground">Redirecionando para o painel...</p>
+        <p className="text-muted-foreground">Autenticado. Aguarde o redirecionamento...</p>
       </div>
     );
   }
@@ -65,3 +70,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
