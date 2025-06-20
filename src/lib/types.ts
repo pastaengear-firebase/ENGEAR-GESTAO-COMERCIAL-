@@ -1,5 +1,6 @@
 
-import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption, FollowUpDaysOptionValue, PlannerStatusOption, PlannerPriorityOption } from './constants';
+import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption, FollowUpDaysOptionValue } from './constants';
+// PlannerStatusOption, PlannerPriorityOption removed
 import type { ALL_SELLERS_OPTION } from './constants'; // Import específico
 
 
@@ -114,33 +115,34 @@ export type QuotesContextType = {
   loadingQuotes: boolean;
 };
 
-export interface PlannerItem {
-  id: string;
-  title: string;
-  clientName?: string;
-  responsibleSeller: Seller;
-  status: PlannerStatusOption;
-  priority: PlannerPriorityOption;
-  deadline: string; // ISO string
-  notes?: string;
-  createdAt: number; // timestamp
-  updatedAt?: number; // timestamp
-}
+// Planner types removed
+// export interface PlannerItem {
+//   id: string;
+//   title: string;
+//   clientName?: string;
+//   responsibleSeller: Seller;
+//   status: PlannerStatusOption;
+//   priority: PlannerPriorityOption;
+//   deadline: string; // ISO string
+//   notes?: string;
+//   createdAt: number; // timestamp
+//   updatedAt?: number; // timestamp
+// }
 
-export type PlannerFilters = {
-  searchTerm?: string;
-  // Adicionar outros filtros específicos do planner se necessário (e.g., status, priority)
-};
+// export type PlannerFilters = {
+//   searchTerm?: string;
+//   // Adicionar outros filtros específicos do planner se necessário (e.g., status, priority)
+// };
 
-export type PlannerContextType = {
-  plannerItems: PlannerItem[];
-  filteredPlannerItems: PlannerItem[];
-  selectedSeller: Seller | typeof ALL_SELLERS_OPTION; // Herdado ou compartilhado com SalesContext
-  addPlannerItem: (itemData: Omit<PlannerItem, 'id' | 'createdAt' | 'updatedAt' | 'responsibleSeller'>) => PlannerItem;
-  updatePlannerItem: (id: string, itemData: Partial<Omit<PlannerItem, 'id' | 'createdAt' | 'updatedAt' | 'responsibleSeller'>>) => PlannerItem | undefined;
-  deletePlannerItem: (id: string) => void;
-  getPlannerItemById: (id: string) => PlannerItem | undefined;
-  setPlannerSearchTerm: (term: string) => void; // Exemplo de filtro específico
-  plannerSearchTerm: string;
-  loadingPlanner: boolean;
-};
+// export type PlannerContextType = {
+//   plannerItems: PlannerItem[];
+//   filteredPlannerItems: PlannerItem[];
+//   selectedSeller: Seller | typeof ALL_SELLERS_OPTION; // Herdado ou compartilhado com SalesContext
+//   addPlannerItem: (itemData: Omit<PlannerItem, 'id' | 'createdAt' | 'updatedAt' | 'responsibleSeller'>) => PlannerItem;
+//   updatePlannerItem: (id: string, itemData: Partial<Omit<PlannerItem, 'id' | 'createdAt' | 'updatedAt' | 'responsibleSeller'>>) => PlannerItem | undefined;
+//   deletePlannerItem: (id: string) => void;
+//   getPlannerItemById: (id: string) => PlannerItem | undefined;
+//   setPlannerSearchTerm: (term: string) => void; // Exemplo de filtro específico
+//   plannerSearchTerm: string;
+//   loadingPlanner: boolean;
+// };

@@ -6,7 +6,7 @@ import { AuthProvider } from './auth-context';
 import { SalesProvider } from './sales-context';
 import { SettingsProvider } from './settings-context';
 import { QuotesProvider } from './quotes-context';
-import { PlannerProvider } from './planner-context'; // Importar PlannerProvider
+// import { PlannerProvider } from './planner-context'; // PlannerProvider removed
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -15,11 +15,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       <SalesProvider>
         <SettingsProvider>
           <QuotesProvider>
-            <PlannerProvider> {/* Adicionar PlannerProvider */}
+            {/* <PlannerProvider> */} {/* PlannerProvider removed */}
               <TooltipProvider>
                 {children}
               </TooltipProvider>
-            </PlannerProvider>
+            {/* </PlannerProvider> */}
           </QuotesProvider>
         </SettingsProvider>
       </SalesProvider>
