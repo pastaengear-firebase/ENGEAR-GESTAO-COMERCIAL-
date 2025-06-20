@@ -10,7 +10,7 @@ import PlannerForm from '@/components/planner/planner-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog'; // Added DialogFooter
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ClipboardList, PlusCircle, Search, RotateCcw, Info } from 'lucide-react';
