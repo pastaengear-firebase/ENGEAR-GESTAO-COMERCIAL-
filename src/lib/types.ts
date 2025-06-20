@@ -1,5 +1,5 @@
 
-import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption, FollowUpDaysOptionValue } from './constants';
+import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption, FollowUpDaysOptionValue, PlannerStatusOption, PlannerPriorityOption } from './constants';
 import type { ALL_SELLERS_OPTION } from './constants'; // Import específico
 
 
@@ -23,16 +23,14 @@ export interface User {
   username: string;
 }
 
-// AuthState simplificado para sempre autenticado
+// AuthState simplificado para sempre autenticado (ou acesso via senha única)
 export type AuthState = {
-  isAuthenticated: true;
-  user: User;
+  user: User; // Usuário fixo para exibição no header
 };
 
 // AuthContextType simplificado
 export type AuthContextType = AuthState & {
-  // login e logout não são mais necessários
-  loading: boolean; // Ainda pode ser útil para uma carga inicial se houver alguma
+  loading: boolean; // Pode ser usado para alguma carga inicial de dados do usuário se necessário
 };
 
 export type SalesFilters = {
@@ -114,4 +112,35 @@ export type QuotesContextType = {
   getQuoteById: (id: string) => Quote | undefined;
   toggleFollowUpDone: (quoteId: string) => void; 
   loadingQuotes: boolean;
+};
+
+export interface PlannerItem {
+  id: string;
+  title: string;
+  clientName?: string;
+  responsibleSeller: Seller;
+  status: PlannerStatusOption;
+  priority: PlannerPriorityOption;
+  deadline: string; // ISO string
+  notes?: string;
+  createdAt: number; // timestamp
+  updatedAt?: number; // timestamp
+}
+
+export type PlannerFilters = {
+  searchTerm?: string;
+  // Adicionar outros filtros específicos do planner se necessário (e.g., status, priority)
+};
+
+export type PlannerContextType = {
+  plannerItems: PlannerItem[];
+  filteredPlannerItems: PlannerItem[];
+  selectedSeller: Seller | typeof ALL_SELLERS_OPTION; // Herdado ou compartilhado com SalesContext
+  addPlannerItem: (itemData: Omit<PlannerItem, 'id' | 'createdAt' | 'updatedAt' | 'responsibleSeller'>) => PlannerItem;
+  updatePlannerItem: (id: string, itemData: Partial<Omit<PlannerItem, 'id' | 'createdAt' | 'updatedAt' | 'responsibleSeller'>>) => PlannerItem | undefined;
+  deletePlannerItem: (id: string) => void;
+  getPlannerItemById: (id: string) => PlannerItem | undefined;
+  setPlannerSearchTerm: (term: string) => void; // Exemplo de filtro específico
+  plannerSearchTerm: string;
+  loadingPlanner: boolean;
 };

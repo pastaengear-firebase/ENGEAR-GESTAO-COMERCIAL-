@@ -1,6 +1,6 @@
 
 import { z } from 'zod';
-import { AREA_OPTIONS, STATUS_OPTIONS, COMPANY_OPTIONS, SELLERS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, FOLLOW_UP_DAYS_OPTIONS } from './constants';
+import { AREA_OPTIONS, STATUS_OPTIONS, COMPANY_OPTIONS, SELLERS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, FOLLOW_UP_DAYS_OPTIONS, PLANNER_STATUS_OPTIONS, PLANNER_PRIORITY_OPTIONS } from './constants';
 
 export const LoginSchema = z.object({
   username: z.string().min(1, 'Usuário é obrigatório.'),
@@ -42,8 +42,17 @@ export const QuoteFormSchema = z.object({
     .optional()
     .default(0),
   sendProposalNotification: z.boolean().optional().default(false),
-  followUpDone: z.boolean().optional().default(false), // Novo campo
+  followUpDone: z.boolean().optional().default(false),
 });
 export type QuoteFormData = z.infer<typeof QuoteFormSchema>;
 
-
+export const PlannerFormSchema = z.object({
+  title: z.string().min(1, 'Título da tarefa é obrigatório.'),
+  clientName: z.string().optional(),
+  status: z.enum(PLANNER_STATUS_OPTIONS, { required_error: 'Status é obrigatório.'}),
+  priority: z.enum(PLANNER_PRIORITY_OPTIONS, { required_error: 'Prioridade é obrigatória.'}),
+  deadline: z.date({ required_error: 'Prazo é obrigatório.'}),
+  notes: z.string().optional(),
+  // responsibleSeller é gerenciado pelo contexto e seller selecionado globalmente
+});
+export type PlannerFormData = z.infer<typeof PlannerFormSchema>;

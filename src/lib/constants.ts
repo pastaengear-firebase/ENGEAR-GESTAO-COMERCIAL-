@@ -53,15 +53,24 @@ export const PROPOSAL_NOTIFICATION_EMAILS = [
 ] as const;
 
 
-export const LOCAL_STORAGE_AUTH_KEY = 'salesAppAuthState';
+export const LOCAL_STORAGE_AUTH_KEY = 'salesAppAuthState'; // No longer actively used for auth logic, but kept for context structure
 export const LOCAL_STORAGE_SALES_KEY = 'salesAppData';
 export const LOCAL_STORAGE_SETTINGS_KEY = 'salesAppSettings';
 export const LOCAL_STORAGE_QUOTES_KEY = 'salesAppQuotesData';
 export const LOCAL_STORAGE_SELECTED_SELLER_KEY = 'salesAppSelectedSeller';
+export const LOCAL_STORAGE_PLANNER_KEY = 'salesAppPlannerData'; // New Key for Planner
 
 // Constantes para o sistema de acesso com senha única
 export const APP_ACCESS_GRANTED_KEY = 'app_engear_access_granted';
 export const DEFAULT_ACCESS_PASSWORD = '1313';
+
+// Constantes para o Planner
+export const PLANNER_STATUS_OPTIONS = ["Pendente", "Em Análise", "Em Desenvolvimento", "Aguardando Cliente", "Concluído", "Cancelado"] as const;
+export type PlannerStatusOption = (typeof PLANNER_STATUS_OPTIONS)[number];
+
+export const PLANNER_PRIORITY_OPTIONS = ["Alta", "Média", "Baixa"] as const;
+export type PlannerPriorityOption = (typeof PLANNER_PRIORITY_OPTIONS)[number];
+
 
 // Constantes que não são mais usadas (relacionadas ao sistema de login anterior)
 // export const COOKIE_AUTH_FLAG = 'salesAppAuthFlag';

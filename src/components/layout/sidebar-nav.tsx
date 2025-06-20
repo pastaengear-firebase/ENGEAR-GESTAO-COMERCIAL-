@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
-import { LayoutDashboard, FilePlus, Database, FileEdit, Receipt, Settings, FileText, X } from 'lucide-react'; // Adicionado FileText e X
+import { LayoutDashboard, FilePlus, Database, FileEdit, Receipt, Settings, FileText, X, ClipboardList } from 'lucide-react'; // Adicionado ClipboardList e X
 import Logo from '@/components/common/logo';
 import { Button } from '@/components/ui/button';
 
@@ -45,6 +45,12 @@ const navItems: NavItem[] = [
     href: '/propostas/gerenciar',
     icon: FileText,
     isActive: (pathname) => pathname.startsWith('/propostas'),
+  },
+  {
+    title: 'Planner', // Novo item de menu
+    href: '/planner',
+    icon: ClipboardList,
+    isActive: (pathname) => pathname.startsWith('/planner'),
   },
   {
     title: 'Configurações',

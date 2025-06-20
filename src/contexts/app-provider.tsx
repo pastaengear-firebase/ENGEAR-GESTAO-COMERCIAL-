@@ -5,7 +5,8 @@ import type React from 'react';
 import { AuthProvider } from './auth-context';
 import { SalesProvider } from './sales-context';
 import { SettingsProvider } from './settings-context';
-import { QuotesProvider } from './quotes-context'; // Importar QuotesProvider
+import { QuotesProvider } from './quotes-context';
+import { PlannerProvider } from './planner-context'; // Importar PlannerProvider
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -13,10 +14,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AuthProvider>
       <SalesProvider>
         <SettingsProvider>
-          <QuotesProvider> {/* Adicionar QuotesProvider */}
-            <TooltipProvider>
-              {children}
-            </TooltipProvider>
+          <QuotesProvider>
+            <PlannerProvider> {/* Adicionar PlannerProvider */}
+              <TooltipProvider>
+                {children}
+              </TooltipProvider>
+            </PlannerProvider>
           </QuotesProvider>
         </SettingsProvider>
       </SalesProvider>
