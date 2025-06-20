@@ -63,7 +63,7 @@ export default function PlannerPage() {
     setShowFormModal(true);
   };
 
-  const confirmDeleteItem = (id: string, responsibleSeller: string) => {
+  const confirmDeleteItem = (id: string, responsibleSeller: PlannerItem['responsibleSeller']) => {
      if (isEffectivelyReadOnly || responsibleSeller !== globalSelectedSeller) {
        toast({
         title: "Ação Não Permitida",
@@ -151,7 +151,10 @@ export default function PlannerPage() {
             <PlannerTable 
               plannerItems={filteredPlannerItems}
               onEdit={handleEditItem} 
-              onDelete={confirmDeleteItem}
+              onDelete={(itemId) => {
+                const item = filteredPlannerItems.find(i => i.id === itemId);
+                if (item) confirmDeleteItem(itemId, item.responsibleSeller);
+              }}
               disabledActions={isEffectivelyReadOnly}
             />
           )}
