@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'i.ibb.co',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   allowedDevOrigins: ['https://6000-firebase-studio-1747639280840.cluster-etsqrqvqyvd4erxx7qq32imrjk.cloudworkstations.dev'],
