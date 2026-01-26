@@ -45,6 +45,7 @@ export type SalesContextType = {
   selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
   setSelectedSeller: (seller: Seller | typeof ALL_SELLERS_OPTION) => void;
   addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>) => Sale;
+  addBulkSales: (newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>[]) => void;
   updateSale: (id: string, saleData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => Sale | undefined;
   deleteSale: (id: string) => void;
   getSaleById: (id: string) => Sale | undefined;

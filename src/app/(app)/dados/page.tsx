@@ -1,11 +1,12 @@
+
 // src/app/(app)/dados/page.tsx
 "use client";
 import SalesTable from '@/components/sales/sales-table';
 import { useSales } from '@/hooks/use-sales';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Printer, Search, RotateCcw, FileDown } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { Printer, Search, RotateCcw, FileDown, FileUp } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import {
   Card,
@@ -15,16 +16,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { Sale } from '@/lib/types';
+import type { Sale, Seller, CompanyOption, AreaOption, StatusOption } from '@/lib/types';
 import * as XLSX from 'xlsx';
+import { useToast } from '@/hooks/use-toast';
+import { SELLERS, COMPANY_OPTIONS, AREA_OPTIONS, STATUS_OPTIONS } from '@/lib/constants';
+import { format, parseISO, isValid } from 'date-fns';
 
 export default function DadosPage() {
-  const { sales, setFilters, filters: globalFilters, selectedSeller } = useSales(); // Usar 'sales' em vez de 'filteredSales'
+  const { sales, setFilters, filters: globalFilters, selectedSeller, addBulkSales } = useSales();
   const [searchTerm, setSearchTerm] = useState(globalFilters.searchTerm || '');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      setFilters({ searchTerm }); // Atualiza o filtro global de searchTerm
+      setFilters({ searchTerm });
     }, 300);
     return () => clearTimeout(debounceTimer);
   }, [searchTerm, setFilters]);
@@ -35,7 +41,7 @@ export default function DadosPage() {
 
   const handleClearSearch = () => {
     setSearchTerm('');
-    setFilters({ searchTerm: '' }); // Limpa o filtro global de searchTerm
+    setFilters({ searchTerm: '' });
   };
   
   const handlePrint = () => {
@@ -43,7 +49,6 @@ export default function DadosPage() {
   };
 
   const handleExport = () => {
-    // Format the data to have more readable headers
     const dataToExport = displaySales.map(sale => ({
       'Data': sale.date,
       'Vendedor': sale.seller,
@@ -59,20 +64,131 @@ export default function DadosPage() {
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Vendas");
-    // Trigger the download
     XLSX.writeFile(workbook, "Dados_Vendas.xlsx");
   };
 
-  // Filtragem local para a página Dados, ignorando filtros de data globais
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+        if (json.length === 0) {
+          toast({ variant: "destructive", title: "Arquivo Vazio", description: "O arquivo Excel selecionado não contém dados." });
+          return;
+        }
+
+        const expectedHeaders = ['Data', 'Vendedor', 'Empresa', 'Projeto', 'O.S.', 'Área', 'Cliente/Serviço', 'Valor da Venda', 'Status', 'Pagamento'];
+        const actualHeaders = Object.keys(json[0]);
+        const missingHeaders = expectedHeaders.filter(h => !actualHeaders.includes(h));
+        
+        if (missingHeaders.length > 0) {
+          toast({
+            variant: "destructive",
+            title: "Cabeçalhos Inválidos",
+            description: `O arquivo não corresponde ao modelo. Cabeçalhos faltando: ${missingHeaders.join(', ')}`,
+          });
+          return;
+        }
+
+        const newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>[] = [];
+        const errors: string[] = [];
+
+        json.forEach((row, index) => {
+          const lineNumber = index + 2;
+          
+          const dateValue = row['Data'];
+          let jsDate: Date;
+          if (dateValue instanceof Date) {
+            jsDate = dateValue;
+          } else if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+            jsDate = parseISO(dateValue);
+          } else {
+            errors.push(`Linha ${lineNumber}: Formato de data inválido. Use AAAA-MM-DD.`);
+            return;
+          }
+          if (!isValid(jsDate)) {
+             errors.push(`Linha ${lineNumber}: Data inválida: "${row['Data']}".`);
+             return;
+          }
+
+          const seller = row['Vendedor'];
+          const company = row['Empresa'];
+          const area = row['Área'];
+          const status = row['Status'];
+          const project = String(row['Projeto'] ?? '').trim();
+          const clientService = String(row['Cliente/Serviço'] ?? '').trim();
+
+          if (!SELLERS.includes(seller)) { errors.push(`Linha ${lineNumber}: Vendedor inválido: "${seller}".`); return; }
+          if (!COMPANY_OPTIONS.includes(company)) { errors.push(`Linha ${lineNumber}: Empresa inválida: "${company}".`); return; }
+          if (!AREA_OPTIONS.includes(area)) { errors.push(`Linha ${lineNumber}: Área inválida: "${area}".`); return; }
+          if (!STATUS_OPTIONS.includes(status)) { errors.push(`Linha ${lineNumber}: Status inválido: "${status}".`); return; }
+          if (!project) { errors.push(`Linha ${lineNumber}: Campo 'Projeto' não pode ser vazio.`); return; }
+          if (!clientService) { errors.push(`Linha ${lineNumber}: Campo 'Cliente/Serviço' não pode ser vazio.`); return; }
+          
+          const salesValue = Number(row['Valor da Venda']);
+          const payment = Number(row['Pagamento']);
+
+          if (isNaN(salesValue) || salesValue < 0) { errors.push(`Linha ${lineNumber}: 'Valor da Venda' deve ser um número não-negativo.`); return; }
+          if (isNaN(payment) || payment < 0) { errors.push(`Linha ${lineNumber}: 'Pagamento' deve ser um número não-negativo.`); return; }
+          
+          newSales.push({
+            date: format(jsDate, 'yyyy-MM-dd'),
+            seller: seller as Seller,
+            company: company as CompanyOption,
+            project: project,
+            os: String(row['O.S.'] ?? ''),
+            area: area as AreaOption,
+            clientService: clientService,
+            salesValue: salesValue,
+            status: status as StatusOption,
+            payment: payment,
+          });
+        });
+
+        if (errors.length > 0) {
+          toast({
+            variant: "destructive",
+            title: `Encontrados ${errors.length} erros. Nenhuma venda importada.`,
+            description: `Exemplo (Linha ${errors[0].split(':')[0].replace('Linha ','')}): ${errors[0].split(': ')[1]}. Corrija o arquivo e tente novamente.`,
+            duration: 9000,
+          });
+          return;
+        }
+        
+        if (newSales.length > 0) {
+          addBulkSales(newSales);
+          toast({ title: "Importação Concluída", description: `${newSales.length} novas vendas foram importadas.` });
+        } else {
+          toast({ variant: "destructive", title: "Nenhuma Venda Válida", description: "Nenhuma venda para importar foi encontrada no arquivo." });
+        }
+
+      } catch (error) {
+        toast({ variant: "destructive", title: "Erro ao Ler Arquivo", description: "Não foi possível ler o arquivo. Verifique se é um arquivo Excel (.xlsx, .xls) válido." });
+        console.error("Import error:", error);
+      } finally {
+        if (event.target) {
+            event.target.value = '';
+        }
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   const displaySales = useMemo(() => {
     let filtered = sales;
 
-    // Filtro por vendedor selecionado globalmente
     if (selectedSeller !== 'EQUIPE COMERCIAL') {
       filtered = filtered.filter(sale => sale.seller === selectedSeller);
     }
 
-    // Filtro por termo de busca local
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(sale =>
@@ -96,6 +212,17 @@ export default function DadosPage() {
           <p className="text-muted-foreground">Visualize, filtre e gerencie os registros de vendas.</p>
         </div>
         <div className="flex items-center gap-2 print-hide">
+          <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm" className="w-full sm:w-auto">
+            <FileUp className="mr-2 h-4 w-4" />
+            Importar Dados
+          </Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept=".xlsx, .xls"
+          />
           <Button onClick={handleExport} variant="outline" size="sm" className="w-full sm:w-auto">
             <FileDown className="mr-2 h-4 w-4" />
             Exportar Excel

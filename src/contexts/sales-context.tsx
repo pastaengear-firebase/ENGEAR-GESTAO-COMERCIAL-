@@ -152,6 +152,15 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return newSale;
   }, []);
 
+  const addBulkSales = useCallback((newSalesData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>[]) => {
+    const newSales: Sale[] = newSalesData.map(saleData => ({
+      ...saleData,
+      id: uuidv4(),
+      createdAt: Date.now(),
+    }));
+    setSales(prevSales => [...prevSales, ...newSales].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  }, []);
+
   const updateSale = useCallback((id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>): Sale | undefined => {
     let updatedSale: Sale | undefined;
     setSales(prevSales =>
@@ -222,6 +231,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         selectedSeller,
         setSelectedSeller,
         addSale,
+        addBulkSales,
         updateSale,
         deleteSale,
         getSaleById,
@@ -234,4 +244,3 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </SalesContext.Provider>
   );
 };
-
