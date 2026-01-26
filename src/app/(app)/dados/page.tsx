@@ -4,7 +4,7 @@ import SalesTable from '@/components/sales/sales-table';
 import { useSales } from '@/hooks/use-sales';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Printer, Search, RotateCcw } from 'lucide-react';
+import { Printer, Search, RotateCcw, FileDown } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 import {
@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { Sale } from '@/lib/types';
+import * as XLSX from 'xlsx';
 
 export default function DadosPage() {
   const { sales, setFilters, filters: globalFilters, selectedSeller } = useSales(); // Usar 'sales' em vez de 'filteredSales'
@@ -39,6 +40,27 @@ export default function DadosPage() {
   
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleExport = () => {
+    // Format the data to have more readable headers
+    const dataToExport = displaySales.map(sale => ({
+      'Data': sale.date,
+      'Vendedor': sale.seller,
+      'Empresa': sale.company,
+      'Projeto': sale.project,
+      'O.S.': sale.os,
+      'Área': sale.area,
+      'Cliente/Serviço': sale.clientService,
+      'Valor da Venda': sale.salesValue,
+      'Status': sale.status,
+      'Pagamento': sale.payment,
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Vendas");
+    // Trigger the download
+    XLSX.writeFile(workbook, "Dados_Vendas.xlsx");
   };
 
   // Filtragem local para a página Dados, ignorando filtros de data globais
@@ -73,10 +95,16 @@ export default function DadosPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Dados de Vendas</h1>
           <p className="text-muted-foreground">Visualize, filtre e gerencie os registros de vendas.</p>
         </div>
-        <Button onClick={handlePrint} variant="outline" size="icon" className="print-hide">
-          <Printer className="h-4 w-4" />
-          <span className="sr-only">Imprimir Tabela</span>
-        </Button>
+        <div className="flex items-center gap-2 print-hide">
+          <Button onClick={handleExport} variant="outline" size="sm" className="w-full sm:w-auto">
+            <FileDown className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
+          <Button onClick={handlePrint} variant="outline" size="icon" className="print-hide">
+            <Printer className="h-4 w-4" />
+            <span className="sr-only">Imprimir Tabela</span>
+          </Button>
+        </div>
       </div>
 
       <Card className="shadow-lg">
@@ -110,4 +138,3 @@ export default function DadosPage() {
     </div>
   );
 }
-
