@@ -10,7 +10,7 @@ interface LogoProps {
 }
 
 const Logo: React.FC<LogoProps> = ({ className, width, height }) => {
-  const logoImagePath = "https://placehold.co/400x125/FFFFFF/661923?text=ENGEAR&font=raleway";
+  const logoImagePath = "https://i.ibb.co/GfWMfMY/novologoe.png";
   const altText = "ENGEAR Logo";
 
   // Determina se o logo deve ser responsivo (se width/height não forem passados)
@@ -19,12 +19,12 @@ const Logo: React.FC<LogoProps> = ({ className, width, height }) => {
   // Define os valores de width/height para o componente Image.
   // Para o caso responsivo, usamos valores altos para definir a proporção.
   // Para o caso de tamanho fixo, usamos os valores passados.
-  const finalWidth = width || 400;
-  const finalHeight = height || 125;
+  const finalWidth = width || 3508;
+  const finalHeight = height || 834;
 
   return (
     // O div wrapper. A classe 'className' vinda de fora controlará o tamanho.
-    <div className={cn('bg-white', className)}>
+    <div className={cn(className)}>
       <Image
         src={logoImagePath}
         alt={altText}
