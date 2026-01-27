@@ -57,7 +57,7 @@
     }
   },
   "auth": {
-    "providers": ["google.com"]
+    "providers": ["anonymous"]
   },
   "firestore": {
     "/sales/{saleId}": {
