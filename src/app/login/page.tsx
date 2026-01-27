@@ -2,7 +2,7 @@
 import { redirect } from 'next/navigation';
 
 export default function LoginPage() {
-  // The login page is now the root page ('/'). 
-  // This page just redirects to the root to handle any old bookmarks or links.
+  // A página de login agora é a página raiz ('/').
+  // Esta página apenas redireciona para a raiz para lidar com quaisquer links antigos.
   redirect('/');
 }

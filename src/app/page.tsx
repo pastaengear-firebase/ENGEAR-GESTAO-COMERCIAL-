@@ -3,7 +3,7 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,37 +14,33 @@ import { DEFAULT_ACCESS_PASSWORD, APP_ACCESS_GRANTED_KEY } from '@/lib/constants
 
 export default function RootPage() {
   const auth = useAuth();
-  const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [password, setPassword] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  // This state prevents the login form from flashing if the user is already logged in.
+  const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
 
-  // This effect acts as the main gatekeeper.
   useEffect(() => {
-    // This check must run on the client after hydration
-    if (typeof window !== 'undefined') {
-      const accessGranted = sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true';
-      if (accessGranted) {
-        // If already granted, just go to the dashboard.
-        router.replace('/dashboard');
-      } else {
-        // If not granted, stop verifying and show the login form.
-        setIsVerifying(false);
-      }
+    // Se um usuário já tiver acesso, redirecione-o para o dashboard
+    if (sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true') {
+      router.replace('/dashboard');
+    } else {
+      // Caso contrário, pare de verificar e mostre o formulário de login
+      setIsVerifying(false);
     }
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+
     if (password !== DEFAULT_ACCESS_PASSWORD) {
       toast({
         title: "Senha Incorreta",
         description: "A senha de acesso está incorreta. Tente novamente.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
@@ -54,17 +50,14 @@ export default function RootPage() {
         description: "Não foi possível conectar ao serviço de autenticação.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
-    setIsLoggingIn(true);
     try {
-      // 1. Ensure we have a Firebase anonymous user for database operations.
-      if (!user) {
-        await signInAnonymously(auth);
-      }
-      
-      // 2. Set the session key to grant access for this session
+      // Garante uma sessão anônima do Firebase para operações de banco de dados
+      await signInAnonymously(auth);
+      // Concede acesso para esta sessão do navegador
       sessionStorage.setItem(APP_ACCESS_GRANTED_KEY, 'true');
 
       toast({
@@ -72,33 +65,30 @@ export default function RootPage() {
         description: "Bem-vindo ao sistema de controle de vendas.",
       });
 
-      // 3. Redirect to the dashboard
+      // Redireciona para o dashboard após o sucesso
       router.replace('/dashboard');
-
     } catch (error) {
       console.error("Erro no login anônimo:", error);
-      sessionStorage.removeItem(APP_ACCESS_GRANTED_KEY); // Clean up on failure
+      sessionStorage.removeItem(APP_ACCESS_GRANTED_KEY); // Limpa em caso de falha
       toast({
         title: "Erro de Conexão",
         description: "Não foi possível estabelecer uma sessão segura. Tente novamente.",
         variant: "destructive",
       });
-    } finally {
-        setIsLoggingIn(false);
+      setIsLoading(false);
     }
   };
   
-  // While verifying the session, show a full-page loader.
+  // Mostra um loader enquanto verifica a sessão para evitar um "flash" do formulário de login
   if (isVerifying) {
      return (
         <div className="flex h-screen items-center justify-center bg-background">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="ml-4 text-lg text-foreground">Verificando sessão...</p>
         </div>
      );
   }
 
-
+  // Renderiza a página de login
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <div className="w-full max-w-sm space-y-8 rounded-xl bg-white dark:bg-gray-800 p-8 shadow-lg text-center">
@@ -122,17 +112,15 @@ export default function RootPage() {
             placeholder="Senha de Acesso"
             required
             className="text-center"
-            disabled={isLoggingIn || userLoading}
+            disabled={isLoading}
           />
           <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
-            disabled={isLoggingIn || userLoading}
+            disabled={isLoading}
           >
-            {isLoggingIn || userLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
-            {isLoggingIn || userLoading ? 'Entrando...' : 'Entrar'}
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isLoading ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
         <p className="text-xs text-muted-foreground pt-4">

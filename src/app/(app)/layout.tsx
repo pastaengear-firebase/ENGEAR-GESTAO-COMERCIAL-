@@ -12,19 +12,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    // This check is the single source of truth for whether the user can see the app content.
-    // It runs on the client after the component mounts.
+    // Esta verificação é a única fonte de verdade para autorização.
     const accessGranted = sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true';
 
     if (!accessGranted) {
-      // If the password was never entered in this session, redirect to the root login page.
+      // Se a senha nunca foi inserida, redireciona para a página de login (a raiz).
       router.replace('/');
     } else {
-      // If the password was entered, authorize the view.
+      // Se a senha foi inserida, autoriza a visualização.
       setIsAuthorized(true);
     }
+    // Marca a verificação como concluída.
+    setIsVerifying(false);
   }, [router]);
 
 
@@ -36,30 +38,39 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsMobileMenuOpen(false);
   };
 
-  // While checking for authorization, show a loader.
-  // This prevents the protected content from flashing before the redirect can happen.
-  if (!isAuthorized) {
+  // Enquanto verifica a autorização, exibe um loader em tela cheia.
+  // Isso impede que o conteúdo protegido apareça brevemente antes do redirecionamento.
+  if (isVerifying) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg">Carregando aplicação...</p>
+        <p className="ml-4 text-lg">Verificando autorização...</p>
       </div>
     );
   }
 
-  // Render children only when authorized. Hooks like useUser can be used within these
-  // children or in the HeaderContent without affecting this layout's authorization logic.
-  return (
-      <div className="flex min-h-screen flex-col">
-        <SidebarNav isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />
-        <div className="flex flex-1 flex-col md:pl-64">
-          <HeaderContent toggleMobileMenu={toggleMobileMenu} />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="mx-auto max-w-full">
-              {children}
-            </div>
-          </main>
+  // Se a verificação terminou e o usuário está autorizado, renderiza a aplicação.
+  if (isAuthorized) {
+    return (
+        <div className="flex min-h-screen flex-col">
+          <SidebarNav isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />
+          <div className="flex flex-1 flex-col md:pl-64">
+            <HeaderContent toggleMobileMenu={toggleMobileMenu} />
+            <main className="flex-1 p-4 sm:p-6 lg:p-8">
+              <div className="mx-auto max-w-full">
+                {children}
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
+    );
+  }
+
+  // Se a verificação terminou e o usuário não está autorizado,
+  // exibe o loader enquanto o redirecionamento (iniciado no useEffect) acontece.
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+    </div>
   );
 }
