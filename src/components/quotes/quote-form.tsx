@@ -164,39 +164,19 @@ Sistema de Controle de Vendas ENGEAR
 
 
   const onSubmit = async (data: QuoteFormData) => {
-    console.log('QuoteForm onSubmit triggered. isEffectivelyReadOnly:', isEffectivelyReadOnly, 'globalSelectedSeller:', globalSelectedSeller);
-    console.log('Form values (data from react-hook-form):', data);
-    console.log('Form validation errors (from react-hook-form state):', form.formState.errors);
-
-    if (isEffectivelyReadOnly && !editMode) { 
+    if (isEffectivelyReadOnly) { 
        toast({
         title: "Ação Não Permitida",
-        description: "Selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho para criar uma nova proposta.",
+        description: "Selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho para criar ou modificar uma proposta.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
       return;
-    }
-
-    if (!editMode) {
-      if (!SELLERS.includes(globalSelectedSeller as Seller)) {
-        console.error('Invalid global seller for new quote:', globalSelectedSeller);
-        toast({
-          title: "Erro de Validação do Vendedor",
-          description: "Para criar uma nova proposta, por favor, selecione SERGIO ou RODRIGO no seletor global do cabeçalho.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false); 
-        return;
-      }
     }
     
     if (!data.proposalDate) {
         toast({ title: "Erro de Validação", description: "Data da proposta é obrigatória.", variant: "destructive" });
-        setIsSubmitting(false);
         return;
     }
-
 
     setIsSubmitting(true);
     let sellerForPayload: Seller;
@@ -205,31 +185,26 @@ Sistema de Controle de Vendas ENGEAR
     } else if (SELLERS.includes(globalSelectedSeller as Seller)) {
         sellerForPayload = globalSelectedSeller as Seller;
     } else {
-        console.error('onSubmit: Cannot determine seller for new quote. Global seller:', globalSelectedSeller);
         toast({ title: "Erro Interno", description: "Não foi possível determinar o vendedor para a nova proposta.", variant: "destructive" });
         setIsSubmitting(false);
         return;
     }
-    console.log('Seller for payload:', sellerForPayload);
-
 
     const quotePayload = {
       ...data,
-      seller: sellerForPayload, 
       proposalDate: format(data.proposalDate, 'yyyy-MM-dd'), 
       validityDate: data.validityDate ? format(data.validityDate, 'yyyy-MM-dd') : undefined,
       proposedValue: Number(data.proposedValue) || 0,
       sendProposalNotification: data.sendProposalNotification || false, 
     };
-    console.log('Quote payload to be sent to context:', quotePayload);
 
     try {
       let savedQuote: Quote | undefined;
       if (editMode && quoteToEdit) {
-        savedQuote = updateQuote(quoteToEdit.id, quotePayload as Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'>> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean });
+        savedQuote = await updateQuote(quoteToEdit.id, quotePayload as any);
         toast({ title: "Sucesso!", description: "Proposta atualizada com sucesso." });
       } else {
-        savedQuote = addQuote(quotePayload as Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean });
+        savedQuote = await addQuote(quotePayload as any);
         toast({ title: "Sucesso!", description: "Nova proposta registrada com sucesso." });
       }
       

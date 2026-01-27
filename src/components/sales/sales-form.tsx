@@ -23,7 +23,7 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import type { Sale, Quote } from '@/lib/types';
+import type { Sale } from '@/lib/types';
 
 interface SalesFormProps {
   showReadOnlyAlert?: boolean;
@@ -229,20 +229,16 @@ Sistema de Controle de Vendas ENGEAR
     };
 
     try {
-      let newSaleId: string | undefined;
       if (editSaleId) {
-        const updatedSale = updateSale(editSaleId, salePayload);
-        if (updatedSale) {
-          toast({ title: "Sucesso!", description: "Venda atualizada com sucesso." });
-        }
+        await updateSale(editSaleId, salePayload);
+        toast({ title: "Sucesso!", description: "Venda atualizada com sucesso." });
       } else {
-        const newSale = addSale(salePayload);
-        newSaleId = newSale.id;
+        const newSale = await addSale(salePayload);
         toast({ title: "Sucesso!", description: "Nova venda registrada com sucesso." });
         triggerEmailNotification(newSale);
         
         if (fromQuoteId) {
-            updateQuoteStatus(fromQuoteId, { status: "Aceita" });
+            await updateQuoteStatus(fromQuoteId, { status: "Aceita" });
             toast({ title: "Proposta Atualizada", description: "O status da proposta original foi alterado para 'Aceita'." });
         }
       }

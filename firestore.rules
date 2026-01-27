@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Rules for 'sales' collection
+    match /sales/{saleId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Rules for 'quotes' collection
+    match /quotes/{quoteId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Rules for 'settings' collection
+    match /settings/{docId} {
+       allow read, write: if isSignedIn();
+    }
+  }
+}

@@ -119,7 +119,7 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
                            <div className="flex items-center space-x-1">
                              <Checkbox
                                 id={`followUpDone-${quote.id}`}
-                                checked={quote.followUpDone}
+                                checked={!!quote.followUpDone}
                                 onCheckedChange={() => toggleFollowUpDone(quote.id)}
                                 disabled={disabledActions}
                                 aria-label="Follow-up realizado"
@@ -162,4 +162,3 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
     </ScrollArea>
   );
 }
-

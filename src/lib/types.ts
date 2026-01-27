@@ -1,6 +1,7 @@
 
 import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption, FollowUpDaysOptionValue } from './constants';
 import type { ALL_SELLERS_OPTION } from './constants'; // Import específico
+import type { User as FirebaseUser } from 'firebase/auth';
 
 
 export interface Sale {
@@ -19,18 +20,11 @@ export interface Sale {
   updatedAt?: number; // timestamp
 }
 
-export interface User {
-  username: string;
-}
+export type User = FirebaseUser;
 
-// AuthState simplificado para sempre autenticado (ou acesso via senha única)
-export type AuthState = {
-  user: User; // Usuário fixo para exibição no header
-};
-
-// AuthContextType simplificado
-export type AuthContextType = AuthState & {
-  loading: boolean; // Pode ser usado para alguma carga inicial de dados do usuário se necessário
+export type AuthContextType = {
+  user: User | null;
+  loading: boolean;
 };
 
 export type SalesFilters = {
@@ -43,10 +37,10 @@ export type SalesContextType = {
   filteredSales: Sale[];
   selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
   setSelectedSeller: (seller: Seller | typeof ALL_SELLERS_OPTION) => void;
-  addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>) => Sale;
-  addBulkSales: (newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>[]) => void;
-  updateSale: (id: string, saleData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => Sale | undefined;
-  deleteSale: (id: string) => void;
+  addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Sale>;
+  addBulkSales: (newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
+  updateSale: (id: string, saleData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<Sale | undefined>;
+  deleteSale: (id: string) => Promise<void>;
   getSaleById: (id: string) => Sale | undefined;
   setFilters: (filters: Partial<SalesFilters>) => void;
   filters: SalesFilters;
@@ -107,10 +101,10 @@ export type QuotesContextType = {
   setDashboardFilters: (filters: Partial<QuoteDashboardFilters>) => void;
   dashboardFilters: QuoteDashboardFilters;
   
-  addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpDone'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }) => Quote;
-  updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'>> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean, followUpDone?: boolean }) => Quote | undefined;
-  deleteQuote: (id: string) => void;
+  addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpDone'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }) => Promise<Quote>;
+  updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'>> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean, followUpDone?: boolean }) => Promise<Quote | undefined>;
+  deleteQuote: (id: string) => Promise<void>;
   getQuoteById: (id: string) => Quote | undefined;
-  toggleFollowUpDone: (quoteId: string) => void; 
+  toggleFollowUpDone: (quoteId: string) => Promise<void>; 
   loadingQuotes: boolean;
 };

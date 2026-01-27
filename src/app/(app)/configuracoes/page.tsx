@@ -1,8 +1,9 @@
-
 // src/app/(app)/configuracoes/page.tsx
 "use client";
 import { useState, useEffect } from 'react';
 import { useSettings } from '@/hooks/use-settings';
+import { useSales } from '@/hooks/use-sales'; // Import useSales
+import { useQuotes } from '@/hooks/use-quotes'; // Import useQuotes
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -12,23 +13,22 @@ import { useToast } from '@/hooks/use-toast';
 import { Settings, Mail, Save, DatabaseZap, Trash2, FileText } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { LOCAL_STORAGE_SALES_KEY, LOCAL_STORAGE_QUOTES_KEY } from '@/lib/constants';
 
 export default function ConfiguracoesPage() {
   const { settings, updateSettings, loadingSettings } = useSettings();
+  const { sales, deleteSale } = useSales(); // Get all sales and delete function
+  const { quotes, deleteQuote } = useQuotes(); // Get all quotes and delete function
   const { toast } = useToast();
 
   const [enableSalesNotifications, setEnableSalesNotifications] = useState(false);
   const [salesEmailList, setSalesEmailList] = useState('');
   const [enableProposalNotifications, setEnableProposalNotifications] = useState(false);
-  // const [proposalEmailList, setProposalEmailList] = useState(''); // Futuro: se emails de proposta forem configuráveis
 
   useEffect(() => {
     if (!loadingSettings) {
       setEnableSalesNotifications(settings.enableEmailNotifications);
       setSalesEmailList(settings.notificationEmails.join(', '));
       setEnableProposalNotifications(settings.enableProposalEmailNotifications);
-      // setProposalEmailList(settings.proposalNotificationEmails.join(', ')); // Futuro
     }
   }, [settings, loadingSettings]);
 
@@ -38,13 +38,10 @@ export default function ConfiguracoesPage() {
       .map(email => email.trim())
       .filter(email => email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
 
-    // const proposalEmails = proposalEmailList... // Futuro
-
     updateSettings({
       enableEmailNotifications: enableSalesNotifications,
       notificationEmails: salesEmails,
       enableProposalEmailNotifications: enableProposalNotifications,
-      // proposalNotificationEmails: proposalEmails, // Futuro
     });
 
     toast({
@@ -53,16 +50,34 @@ export default function ConfiguracoesPage() {
     });
   };
 
-  const handleClearData = (key: string, type: 'Vendas' | 'Propostas') => {
-    localStorage.removeItem(key);
-    toast({
-      title: `Dados de ${type} Limpos`,
-      description: `Todos os dados de ${type} armazenados localmente foram removidos. A página será recarregada.`,
-    });
-    setTimeout(() => {
-      window.location.reload();
-    }, 1500); // Pequeno delay para o toast ser lido
+  const handleClearData = async (type: 'Vendas' | 'Propostas') => {
+    try {
+      if (type === 'Vendas') {
+        // Use Promise.all to delete all sales concurrently
+        await Promise.all(sales.map(sale => deleteSale(sale.id)));
+        toast({
+          title: `Dados de Vendas Limpos`,
+          description: `Todos os dados de Vendas armazenados no Firebase foram removidos.`,
+        });
+      } else if (type === 'Propostas') {
+        // Use Promise.all to delete all quotes concurrently
+        await Promise.all(quotes.map(quote => deleteQuote(quote.id)));
+        toast({
+          title: `Dados de Propostas Limpos`,
+          description: `Todos os dados de Propostas armazenados no Firebase foram removidos.`,
+        });
+      }
+    } catch (error) {
+       toast({
+        title: `Erro ao Limpar Dados`,
+        description: `Não foi possível remover os dados de ${type}. Tente novamente.`,
+        variant: 'destructive'
+      });
+      console.error(`Error clearing ${type} data:`, error);
+    }
+    // No longer need to reload the page as useCollection will update automatically
   };
+
 
   if (loadingSettings) {
     return (
@@ -164,7 +179,7 @@ export default function ConfiguracoesPage() {
         <AccordionItem value="item-2">
           <AccordionTrigger className="text-xl font-semibold">
             <div className="flex items-center">
-                <DatabaseZap className="mr-2 h-5 w-5 text-destructive" /> Gerenciamento de Dados Locais
+                <DatabaseZap className="mr-2 h-5 w-5 text-destructive" /> Gerenciamento de Dados do Banco
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -172,7 +187,7 @@ export default function ConfiguracoesPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Limpeza de Dados</CardTitle>
                 <CardDescription>
-                  Estas ações removerão permanentemente os dados armazenados no seu navegador. Use com cautela.
+                  Estas ações removerão permanentemente todos os dados do banco de dados (Firestore). Use com extrema cautela.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -180,19 +195,19 @@ export default function ConfiguracoesPage() {
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" className="w-full sm:w-auto">
-                        <Trash2 className="mr-2 h-4 w-4" /> Limpar Dados de Vendas
+                        <Trash2 className="mr-2 h-4 w-4" /> Limpar Todas as Vendas
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Confirmar Limpeza</AlertDialogTitle>
+                        <AlertDialogTitle>Confirmar Limpeza Total</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Tem certeza que deseja excluir todos os dados de VENDAS armazenados localmente? Esta ação não pode ser desfeita.
+                          Tem certeza que deseja excluir TODOS os dados de VENDAS do banco de dados? Esta ação é irreversível e afetará todos os usuários.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleClearData(LOCAL_STORAGE_SALES_KEY, 'Vendas')} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction onClick={() => handleClearData('Vendas')} className="bg-destructive hover:bg-destructive/90">
                           Confirmar Limpeza de Vendas
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -202,19 +217,19 @@ export default function ConfiguracoesPage() {
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                        <Button variant="destructive" className="w-full sm:w-auto">
-                        <Trash2 className="mr-2 h-4 w-4" /> Limpar Dados de Propostas
+                        <Trash2 className="mr-2 h-4 w-4" /> Limpar Todas as Propostas
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Confirmar Limpeza</AlertDialogTitle>
+                        <AlertDialogTitle>Confirmar Limpeza Total</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Tem certeza que deseja excluir todos os dados de PROPOSTAS armazenados localmente? Esta ação não pode ser desfeita.
+                           Tem certeza que deseja excluir TODOS os dados de PROPOSTAS do banco de dados? Esta ação é irreversível e afetará todos os usuários.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleClearData(LOCAL_STORAGE_QUOTES_KEY, 'Propostas')} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction onClick={() => handleClearData('Propostas')} className="bg-destructive hover:bg-destructive/90">
                            Confirmar Limpeza de Propostas
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -229,4 +244,3 @@ export default function ConfiguracoesPage() {
     </div>
   );
 }
-

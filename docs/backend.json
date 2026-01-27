@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "Sale": {
+      "title": "Sale",
+      "description": "Represents a single sale record.",
+      "type": "object",
+      "properties": {
+        "seller": { "type": "string", "enum": ["SERGIO", "RODRIGO"] },
+        "date": { "type": "string", "format": "date" },
+        "company": { "type": "string", "enum": ["ENGEAR", "CLIMAZONE"] },
+        "project": { "type": "string" },
+        "os": { "type": "string" },
+        "area": { "type": "string", "enum": ["INST. AC", "MANUT. AC", "PRÉ", "CI", "GÁS", "SAS", "AQG", "EXAUST", "LOCAÇÃO"] },
+        "clientService": { "type": "string" },
+        "salesValue": { "type": "number" },
+        "status": { "type": "string", "enum": ["Á INICAR", "EM ANDAMENTO", "FINALIZADO", "CANCELADO"] },
+        "payment": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["seller", "date", "company", "project", "area", "clientService", "salesValue", "status", "payment", "createdAt"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "Represents a single quote record.",
+      "type": "object",
+      "properties": {
+        "seller": { "type": "string", "enum": ["SERGIO", "RODRIGO"] },
+        "clientName": { "type": "string" },
+        "proposalDate": { "type": "string", "format": "date" },
+        "validityDate": { "type": "string", "format": "date" },
+        "company": { "type": "string", "enum": ["ENGEAR", "CLIMAZONE"] },
+        "area": { "type": "string", "enum": ["INST. AC", "MANUT. AC", "PRÉ", "CI", "GÁS", "SAS", "AQG", "EXAUST", "LOCAÇÃO"] },
+        "contactSource": { "type": "string", "enum": ["E-mail", "Telefone", "Presencial", "Indicação", "Website", "Outro"] },
+        "description": { "type": "string" },
+        "proposedValue": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pendente", "Enviada", "Em Negociação", "Aceita", "Recusada", "Cancelada"] },
+        "notes": { "type": "string" },
+        "followUpDate": { "type": "string", "format": "date" },
+        "followUpDone": { "type": "boolean" },
+        "sendProposalNotification": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["seller", "clientName", "proposalDate", "company", "area", "contactSource", "description", "proposedValue", "status", "createdAt"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Application settings.",
+      "type": "object",
+      "properties": {
+        "enableEmailNotifications": { "type": "boolean" },
+        "notificationEmails": { "type": "array", "items": { "type": "string" } },
+        "enableProposalEmailNotifications": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["anonymous"]
+  },
+  "firestore": {
+    "/sales/{saleId}": {
+      "schema": { "$ref": "#/entities/Sale" },
+      "description": "Collection of sales documents."
+    },
+    "/quotes/{quoteId}": {
+      "schema": { "$ref": "#/entities/Quote" },
+      "description": "Collection of quote documents."
+    },
+    "/settings/{settingId}": {
+        "schema": { "$ref": "#/entities/Setting" },
+        "description": "Application settings documents."
+    }
+  }
+}

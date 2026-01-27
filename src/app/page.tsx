@@ -2,20 +2,29 @@
 "use client";
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
 export default function HomePage() {
   const router = useRouter();
+  const { user, loading } = useUser();
 
   useEffect(() => {
-    // Redireciona diretamente para a página de acesso
-    router.replace('/access');
-  }, [router]);
+    if (!loading) {
+      if (user) {
+        router.replace('/dashboard');
+      } else {
+        // Se a autenticação anônima falhar ou não houver usuário,
+        // ele permanecerá aqui. Poderíamos redirecionar para uma página de erro
+        // mas por enquanto, a experiência é o loader.
+      }
+    }
+  }, [user, loading, router]);
 
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      <p className="ml-4 text-lg text-foreground">Carregando aplicação...</p>
+      <p className="ml-4 text-lg text-foreground">Carregando e autenticando...</p>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // src/components/layout/header-content.tsx
 "use client";
-import { useAuth } from '@/hooks/use-auth';
+import { useUser } from '@/firebase';
 import SellerSelector from '@/components/common/seller-selector';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,20 +22,20 @@ interface HeaderContentProps {
 }
 
 export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) {
-  const { user } = useAuth();
+  const { user } = useUser();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
-  const getInitials = (name: string | undefined) => {
-    if (!name) return 'U';
+  const getInitials = (name: string | undefined | null) => {
+    if (!name) return 'AN'; // Anônimo
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Usar o nome de usuário padrão se o contexto não fornecer um usuário
-  const displayUser = user || { username: DEFAULT_LOGIN_CREDENTIALS.username };
-
+  // O usuário agora vem do Firebase Auth
+  const displayName = user?.isAnonymous ? "Usuário Anônimo" : user?.displayName || "Usuário";
+  const displayEmail = user?.isAnonymous ? `ID: ${user.uid.substring(0,6)}...` : user?.email;
 
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-white dark:bg-white">
@@ -64,13 +64,13 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
             </Button>
           )}
 
-          {displayUser && (
+          {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
                   <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {getInitials(displayUser.username)}
+                      {getInitials(user.displayName)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -78,9 +78,9 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{displayUser.username}</p>
+                    <p className="text-sm font-medium leading-none">{displayName}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {EMAIL_RECOVERY_ADDRESS.startsWith('pastaengear') ? 'Administrador' : 'Usuário'}
+                      {displayEmail}
                     </p>
                   </div>
                 </DropdownMenuLabel>
