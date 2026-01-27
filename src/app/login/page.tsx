@@ -24,13 +24,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // If user is already logged in and verified, redirect to dashboard
-    if (!userLoading && user) {
-      if (user.emailVerified) {
+    // If user is already logged in and their email is verified, redirect to dashboard
+    if (!userLoading && user && user.emailVerified) {
         router.replace('/dashboard');
-      } else {
-        router.replace('/auth/verify-email');
-      }
     }
   }, [user, userLoading, router]);
 
@@ -86,7 +82,8 @@ export default function LoginPage() {
   };
   
   // While verifying if the user is already logged in from a previous session, show a loader.
-  if (userLoading || user) {
+  // But if the user exists and is not verified, we should still show the login page, so don't show a loader in that case.
+  if (userLoading || (user && user.emailVerified)) {
      return (
         <div className="flex h-screen items-center justify-center bg-background">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
