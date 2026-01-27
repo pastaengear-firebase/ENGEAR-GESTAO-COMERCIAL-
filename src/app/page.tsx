@@ -21,11 +21,11 @@ export default function RootPage() {
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    // If a user already has access, redirect them to the dashboard
+    // If a user already has access from this session, send them to the dashboard.
     if (sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true') {
       router.replace('/dashboard');
     } else {
-      // Otherwise, stop verifying and show the login form
+      // Otherwise, we're not verifying anymore, show the login form.
       setIsVerifying(false);
     }
   }, [router]);
@@ -60,11 +60,6 @@ export default function RootPage() {
       // Grant access for this browser session
       sessionStorage.setItem(APP_ACCESS_GRANTED_KEY, 'true');
 
-      toast({
-        title: "Acesso Autorizado",
-        description: "Bem-vindo ao sistema de controle de vendas.",
-      });
-
       // Redirect to the dashboard upon success
       router.replace('/dashboard');
     } catch (error) {
@@ -79,7 +74,7 @@ export default function RootPage() {
     }
   };
   
-  // Show a loader while verifying the session to prevent a "flash" of the login form
+  // While verifying if the user is already logged in from a previous session, show a loader.
   if (isVerifying) {
      return (
         <div className="flex h-screen items-center justify-center bg-background">

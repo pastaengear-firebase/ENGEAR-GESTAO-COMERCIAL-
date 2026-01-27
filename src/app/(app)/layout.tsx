@@ -9,38 +9,29 @@ import { Loader2 } from 'lucide-react';
 import { APP_ACCESS_GRANTED_KEY } from '@/lib/constants';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // This check is the single source of truth for authorization.
+    // This effect runs only on the client, after the initial render.
     const accessGranted = sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true';
-
-    if (!accessGranted) {
-      // If the password was never entered, redirect to the login page (the root).
-      router.replace('/');
-    } else {
-      // If the password was entered, authorize the view.
+    if (accessGranted) {
+      // If access is granted, allow rendering the children.
       setIsAuthorized(true);
+    } else {
+      // If not, redirect to the login page.
+      router.replace('/');
     }
-    // Mark verification as complete.
-    setIsVerifying(false);
   }, [router]);
 
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
-
-  // While verifying authorization, display a full-screen loader.
-  // This prevents protected content from flashing briefly before redirection.
-  if (isVerifying) {
+  // While not authorized, render a full-screen loader.
+  // This prevents any "flash" of the protected content (children)
+  // because the component returns here before reaching the children.
+  if (!isAuthorized) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -49,28 +40,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If verification is done and the user is authorized, render the application.
-  if (isAuthorized) {
-    return (
-        <div className="flex min-h-screen flex-col">
-          <SidebarNav isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />
-          <div className="flex flex-1 flex-col md:pl-64">
-            <HeaderContent toggleMobileMenu={toggleMobileMenu} />
-            <main className="flex-1 p-4 sm:p-6 lg:p-8">
-              <div className="mx-auto max-w-full">
-                {children}
-              </div>
-            </main>
-          </div>
-        </div>
-    );
-  }
-
-  // If verification is done and the user is not authorized,
-  // show the loader while the redirection (initiated in useEffect) happens.
+  // Only once authorization is confirmed, render the main app layout.
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-background">
-      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+    <div className="flex min-h-screen flex-col">
+      <SidebarNav isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />
+      <div className="flex flex-1 flex-col md:pl-64">
+        <HeaderContent toggleMobileMenu={toggleMobileMenu} />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-full">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
