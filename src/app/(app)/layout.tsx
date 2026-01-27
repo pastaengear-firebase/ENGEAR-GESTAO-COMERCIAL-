@@ -11,19 +11,20 @@ import { APP_ACCESS_GRANTED_KEY } from '@/lib/constants';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, loading } = useUser();
+  const { loading: userLoading } = useUser();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    // This check must run on the client after hydration
+    // This check must run on the client after hydration.
+    // It is the single source of truth for whether the user can see the app content.
     const accessGranted = sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true';
 
     if (!accessGranted) {
       // If the password was never entered, redirect to the root login page.
       router.replace('/');
     } else {
-      // If the password was entered, trust that and authorize the view.
+      // If the password was entered, authorize the view.
       setIsAuthorized(true);
     }
   }, [router]);
@@ -37,17 +38,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsMobileMenuOpen(false);
   };
 
-  // While checking authorization, show a loader. This prevents content flashing.
-  if (!isAuthorized || loading) {
+  // While checking authorization or waiting for Firebase user, show a loader.
+  // This prevents content flashing if the user is unauthorized.
+  if (!isAuthorized || userLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg">Autenticando acesso seguro...</p>
+        <p className="ml-4 text-lg">Carregando aplicação...</p>
       </div>
     );
   }
 
-  // Render children only when authorized
+  // Render children only when authorized.
   return (
       <div className="flex min-h-screen flex-col">
         <SidebarNav isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />
