@@ -19,17 +19,20 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(true); // Start with verifying state
+  const [isVerifying, setIsVerifying] = useState(true);
 
   // This effect acts as the main gatekeeper.
   useEffect(() => {
-    // If the access key is present in the session, the user is already "logged in".
-    if (sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true') {
-      // Send them to the dashboard and stop verification.
-      router.replace('/dashboard');
-    } else {
-      // If no key, stop verifying and show the login form.
-      setIsVerifying(false);
+    // This check must run on the client after hydration
+    if (typeof window !== 'undefined') {
+      const accessGranted = sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true';
+      if (accessGranted) {
+        // If already granted, just go to the dashboard.
+        router.replace('/dashboard');
+      } else {
+        // If not granted, stop verifying and show the login form.
+        setIsVerifying(false);
+      }
     }
   }, [router]);
 
@@ -55,14 +58,16 @@ export default function LoginPage() {
 
     setIsLoggingIn(true);
     try {
-      // 1. Set the session key to grant access for this session
-      sessionStorage.setItem(APP_ACCESS_GRANTED_KEY, 'true');
-
-      // 2. Ensure we have a Firebase anonymous user for database operations.
+      // 1. Ensure we have a Firebase anonymous user for database operations.
+      // This is crucial for the database rules to work correctly.
       if (!user) {
         await signInAnonymously(auth);
       }
       
+      // 2. Set the session key to grant access for this session
+      // This happens AFTER the anonymous sign-in is confirmed.
+      sessionStorage.setItem(APP_ACCESS_GRANTED_KEY, 'true');
+
       toast({
         title: "Acesso Autorizado",
         description: "Bem-vindo ao sistema de controle de vendas.",
@@ -73,10 +78,10 @@ export default function LoginPage() {
 
     } catch (error) {
       console.error("Erro no login anônimo:", error);
-      sessionStorage.removeItem(APP_ACCESS_GRANTED_KEY);
+      sessionStorage.removeItem(APP_ACCESS_GRANTED_KEY); // Clean up on failure
       toast({
         title: "Erro de Conexão",
-        description: "Não foi possível estabelecer uma sessão segura. Verifique as configurações do Firebase.",
+        description: "Não foi possível estabelecer uma sessão segura. Tente novamente.",
         variant: "destructive",
       });
     } finally {

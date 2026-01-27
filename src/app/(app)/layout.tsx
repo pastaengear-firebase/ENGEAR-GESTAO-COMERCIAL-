@@ -13,25 +13,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, loading } = useUser();
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false); // New state
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     // This check must run on the client after hydration
     const accessGranted = sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true';
-    
-    // Wait until Firebase auth state is resolved
-    if (loading) {
-      return; 
-    }
 
-    if (!accessGranted || !user) {
-      // If either check fails, redirect to login
+    if (!accessGranted) {
+      // If the password was never entered, redirect to login immediately.
       router.replace('/login');
     } else {
-      // Only if both checks pass, authorize the user to see the content
+      // If the password was entered, trust that and authorize the view.
+      // The Firebase user session will catch up. This prevents the redirect loop.
       setIsAuthorized(true);
     }
-  }, [user, loading, router]);
+  }, [router]);
 
 
   const toggleMobileMenu = () => {
@@ -43,7 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   // While checking authorization, show a loader. This prevents content flashing.
-  if (!isAuthorized) {
+  if (!isAuthorized || loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
