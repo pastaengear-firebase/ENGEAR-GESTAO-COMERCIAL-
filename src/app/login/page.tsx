@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import Logo from '@/components/common/logo';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { DEFAULT_ACCESS_PASSWORD } from '@/lib/constants';
+import { DEFAULT_ACCESS_PASSWORD, APP_ACCESS_GRANTED_KEY } from '@/lib/constants';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -20,12 +20,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // If the user is already logged in (e.g. session persisted), redirect to dashboard
+  // If user hits login page but has a valid session key, send them to dashboard
   useEffect(() => {
-    if (!userLoading && user) {
+    if (sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true') {
       router.replace('/dashboard');
     }
-  }, [user, userLoading, router]);
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,14 +49,27 @@ export default function LoginPage() {
 
     setIsLoggingIn(true);
     try {
-      await signInAnonymously(auth);
+      // 1. Set the session key to grant access for this session
+      sessionStorage.setItem(APP_ACCESS_GRANTED_KEY, 'true');
+
+      // 2. Ensure we have a Firebase anonymous user for database operations.
+      // If a user doesn't exist, sign in. If one already does, we can reuse it.
+      if (!user) {
+        await signInAnonymously(auth);
+      }
+      
       toast({
         title: "Acesso Autorizado",
         description: "Bem-vindo ao sistema de controle de vendas.",
       });
-      // The useEffect hook above will handle the redirection to /dashboard
+
+      // 3. Redirect to the dashboard
+      router.replace('/dashboard');
+
     } catch (error) {
       console.error("Erro no login anônimo:", error);
+      // If anything fails, remove the key to prevent being in a weird state
+      sessionStorage.removeItem(APP_ACCESS_GRANTED_KEY);
       toast({
         title: "Erro de Conexão",
         description: "Não foi possível estabelecer uma sessão segura. Verifique as configurações do Firebase.",
@@ -65,18 +78,10 @@ export default function LoginPage() {
       setIsLoggingIn(false);
     }
   };
+  
+  // Do not show a loader here. The purpose of this page is to ask for a password.
+  // The protected layout will handle showing a loader while verifying the session.
 
-  // While checking auth state or if user is already logged in, show loader
-  if (userLoading || user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg">Verificando sessão...</p>
-      </div>
-    );
-  }
-
-  // If no user, show login page
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <div className="w-full max-w-sm space-y-8 rounded-xl bg-white dark:bg-gray-800 p-8 shadow-lg text-center">
@@ -104,12 +109,12 @@ export default function LoginPage() {
           <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
-            disabled={isLoggingIn}
+            disabled={isLoggingIn || userLoading}
           >
-            {isLoggingIn ? (
+            {isLoggingIn || userLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            {isLoggingIn ? 'Entrando...' : 'Entrar'}
+            {isLoggingIn || userLoading ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
         <p className="text-xs text-muted-foreground pt-4">

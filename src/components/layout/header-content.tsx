@@ -17,6 +17,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
+import { APP_ACCESS_GRANTED_KEY } from '@/lib/constants';
 
 interface HeaderContentProps {
   toggleMobileMenu: () => void;
@@ -37,10 +38,14 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
       return;
     }
     try {
+      // Important: Remove the session key first.
+      sessionStorage.removeItem(APP_ACCESS_GRANTED_KEY);
+      
       await signOut(auth);
       toast({ title: "Sucesso", description: "Você foi desconectado com segurança." });
-      // O hook useUser em /login cuidará do redirecionamento
-      window.location.href = '/login'; // Força o redirecionamento
+
+      // Force a hard reload to the login page to clear all state.
+      window.location.href = '/login';
     } catch (error) {
       console.error("Logout failed:", error);
       toast({ title: "Erro ao Sair", description: "Não foi possível desconectar. Tente novamente.", variant: "destructive" });

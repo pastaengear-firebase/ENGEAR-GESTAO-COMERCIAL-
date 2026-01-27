@@ -7,16 +7,29 @@ import HeaderContent from '@/components/layout/header-content';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { APP_ACCESS_GRANTED_KEY } from '@/lib/constants';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, loading } = useUser();
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false); // New state
 
   useEffect(() => {
-    // Se não estiver carregando e não houver usuário, redirecione para o login
-    if (!loading && !user) {
+    // This check must run on the client after hydration
+    const accessGranted = sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true';
+    
+    // Wait until Firebase auth state is resolved
+    if (loading) {
+      return; 
+    }
+
+    if (!accessGranted || !user) {
+      // If either check fails, redirect to login
       router.replace('/login');
+    } else {
+      // Only if both checks pass, authorize the user to see the content
+      setIsAuthorized(true);
     }
   }, [user, loading, router]);
 
@@ -29,8 +42,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsMobileMenuOpen(false);
   };
 
-  // Enquanto carrega ou se não há usuário, mostra um loader em tela cheia
-  if (loading || !user) {
+  // While checking authorization, show a loader. This prevents content flashing.
+  if (!isAuthorized) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -39,6 +52,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Render children only when authorized
   return (
       <div className="flex min-h-screen flex-col">
         <SidebarNav isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />
