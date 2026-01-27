@@ -1,2 +1,2 @@
-// This file is intentionally left empty to resolve a duplicate configuration issue.
-// The primary next.config.ts in the project root is being used instead.
+// Este arquivo foi intencionalmente esvaziado para remover uma configuração duplicada que estava causando problemas de compilação.
+// A configuração principal do Next.js está no arquivo next.config.ts na raiz do projeto.
