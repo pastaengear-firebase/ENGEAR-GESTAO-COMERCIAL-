@@ -1,2 +1,6 @@
-// This file is intentionally left empty to remove AI-related functionality
-// that required a paid Firebase plan.
+// src/components/sales/ai-suggestions.tsx
+// This file now exports a null component to ensure build stability.
+// The AI functionality has been removed to allow deployment on the free Spark plan.
+export default function AiSuggestions() {
+  return null;
+}
