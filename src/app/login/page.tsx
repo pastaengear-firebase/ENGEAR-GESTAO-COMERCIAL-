@@ -19,11 +19,17 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true); // Start with verifying state
 
-  // If user hits login page but has a valid session key, send them to dashboard
+  // This effect acts as the main gatekeeper.
   useEffect(() => {
+    // If the access key is present in the session, the user is already "logged in".
     if (sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true') {
+      // Send them to the dashboard and stop verification.
       router.replace('/dashboard');
+    } else {
+      // If no key, stop verifying and show the login form.
+      setIsVerifying(false);
     }
   }, [router]);
 
@@ -53,7 +59,6 @@ export default function LoginPage() {
       sessionStorage.setItem(APP_ACCESS_GRANTED_KEY, 'true');
 
       // 2. Ensure we have a Firebase anonymous user for database operations.
-      // If a user doesn't exist, sign in. If one already does, we can reuse it.
       if (!user) {
         await signInAnonymously(auth);
       }
@@ -68,19 +73,27 @@ export default function LoginPage() {
 
     } catch (error) {
       console.error("Erro no login anônimo:", error);
-      // If anything fails, remove the key to prevent being in a weird state
       sessionStorage.removeItem(APP_ACCESS_GRANTED_KEY);
       toast({
         title: "Erro de Conexão",
         description: "Não foi possível estabelecer uma sessão segura. Verifique as configurações do Firebase.",
         variant: "destructive",
       });
-      setIsLoggingIn(false);
+    } finally {
+        setIsLoggingIn(false);
     }
   };
   
-  // Do not show a loader here. The purpose of this page is to ask for a password.
-  // The protected layout will handle showing a loader while verifying the session.
+  // While verifying the session, show a full-page loader.
+  if (isVerifying) {
+     return (
+        <div className="flex h-screen items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="ml-4 text-lg text-foreground">Verificando sessão...</p>
+        </div>
+     );
+  }
+
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
@@ -105,6 +118,7 @@ export default function LoginPage() {
             placeholder="Senha de Acesso"
             required
             className="text-center"
+            disabled={isLoggingIn || userLoading}
           />
           <Button
             type="submit"
