@@ -1,1 +1,1 @@
-// Este arquivo foi removido para evitar conflitos de configuração.
+// This file is intentionally left blank to prevent build errors.
