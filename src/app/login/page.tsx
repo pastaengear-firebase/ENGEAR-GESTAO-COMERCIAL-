@@ -23,10 +23,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Lógica de redirecionamento se o usuário já estiver logado e verificado
   useEffect(() => {
-    // Only redirect away from the login page if the user is already fully authenticated and verified.
-    // Otherwise, just show the login form and let the user attempt to log in.
-    // The main app layout guard will handle protection for other routes.
     if (!userLoading && user && user.emailVerified) {
         router.replace('/dashboard');
     }
@@ -56,18 +54,18 @@ export default function LoginPage() {
           description: "Por favor, verifique seu e-mail antes de fazer login.",
           variant: "destructive",
         });
-        await auth.signOut(); // Sign out user until they are verified
+        // O usuário já será redirecionado para a página de verificação pelo guardião principal,
+        // mas desconectá-lo aqui é uma boa prática para evitar estado inconsistente.
+        await auth.signOut();
         setIsLoading(false);
         router.push('/auth/verify-email');
         return;
       }
       
-      // On successful login, the main layout's useEffect will handle the redirect.
       toast({
         title: "Login bem-sucedido!",
         description: "Redirecionando para o dashboard...",
       });
-      // A small delay might be needed if the state propagation is slow, but usually AppLayout handles it.
        router.replace('/dashboard');
 
 
@@ -86,8 +84,9 @@ export default function LoginPage() {
     }
   };
   
-  // Show a loader ONLY while the auth state is being determined.
-  if (userLoading) {
+  // Exibe um loader de página inteira enquanto verifica o estado de autenticação
+  // ou se o usuário já está sendo redirecionado.
+  if (userLoading || (user && user.emailVerified)) {
      return (
         <div className="flex h-screen items-center justify-center bg-background">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -95,9 +94,7 @@ export default function LoginPage() {
      );
   }
 
-  // If the user is already authenticated, the useEffect will have redirected them.
-  // Otherwise, render the login form. This covers the case of no user, or an unverified user,
-  // allowing them to see the login page as intended.
+  // Renderiza o formulário de login se o usuário não estiver logado ou não estiver verificado.
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <div className="w-full max-w-sm space-y-6 rounded-xl bg-white dark:bg-gray-800 p-8 shadow-lg">

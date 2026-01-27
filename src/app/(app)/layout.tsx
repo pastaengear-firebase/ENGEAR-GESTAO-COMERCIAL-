@@ -14,11 +14,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      // If loading is finished and there's no user, redirect to login
+    if (loading) return; // Aguarda o fim do carregamento
+
+    if (!user) {
       router.replace('/login');
-    } else if (!loading && user && !user.emailVerified) {
-      // If user exists but email is not verified, redirect to verification page
+    } else if (!user.emailVerified) {
       router.replace('/auth/verify-email');
     }
   }, [user, loading, router]);
@@ -26,8 +26,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  // While loading or if no user, show a loading screen or nothing
-  // This prevents the "flash" of protected content
+  // Enquanto carrega ou se o usuário não for válido, mostra uma tela de carregamento de página inteira.
+  // Isso impede o "flash" do conteúdo protegido.
   if (loading || !user || !user.emailVerified) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -36,7 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Only once user is confirmed and verified, render the main app layout.
+  // Apenas quando o usuário estiver totalmente autenticado e verificado, renderiza o layout principal.
   return (
     <div className="flex min-h-screen flex-col">
       <SidebarNav isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />
