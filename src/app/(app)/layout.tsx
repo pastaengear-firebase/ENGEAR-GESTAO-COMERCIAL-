@@ -14,9 +14,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Se não estiver carregando e não houver usuário, redirecione
+    // Se não estiver carregando e não houver usuário, redirecione para o login
     if (!loading && !user) {
-      router.replace('/'); // Redireciona para a home, que cuidará da autenticação
+      router.replace('/login');
     }
   }, [user, loading, router]);
 

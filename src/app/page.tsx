@@ -14,9 +14,7 @@ export default function HomePage() {
       if (user) {
         router.replace('/dashboard');
       } else {
-        // Se a autenticação anônima falhar ou não houver usuário,
-        // ele permanecerá aqui. Poderíamos redirecionar para uma página de erro
-        // mas por enquanto, a experiência é o loader.
+        router.replace('/login');
       }
     }
   }, [user, loading, router]);

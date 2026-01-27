@@ -1,6 +1,6 @@
 // src/components/layout/header-content.tsx
 "use client";
-import { useUser } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import SellerSelector from '@/components/common/seller-selector';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,10 +12,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { UserCircle, Moon, Sun, Menu } from 'lucide-react';
+import { UserCircle, Moon, Sun, Menu, LogOut } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { EMAIL_RECOVERY_ADDRESS, DEFAULT_LOGIN_CREDENTIALS } from '@/lib/constants';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 interface HeaderContentProps {
   toggleMobileMenu: () => void;
@@ -23,19 +24,39 @@ interface HeaderContentProps {
 
 export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) {
   const { user } = useUser();
+  const auth = useAuth();
+  const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   const getInitials = (name: string | undefined | null) => {
-    if (!name) return 'AN'; // Anônimo
+    if (!name) return '??';
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
     return name.substring(0, 2).toUpperCase();
   };
 
-  // O usuário agora vem do Firebase Auth
-  const displayName = user?.isAnonymous ? "Usuário Anônimo" : user?.displayName || "Usuário";
-  const displayEmail = user?.isAnonymous ? `ID: ${user.uid.substring(0,6)}...` : user?.email;
+  const handleLogout = async () => {
+    if (!auth) {
+      toast({ title: "Erro", description: "Serviço de autenticação não disponível.", variant: "destructive" });
+      return;
+    }
+    try {
+      await signOut(auth);
+      toast({ title: "Sucesso", description: "Você foi desconectado com segurança." });
+      // O hook useUser cuidará do redirecionamento para a página de login
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast({ title: "Erro ao Sair", description: "Não foi possível desconectar. Tente novamente.", variant: "destructive" });
+    }
+  };
+
+  const displayName = user?.displayName || "Usuário";
+  const displayEmail = user?.email;
 
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-white dark:bg-white">
@@ -69,9 +90,7 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
                   <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {getInitials(user.displayName)}
-                    </AvatarFallback>
+                    {user.photoURL ? <img src={user.photoURL} alt={displayName} /> : <AvatarFallback className="bg-primary text-primary-foreground">{getInitials(displayName)}</AvatarFallback>}
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -84,6 +103,11 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
                     </p>
                   </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
