@@ -1,10 +1,10 @@
 // src/app/login/page.tsx
 "use client";
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,21 +15,12 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  // Lógica de redirecionamento se o usuário já estiver logado e verificado
-  useEffect(() => {
-    if (!userLoading && user && user.emailVerified) {
-        router.replace('/dashboard');
-    }
-  }, [user, userLoading, router]);
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,26 +39,21 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
+      // AuthGate will handle redirection. We just provide user feedback.
       if (!userCredential.user.emailVerified) {
         toast({
           title: "Verificação de E-mail Pendente",
-          description: "Por favor, verifique seu e-mail antes de fazer login.",
+          description: "Por favor, verifique seu e-mail antes de fazer login. Redirecionando...",
           variant: "destructive",
         });
-        // O usuário já será redirecionado para a página de verificação pelo guardião principal,
-        // mas desconectá-lo aqui é uma boa prática para evitar estado inconsistente.
-        await auth.signOut();
-        setIsLoading(false);
-        router.push('/auth/verify-email');
-        return;
+      } else {
+        toast({
+          title: "Login bem-sucedido!",
+          description: "Redirecionando para o dashboard...",
+        });
       }
-      
-      toast({
-        title: "Login bem-sucedido!",
-        description: "Redirecionando para o dashboard...",
-      });
-       router.replace('/dashboard');
-
+      // Optimistic redirect to speed up transition. AuthGate is the source of truth.
+      router.replace('/dashboard');
 
     } catch (error: any) {
       console.error("Erro no login:", error);
@@ -80,21 +66,14 @@ export default function LoginPage() {
         description,
         variant: "destructive",
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   };
   
-  // Exibe um loader de página inteira enquanto verifica o estado de autenticação
-  // ou se o usuário já está sendo redirecionado.
-  if (userLoading || (user && user.emailVerified)) {
-     return (
-        <div className="flex h-screen items-center justify-center bg-background">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-     );
-  }
+  // No more useEffect for redirection. This page is now "dumb".
+  // AuthGate handles all redirection logic.
 
-  // Renderiza o formulário de login se o usuário não estiver logado ou não estiver verificado.
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <div className="w-full max-w-sm space-y-6 rounded-xl bg-white dark:bg-gray-800 p-8 shadow-lg">
