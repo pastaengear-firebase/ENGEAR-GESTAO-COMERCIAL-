@@ -24,7 +24,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // If user is already logged in and their email is verified, redirect to dashboard
+    // Only redirect away from the login page if the user is already fully authenticated and verified.
+    // Otherwise, just show the login form and let the user attempt to log in.
+    // The main app layout guard will handle protection for other routes.
     if (!userLoading && user && user.emailVerified) {
         router.replace('/dashboard');
     }
@@ -60,11 +62,14 @@ export default function LoginPage() {
         return;
       }
       
-      // On successful login, the useEffect will handle the redirect
+      // On successful login, the main layout's useEffect will handle the redirect.
       toast({
         title: "Login bem-sucedido!",
         description: "Redirecionando para o dashboard...",
       });
+      // A small delay might be needed if the state propagation is slow, but usually AppLayout handles it.
+       router.replace('/dashboard');
+
 
     } catch (error: any) {
       console.error("Erro no login:", error);
@@ -81,9 +86,8 @@ export default function LoginPage() {
     }
   };
   
-  // While verifying if the user is already logged in from a previous session, show a loader.
-  // But if the user exists and is not verified, we should still show the login page, so don't show a loader in that case.
-  if (userLoading || (user && user.emailVerified)) {
+  // Show a loader ONLY while the auth state is being determined.
+  if (userLoading) {
      return (
         <div className="flex h-screen items-center justify-center bg-background">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -91,7 +95,9 @@ export default function LoginPage() {
      );
   }
 
-  // Render the login page
+  // If the user is already authenticated, the useEffect will have redirected them.
+  // Otherwise, render the login form. This covers the case of no user, or an unverified user,
+  // allowing them to see the login page as intended.
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <div className="w-full max-w-sm space-y-6 rounded-xl bg-white dark:bg-gray-800 p-8 shadow-lg">
