@@ -1,11 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configura o Next.js para gerar um site estático na pasta 'out'
+  // Ativa a exportação estática para compatibilidade com o plano Spark.
   output: 'export',
 
-  // Adiciona uma barra final (ex: /sobre/) aos links. 
-  // Isso melhora a compatibilidade com hospedagens de sites estáticos.
-  trailingSlash: true,
+  // A otimização de imagens do Next.js não é suportada no modo de exportação estática.
+  // Esta opção desativa a otimização para evitar erros.
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;
