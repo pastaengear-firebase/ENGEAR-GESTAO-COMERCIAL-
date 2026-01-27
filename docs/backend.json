@@ -1,5 +1,16 @@
 {
   "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user-specific information.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "createdAt"]
+    },
     "Sale": {
       "title": "Sale",
       "description": "Represents a single sale record.",
@@ -57,9 +68,13 @@
     }
   },
   "auth": {
-    "providers": ["anonymous"]
+    "providers": ["email"]
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Collection of user profiles."
+    },
     "/sales/{saleId}": {
       "schema": { "$ref": "#/entities/Sale" },
       "description": "Collection of sales documents."

@@ -1,11 +1,4 @@
 
-export const DEFAULT_LOGIN_CREDENTIALS = {
-  username: 'ENGEAR',
-  password: '1313', // Mantido para referência, não usado para login ativo
-};
-
-export const EMAIL_RECOVERY_ADDRESS = 'pastaengear@gmail.com'; // Mantido para referência
-
 export const SELLERS = ['SERGIO', 'RODRIGO'] as const;
 export type Seller = (typeof SELLERS)[number];
 export const ALL_SELLERS_OPTION = 'EQUIPE COMERCIAL';
@@ -53,11 +46,4 @@ export const PROPOSAL_NOTIFICATION_EMAILS = [
 ] as const;
 
 
-export const LOCAL_STORAGE_AUTH_KEY = 'salesAppAuthState';
-export const LOCAL_STORAGE_SALES_KEY = 'salesAppData';
-export const LOCAL_STORAGE_SETTINGS_KEY = 'salesAppSettings';
-export const LOCAL_STORAGE_QUOTES_KEY = 'salesAppQuotesData';
 export const LOCAL_STORAGE_SELECTED_SELLER_KEY = 'salesAppSelectedSeller';
-
-export const APP_ACCESS_GRANTED_KEY = 'app_engear_access_granted';
-export const DEFAULT_ACCESS_PASSWORD = '1313';

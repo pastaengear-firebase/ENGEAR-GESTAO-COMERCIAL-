@@ -5,37 +5,38 @@ import { useState, useEffect } from 'react';
 import SidebarNav from '@/components/layout/sidebar-nav';
 import HeaderContent from '@/components/layout/header-content';
 import { useRouter } from 'next/navigation';
-import { APP_ACCESS_GRANTED_KEY } from '@/lib/constants';
+import { useUser } from '@/firebase';
+import { Loader2 } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useUser();
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // This effect runs only on the client, after the initial render.
-    const accessGranted = sessionStorage.getItem(APP_ACCESS_GRANTED_KEY) === 'true';
-    if (accessGranted) {
-      // If access is granted, allow rendering the children.
-      setIsAuthorized(true);
-    } else {
-      // If not, redirect to the login page (root).
-      router.replace('/');
+    if (!loading && !user) {
+      // If loading is finished and there's no user, redirect to login
+      router.replace('/login');
+    } else if (!loading && user && !user.emailVerified) {
+      // If user exists but email is not verified, redirect to verification page
+      router.replace('/auth/verify-email');
     }
-  }, [router]);
+  }, [user, loading, router]);
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  // While not authorized, render nothing.
-  // This prevents any "flash" of the protected content because the component
-  // returns null before the useEffect has a chance to run and confirm authorization.
-  // This is the key fix to the navigation/rendering race condition.
-  if (!isAuthorized) {
-    return null;
+  // While loading or if no user, show a loading screen or nothing
+  // This prevents the "flash" of protected content
+  if (loading || !user || !user.emailVerified) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
   }
 
-  // Only once authorization is confirmed, render the main app layout.
+  // Only once user is confirmed and verified, render the main app layout.
   return (
     <div className="flex min-h-screen flex-col">
       <SidebarNav isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />

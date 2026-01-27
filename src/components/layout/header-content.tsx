@@ -11,13 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Moon, Sun, Menu, LogOut } from 'lucide-react'; // Alterado para User
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User, Moon, Sun, Menu, LogOut } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { APP_ACCESS_GRANTED_KEY } from '@/lib/constants';
 
 interface HeaderContentProps {
   toggleMobileMenu: () => void;
@@ -38,22 +37,20 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
       return;
     }
     try {
-      // Important: Remove the session key first.
-      sessionStorage.removeItem(APP_ACCESS_GRANTED_KEY);
-      
       await signOut(auth);
       toast({ title: "Sucesso", description: "Você foi desconectado com segurança." });
-
-      // Force a hard reload to the login page to clear all state.
-      window.location.href = '/';
+      // The redirect will be handled by the AppLayout's useEffect
+      window.location.href = '/login'; // Force redirect to clear state
     } catch (error) {
       console.error("Logout failed:", error);
       toast({ title: "Erro ao Sair", description: "Não foi possível desconectar. Tente novamente.", variant: "destructive" });
     }
   };
 
-  const displayName = "Usuário Anônimo";
-  const displayId = user?.uid;
+  const getInitials = (email?: string | null) => {
+    if (!email) return '?';
+    return email[0].toUpperCase();
+  }
 
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-white dark:bg-white">
@@ -87,8 +84,9 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
                   <Avatar className="h-9 w-9">
+                     <AvatarImage src={user.photoURL || ''} alt={user.displayName || ''} />
                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        <User className="h-5 w-5" />
+                        {getInitials(user.email)}
                      </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -96,9 +94,9 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{displayName}</p>
-                    <p className="text-xs leading-none text-muted-foreground truncate" title={displayId}>
-                      ID: {displayId}
+                    <p className="text-sm font-medium leading-none">{user.displayName || 'Usuário'}</p>
+                    <p className="text-xs leading-none text-muted-foreground truncate" title={user.email || ''}>
+                      {user.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
