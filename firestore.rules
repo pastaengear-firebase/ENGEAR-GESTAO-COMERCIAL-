@@ -3,31 +3,24 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Rules for 'users' collection
+    // Rules for 'users' collection (now unused)
     match /users/{userId} {
-      // Users can only create their own profile, and only read/update their own.
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow read, update: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if false;
     }
 
     // Rules for 'sales' collection
     match /sales/{saleId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     // Rules for 'quotes' collection
     match /quotes/{quoteId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
     
     // Rules for 'settings' collection
     match /settings/{docId} {
-       allow read, write: if isSignedIn();
+       allow read, write: if true;
     }
   }
 }

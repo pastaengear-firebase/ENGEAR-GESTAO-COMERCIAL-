@@ -2,7 +2,7 @@
 "use client";
 import type React from 'react';
 import { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { useFirestore, useCollection, useUser } from '@/firebase'; // Importa useUser
+import { useFirestore, useCollection } from '@/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { ALL_SELLERS_OPTION, SELLERS } from '@/lib/constants';
 import type { Quote, QuotesContextType, Seller, FollowUpDaysOptionValue, QuoteDashboardFilters } from '@/lib/types';
@@ -12,14 +12,11 @@ import { format, parseISO, addDays } from 'date-fns';
 export const QuotesContext = createContext<QuotesContextType | undefined>(undefined);
 
 export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading: userLoading } = useUser(); // Usa o hook de autenticação
   const firestore = useFirestore();
 
-  // A coleção só é definida se o firestore e o usuário estiverem prontos
   const quotesCollection = useMemo(() => firestore ? collection(firestore, 'quotes') : null, [firestore]);
   
-  // O hook useCollection só é ativado se a coleção e o usuário existirem
-  const { data: quotes, loading: loadingQuotesData } = useCollection<Quote>(user && quotesCollection ? quotesCollection : null);
+  const { data: quotes, loading: loadingQuotesData } = useCollection<Quote>(quotesCollection);
 
   const [managementSearchTerm, setManagementSearchTermState] = useState<string>('');
   const [dashboardFilters, setDashboardFiltersState] = useState<QuoteDashboardFilters>({ selectedYear: 'all' });
@@ -47,7 +44,6 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpDone'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }
   ): Promise<Quote> => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
-    if (!user) throw new Error("Usuário não autenticado.");
     if (selectedSeller === ALL_SELLERS_OPTION || !SELLERS.includes(selectedSeller as Seller)) {
       throw new Error("Um vendedor específico (SERGIO ou RODRIGO) deve ser selecionado para adicionar uma proposta.");
     }
@@ -68,14 +64,13 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const docRef = await addDoc(quotesCollection, newQuoteData);
 
     return { ...quoteData, seller: selectedSeller as Seller, id: docRef.id, followUpDate: finalFollowUpDate, createdAt: Date.now() };
-  }, [selectedSeller, quotesCollection, user]);
+  }, [selectedSeller, quotesCollection]);
 
   const updateQuote = useCallback(async (
     id: string, 
     quoteUpdateData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'>> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean, followUpDone?: boolean }
   ): Promise<Quote | undefined> => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
-     if (!user) throw new Error("Usuário não autenticado.");
     const quoteRef = doc(quotesCollection, id);
     const originalQuote = quotes?.find(q => q.id === id);
     if (!originalQuote) return undefined;
@@ -97,13 +92,12 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await updateDoc(quoteRef, updatePayload);
     
     return { ...originalQuote, ...quoteUpdateData, id, followUpDate: finalFollowUpDate, updatedAt: Date.now() };
-  }, [quotes, quotesCollection, user]);
+  }, [quotes, quotesCollection]);
 
   const deleteQuote = useCallback(async (id: string) => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
-     if (!user) throw new Error("Usuário não autenticado.");
     await deleteDoc(doc(quotesCollection, id));
-  }, [quotesCollection, user]);
+  }, [quotesCollection]);
 
   const getQuoteById = useCallback((id: string): Quote | undefined => {
     return quotes?.find(quote => quote.id === id);
@@ -111,7 +105,6 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const toggleFollowUpDone = useCallback(async (quoteId: string) => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
-     if (!user) throw new Error("Usuário não autenticado.");
     const quoteRef = doc(quotesCollection, quoteId);
     const quote = quotes?.find(q => q.id === quoteId);
     if (quote) {
@@ -120,7 +113,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             updatedAt: serverTimestamp()
         });
     }
-  }, [quotes, quotesCollection, user]);
+  }, [quotes, quotesCollection]);
 
   const setManagementSearchTerm = useCallback((term: string) => {
     setManagementSearchTermState(term);
@@ -161,7 +154,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
   }, [quotes, selectedSeller, dashboardFilters]);
   
-  const loadingQuotes = userLoading || loadingQuotesData;
+  const loadingQuotes = loadingQuotesData;
 
   return (
     <QuotesContext.Provider

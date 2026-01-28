@@ -1,7 +1,6 @@
 
 import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption, FollowUpDaysOptionValue } from './constants';
 import type { ALL_SELLERS_OPTION } from './constants'; // Import específico
-import type { User as FirebaseUser } from 'firebase/auth';
 
 
 export interface Sale {
@@ -19,13 +18,6 @@ export interface Sale {
   createdAt: number; // timestamp
   updatedAt?: number; // timestamp
 }
-
-export type User = FirebaseUser;
-
-export type AuthContextType = {
-  user: User | null;
-  loading: boolean;
-};
 
 export type SalesFilters = {
   searchTerm?: string;

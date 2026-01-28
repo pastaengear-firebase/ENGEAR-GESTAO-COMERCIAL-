@@ -5,7 +5,6 @@ import './globals.css';
 import { AppProvider } from '@/contexts/app-provider';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "next-themes";
-import AuthGate from '@/components/layout/auth-gate';
 
 export const metadata: Metadata = {
   title: 'CONTROLE DE VENDAS – EQUIPE COMERCIAL ENGEAR',
@@ -26,9 +25,7 @@ export default function RootLayout({
           enableSystem
         >
           <AppProvider>
-            <AuthGate>
-              {children}
-            </AuthGate>
+            {children}
             <Toaster />
           </AppProvider>
         </ThemeProvider>
