@@ -4,7 +4,7 @@ import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { AppProvider } from '@/contexts/app-provider';
 import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "next-themes"; // Import ThemeProvider
+import { ThemeProvider } from "next-themes";
 import AuthGate from '@/components/layout/auth-gate';
 
 export const metadata: Metadata = {

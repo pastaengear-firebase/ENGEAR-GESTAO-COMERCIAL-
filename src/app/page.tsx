@@ -2,6 +2,6 @@
 import { redirect } from 'next/navigation';
 
 export default function RootPage() {
-  // The new entry point is the login page.
-  redirect('/login');
+  // Redirect to the main dashboard. AuthGate will handle unauthenticated users.
+  redirect('/dashboard');
 }
