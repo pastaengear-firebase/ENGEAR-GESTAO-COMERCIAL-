@@ -196,10 +196,9 @@ Sistema de Controle de Vendas ENGEAR
 
     setIsSubmitting(true);
 
-    const salePayload: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'> = {
+    const salePayload: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'> = {
       ...data,
       date: format(data.date, 'yyyy-MM-dd'),
-      seller: selectedSeller as any, // Assumes selectedSeller is 'SERGIO' or 'RODRIGO'
       salesValue: Number(data.salesValue) || 0,
       payment: Number(data.payment) || 0,
     };

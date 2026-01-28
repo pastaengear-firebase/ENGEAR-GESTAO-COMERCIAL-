@@ -35,30 +35,31 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [user, authLoading]);
 
-  const isReadOnly = useMemo(() => selectedSeller === ALL_SELLERS_OPTION, [selectedSeller]);
+  const isReadOnly = useMemo(() => selectedSeller === ALL_SELLERS_OPTION && (!user || !Object.keys(SELLER_EMAIL_MAP).includes(user.email?.toLowerCase() || '')), [selectedSeller, user]);
 
-  const addSale = useCallback(async (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>): Promise<Sale> => {
+  const addSale = useCallback(async (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>): Promise<Sale> => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
-    if (isReadOnly) throw new Error("Usuário não tem permissão para adicionar vendas.");
+    if (isReadOnly || !user) throw new Error("Usuário não tem permissão para adicionar vendas.");
 
     const docRef = await addDoc(salesCollection, {
       ...saleData,
       seller: selectedSeller,
+      sellerUid: user.uid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    return { ...saleData, seller: selectedSeller, id: docRef.id, createdAt: Date.now() };
-  }, [salesCollection, selectedSeller, isReadOnly]);
+    return { ...saleData, seller: selectedSeller as Seller, sellerUid: user.uid, id: docRef.id, createdAt: Date.now() } as Sale;
+  }, [salesCollection, selectedSeller, isReadOnly, user]);
 
-  const addBulkSales = useCallback(async (newSalesData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>[]) => {
-    if (!firestore || !salesCollection) throw new Error("Firestore não está inicializado.");
+  const addBulkSales = useCallback(async (newSalesData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>[]) => {
+    if (!firestore || !salesCollection || !user) throw new Error("Firestore ou usuário não está inicializado.");
     const batch = writeBatch(firestore);
     newSalesData.forEach(saleData => {
         const docRef = doc(salesCollection);
-        batch.set(docRef, { ...saleData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        batch.set(docRef, { ...saleData, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     });
     await batch.commit();
-  }, [firestore, salesCollection]);
+  }, [firestore, salesCollection, user]);
 
   const updateSale = useCallback(async (id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Sale | undefined> => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
@@ -93,10 +94,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const filteredSales = useMemo(() => {
     return (sales || [])
       .filter(sale => {
-        // With auth, selectedSeller is now a derived state, not a filter.
-        // If the user is a specific seller, they only see their sales.
-        // If they are not a seller (isReadOnly), they see all sales.
-        if (isReadOnly) return true;
+        if (selectedSeller === ALL_SELLERS_OPTION) return true;
         return sale.seller === selectedSeller;
       })
       .filter(sale => {
@@ -114,7 +112,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const saleYear = new Date(sale.date).getFullYear();
         return saleYear === filters.selectedYear;
       });
-  }, [sales, selectedSeller, filters, isReadOnly]);
+  }, [sales, selectedSeller, filters]);
 
   const loading = salesLoading || authLoading;
 

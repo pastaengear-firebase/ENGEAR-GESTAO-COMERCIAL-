@@ -18,6 +18,7 @@
       "type": "object",
       "properties": {
         "seller": { "type": "string", "enum": ["SERGIO", "RODRIGO"] },
+        "sellerUid": { "type": "string", "description": "The UID of the seller who created the sale." },
         "date": { "type": "string", "format": "date" },
         "company": { "type": "string", "enum": ["ENGEAR", "CLIMAZONE"] },
         "project": { "type": "string" },
@@ -30,7 +31,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["seller", "date", "company", "project", "area", "clientService", "salesValue", "status", "payment", "createdAt"]
+      "required": ["seller", "sellerUid", "date", "company", "project", "area", "clientService", "salesValue", "status", "payment", "createdAt"]
     },
     "Quote": {
       "title": "Quote",
@@ -38,6 +39,7 @@
       "type": "object",
       "properties": {
         "seller": { "type": "string", "enum": ["SERGIO", "RODRIGO"] },
+        "sellerUid": { "type": "string", "description": "The UID of the seller who created the quote." },
         "clientName": { "type": "string" },
         "proposalDate": { "type": "string", "format": "date" },
         "validityDate": { "type": "string", "format": "date" },
@@ -54,7 +56,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["seller", "clientName", "proposalDate", "company", "area", "contactSource", "description", "proposedValue", "status", "createdAt"]
+      "required": ["seller", "sellerUid", "clientName", "proposalDate", "company", "area", "contactSource", "description", "proposedValue", "status", "createdAt"]
     },
     "Setting": {
       "title": "Setting",

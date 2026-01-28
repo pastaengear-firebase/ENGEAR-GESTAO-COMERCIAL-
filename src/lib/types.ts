@@ -12,6 +12,7 @@ export interface AppUser {
 export interface Sale {
   id: string;
   seller: Seller;
+  sellerUid: string;
   date: string; // ISO string
   company: CompanyOption;
   project: string;
@@ -35,8 +36,8 @@ export type SalesContextType = {
   filteredSales: Sale[];
   selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
   isReadOnly: boolean;
-  addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller'>) => Promise<Sale>;
-  addBulkSales: (newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
+  addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>) => Promise<Sale>;
+  addBulkSales: (newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>[]) => Promise<void>;
   updateSale: (id: string, saleData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<Sale | undefined>;
   deleteSale: (id: string) => Promise<void>;
   getSaleById: (id: string) => Sale | undefined;
@@ -70,6 +71,7 @@ export type QuoteDashboardFilters = Pick<SalesFilters, 'selectedYear'>;
 export interface Quote {
   id: string;
   seller: Seller;
+  sellerUid: string;
   clientName: string;
   proposalDate: string; // ISO string
   validityDate?: string; // ISO string, opcional
@@ -99,7 +101,7 @@ export type QuotesContextType = {
   setDashboardFilters: (filters: Partial<QuoteDashboardFilters>) => void;
   dashboardFilters: QuoteDashboardFilters;
   
-  addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpDone'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }) => Promise<Quote>;
+  addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid' | 'followUpDate' | 'followUpDone'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }) => Promise<Quote>;
   updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate'>> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean, followUpDone?: boolean }) => Promise<Quote | undefined>;
   deleteQuote: (id: string) => Promise<void>;
   getQuoteById: (id: string) => Quote | undefined;

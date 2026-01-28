@@ -7,6 +7,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from '
 import { ALL_SELLERS_OPTION, SELLERS } from '@/lib/constants';
 import type { Quote, QuotesContextType, Seller, FollowUpDaysOptionValue, QuoteDashboardFilters } from '@/lib/types';
 import { useSales } from '@/hooks/use-sales';
+import { useAuth } from '@/hooks/use-auth';
 import { format, parseISO, addDays } from 'date-fns';
 
 export const QuotesContext = createContext<QuotesContextType | undefined>(undefined);
@@ -22,6 +23,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [dashboardFilters, setDashboardFiltersState] = useState<QuoteDashboardFilters>({ selectedYear: 'all' });
 
   const { selectedSeller, isReadOnly } = useSales();
+  const { user } = useAuth();
 
   const calculateFollowUpDate = (proposalDateStr: string, offsetDays?: FollowUpDaysOptionValue): string | null => {
     if (offsetDays && offsetDays > 0) {
@@ -37,10 +39,10 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const addQuote = useCallback(async (
-    quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpDone'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }
+    quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid' | 'followUpDate' | 'followUpDone'> & { followUpDaysOffset?: FollowUpDaysOptionValue, sendProposalNotification?: boolean }
   ): Promise<Quote> => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
-    if (isReadOnly) {
+    if (isReadOnly || !user) {
       throw new Error("Usuário sem permissão para adicionar proposta.");
     }
     
@@ -50,6 +52,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const newQuoteData = {
       ...restOfQuoteData,
       seller: selectedSeller as Seller,
+      sellerUid: user.uid,
       followUpDate: finalFollowUpDate,
       followUpDone: false, 
       sendProposalNotification: quoteData.sendProposalNotification || false,
@@ -59,8 +62,8 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const docRef = await addDoc(quotesCollection, newQuoteData);
 
-    return { ...quoteData, seller: selectedSeller as Seller, id: docRef.id, followUpDate: finalFollowUpDate, createdAt: new Date() };
-  }, [selectedSeller, quotesCollection, isReadOnly]);
+    return { ...quoteData, seller: selectedSeller as Seller, sellerUid: user.uid, id: docRef.id, followUpDate: finalFollowUpDate, createdAt: new Date() } as Quote;
+  }, [selectedSeller, quotesCollection, isReadOnly, user]);
 
   const updateQuote = useCallback(async (
     id: string, 
@@ -124,7 +127,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const managementFilteredQuotes = useMemo(() => {
     return (quotes || [])
       .filter(quote => {
-        if (isReadOnly) return true;
+        if (selectedSeller === ALL_SELLERS_OPTION) return true;
         return quote.seller === selectedSeller;
       })
       .filter(quote => {
@@ -137,7 +140,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           String(quote.proposedValue).includes(lowerSearchTerm)
         );
       });
-  }, [quotes, selectedSeller, managementSearchTerm, isReadOnly]);
+  }, [quotes, selectedSeller, managementSearchTerm]);
 
   const setDashboardFilters = useCallback((newFilters: Partial<QuoteDashboardFilters>) => {
     setDashboardFiltersState(prevFilters => ({ ...prevFilters, ...newFilters }));
@@ -146,7 +149,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const dashboardFilteredQuotes = useMemo(() => {
     return (quotes || [])
       .filter(quote => {
-        if (isReadOnly) return true;
+        if (selectedSeller === ALL_SELLERS_OPTION) return true;
         return quote.seller === selectedSeller;
       })
       .filter(quote => {
@@ -154,7 +157,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const quoteYear = new Date(quote.proposalDate).getFullYear();
         return quoteYear === dashboardFilters.selectedYear;
       });
-  }, [quotes, selectedSeller, dashboardFilters, isReadOnly]);
+  }, [quotes, selectedSeller, dashboardFilters]);
   
   const loadingQuotes = loadingQuotesData;
 
