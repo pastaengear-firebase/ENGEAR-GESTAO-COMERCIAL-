@@ -147,9 +147,9 @@ export default function DadosPage() {
             os: String(row['O.S.'] ?? ''),
             area: area as AreaOption,
             clientService: clientService,
-            salesValue: salesValue,
+            salesValue: Math.round((salesValue || 0) * 100) / 100,
             status: status as StatusOption,
-            payment: payment,
+            payment: Math.round((payment || 0) * 100) / 100,
           });
         });
 

@@ -199,8 +199,8 @@ Sistema de Controle de Vendas ENGEAR
     const salePayload: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'> = {
       ...data,
       date: format(data.date, 'yyyy-MM-dd'),
-      salesValue: Number(data.salesValue) || 0,
-      payment: Number(data.payment) || 0,
+      salesValue: Math.round((Number(data.salesValue) || 0) * 100) / 100,
+      payment: Math.round((Number(data.payment) || 0) * 100) / 100,
     };
 
     try {

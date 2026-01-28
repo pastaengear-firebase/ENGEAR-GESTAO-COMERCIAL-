@@ -172,10 +172,10 @@ Sistema de Controle de Vendas ENGEAR
     
     const quotePayload = {
       ...data,
-      proposalDate: format(data.proposalDate, 'yyyy-MM-dd'), 
+      proposalDate: format(data.proposalDate, 'yyyy-MM-dd'),
       validityDate: data.validityDate ? format(data.validityDate, 'yyyy-MM-dd') : undefined,
-      proposedValue: Number(data.proposedValue) || 0,
-      sendProposalNotification: data.sendProposalNotification || false, 
+      proposedValue: Math.round((Number(data.proposedValue) || 0) * 100) / 100,
+      sendProposalNotification: data.sendProposalNotification || false,
     };
 
     try {
