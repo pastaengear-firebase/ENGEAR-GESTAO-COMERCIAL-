@@ -4,11 +4,11 @@ import type React from 'react';
 import { createContext, useCallback } from 'react';
 import { useUser } from '@/firebase/auth/use-user';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import type { AppUser } from '@/lib/types';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -29,6 +29,7 @@ const formatUser = (user: FirebaseUser): AppUser => ({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user: firebaseUser, loading } = useUser();
   const firestore = useFirestore();
+  const auth = useFirebaseAuth();
   const router = useRouter();
   const user = firebaseUser ? formatUser(firebaseUser) : null;
 
@@ -45,7 +46,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [firestore]);
 
   const signInWithGoogle = async () => {
-    const auth = getAuth();
+    if (!auth) {
+      console.error("Auth service not available.");
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -56,7 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    const auth = getAuth();
+    if (!auth) {
+      console.error("Auth service not available.");
+      return;
+    }
     await firebaseSignOut(auth);
     router.push('/login');
   };
