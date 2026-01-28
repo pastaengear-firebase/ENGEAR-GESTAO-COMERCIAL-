@@ -28,6 +28,7 @@
         "salesValue": { "type": "number" },
         "status": { "type": "string", "enum": ["Á INICAR", "EM ANDAMENTO", "FINALIZADO", "CANCELADO"] },
         "payment": { "type": "number" },
+        "summary": { "type": "string", "description": "A quick summary of the sale and service to be performed." },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },

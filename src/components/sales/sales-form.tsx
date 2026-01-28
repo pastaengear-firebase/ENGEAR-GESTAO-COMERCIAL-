@@ -11,12 +11,14 @@ import { useQuotes } from '@/hooks/use-quotes'; // Para buscar e atualizar propo
 import { useSettings } from '@/hooks/use-settings'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarIcon, DollarSign, Save, RotateCcw, Info } from 'lucide-react';
+import { CalendarIcon, DollarSign, Save, RotateCcw, Info, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -55,6 +57,8 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
       salesValue: undefined,
       status: undefined,
       payment: undefined,
+      summary: '',
+      sendSaleNotification: false,
     },
   });
 
@@ -74,6 +78,8 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
             salesValue: saleToEdit.salesValue,
             status: saleToEdit.status,
             payment: saleToEdit.payment,
+            summary: saleToEdit.summary || '',
+            sendSaleNotification: false, // Don't send email on edit
           });
           setOriginatingSeller(saleToEdit.seller);
           if (selectedSeller !== saleToEdit.seller) formIsReadOnly = true;
@@ -103,6 +109,8 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
             salesValue: quoteToConvert.proposedValue,
             status: "Á INICAR",
             payment: 0,
+            summary: quoteToConvert.description, // Pre-fill summary from quote description
+            sendSaleNotification: false,
           });
           setOriginatingSeller(quoteToConvert.seller);
         } else {
@@ -120,6 +128,8 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
           salesValue: undefined,
           status: undefined,
           payment: undefined,
+          summary: '',
+          sendSaleNotification: false,
         });
         setOriginatingSeller(null);
       }
@@ -141,7 +151,7 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
     }
 
     const recipients = appSettings.notificationEmails.join(',');
-    const subject = `Nova Venda Registrada: ${sale.project} (OS: ${sale.os || 'N/A'})`;
+    const subject = `NOVA VENDA - ${sale.company}, ${sale.project}, OS ${sale.os || 'N/A'}, ${sale.clientService}, ${sale.salesValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
     const appBaseUrl = window.location.origin;
     const saleEditLink = `${appBaseUrl}/editar-venda?editId=${sale.id}`;
 
@@ -161,6 +171,11 @@ Cliente/Serviço: ${sale.clientService}
 Valor da Venda: ${sale.salesValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
 Status: ${sale.status}
 Pagamento Registrado: ${sale.payment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+--------------------------------------------------
+
+Resumo da Venda/Serviço:
+--------------------------------------------------
+${sale.summary || "Nenhum resumo fornecido."}
 --------------------------------------------------
 
 Acesse a aplicação: ${appBaseUrl}/dashboard
@@ -199,8 +214,8 @@ Sistema de Controle de Vendas ENGEAR
     const salePayload: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'> = {
       ...data,
       date: format(data.date, 'yyyy-MM-dd'),
-      salesValue: Number(Math.round(+(Number(data.salesValue) || 0) + 'e+2') + 'e-2'),
-      payment: Number(Math.round(+(Number(data.payment) || 0) + 'e+2') + 'e-2'),
+      salesValue: Number((Math.round(+(Number(data.salesValue) || 0) * 100) / 100).toFixed(2)),
+      payment: Number((Math.round(+(Number(data.payment) || 0) * 100) / 100).toFixed(2)),
     };
 
     try {
@@ -210,7 +225,9 @@ Sistema de Controle de Vendas ENGEAR
       } else {
         const newSale = await addSale(salePayload);
         toast({ title: "Sucesso!", description: "Nova venda registrada com sucesso." });
-        triggerEmailNotification(newSale);
+        if (data.sendSaleNotification) {
+          triggerEmailNotification(newSale);
+        }
         
         if (fromQuoteId) {
             await updateQuoteStatus(fromQuoteId, { status: "Aceita" });
@@ -228,6 +245,8 @@ Sistema de Controle de Vendas ENGEAR
         salesValue: undefined,
         status: undefined,
         payment: undefined,
+        summary: '',
+        sendSaleNotification: false,
       });
 
       if (pathname.startsWith('/editar-venda') && editSaleId) {
@@ -479,9 +498,58 @@ Sistema de Controle de Vendas ENGEAR
           />
         </div>
 
+        <div className="space-y-4">
+           <FormField
+              control={form.control}
+              name="summary"
+              render={({ field }) => (
+                  <FormItem>
+                  <FormLabel>Resumo da Venda/Serviço</FormLabel>
+                  <FormControl>
+                      <Textarea
+                      placeholder="Insira um resumo rápido da venda e do serviço a ser executado..."
+                      {...field}
+                      disabled={finalIsReadOnly || isSubmitting}
+                      rows={4}
+                      />
+                  </FormControl>
+                  <FormMessage />
+                  </FormItem>
+              )}
+          />
+
+          {!editSaleId && (
+            <FormField
+              control={form.control}
+              name="sendSaleNotification"
+              render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-muted/30">
+                  <FormControl>
+                  <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={finalIsReadOnly || isSubmitting || loadingSettings || !appSettings.enableEmailNotifications}
+                  />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                  <FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4 text-primary" />ENVIAR E-MAIL COM A NOVA VENDA</FormLabel>
+                  <FormDescription>
+                      {loadingSettings ? "Carregando config..." : 
+                      !appSettings.enableEmailNotifications ? "Notificações de vendas desabilitadas em Configurações." :
+                      "Se marcado, um e-mail com os dados da venda será preparado para envio à equipe."
+                      }
+                  </FormDescription>
+                  </div>
+              </FormItem>
+              )}
+            />
+          )}
+        </div>
+
+
         <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
           <Button type="button" variant="ghost" onClick={() => {
-              form.reset({ date: new Date(), company: undefined, project: '', os: '', area: undefined, clientService: '', salesValue: undefined, status: undefined, payment: undefined });
+              form.reset({ date: new Date(), company: undefined, project: '', os: '', area: undefined, clientService: '', salesValue: undefined, status: undefined, payment: undefined, summary: '', sendSaleNotification: false });
               if (editSaleId) router.push('/editar-venda');
               if (fromQuoteId) router.push('/inserir-venda');
             }}

@@ -18,6 +18,8 @@ export const SalesFormSchema = z.object({
   salesValue: z.coerce.number().positive('Valor da Venda deve ser positivo.'),
   status: z.enum(STATUS_OPTIONS, { required_error: 'Status é obrigatório.' }),
   payment: z.coerce.number().min(0, 'Valor do Pagamento não pode ser negativo.'),
+  summary: z.string().optional(),
+  sendSaleNotification: z.boolean().optional().default(false),
   seller: z.enum(SELLERS).optional(), // Adicionado para validação, mas será definido via estado
 });
 export type SalesFormData = z.infer<typeof SalesFormSchema>;

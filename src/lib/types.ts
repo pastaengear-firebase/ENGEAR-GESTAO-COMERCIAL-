@@ -22,6 +22,7 @@ export interface Sale {
   salesValue: number;
   status: StatusOption;
   payment: number;
+  summary?: string;
   createdAt: any; // Can be a server timestamp
   updatedAt?: any; // Can be a server timestamp
 }
