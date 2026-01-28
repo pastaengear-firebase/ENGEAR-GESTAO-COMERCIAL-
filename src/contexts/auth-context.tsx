@@ -1,10 +1,10 @@
 // src/contexts/auth-context.tsx
 "use client";
 import type React from 'react';
-import { createContext, useCallback } from 'react';
+import { createContext, useCallback, useEffect } from 'react';
 import { useUser } from '@/firebase/auth/use-user';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import type { AppUser } from '@/lib/types';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -45,18 +45,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await setDoc(userRef, { ...profile, updatedAt: serverTimestamp() }, { merge: true });
   }, [firestore]);
 
+  // Check for redirect result on component mount
+  useEffect(() => {
+    if (auth) {
+      getRedirectResult(auth)
+        .then((result) => {
+          if (result) {
+            // This is the first login after redirect. Update the profile.
+            updateUserProfile(result.user);
+          }
+        })
+        .catch((error) => {
+          console.error("Error processing redirect result:", error);
+        });
+    }
+  }, [auth, updateUserProfile]);
+
+
   const signInWithGoogle = async () => {
     if (!auth) {
       console.error("Auth service not available.");
       return;
     }
     const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      await updateUserProfile(result.user);
-    } catch (error) {
-      console.error("Error during Google sign-in:", error);
-    }
+    await signInWithRedirect(auth, provider); // Use redirect instead of popup
   };
 
   const signOut = async () => {
