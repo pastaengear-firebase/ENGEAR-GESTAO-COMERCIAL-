@@ -5,8 +5,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SalesFormSchema, type SalesFormData } from '@/lib/schemas';
-import { AREA_OPTIONS, STATUS_OPTIONS, SELLERS, ALL_SELLERS_OPTION, COMPANY_OPTIONS } from '@/lib/constants';
-import type { Seller } from '@/lib/constants';
+import { AREA_OPTIONS, STATUS_OPTIONS, SELLERS, COMPANY_OPTIONS } from '@/lib/constants';
 import { useSales } from '@/hooks/use-sales';
 import { useQuotes } from '@/hooks/use-quotes'; // Para buscar e atualizar propostas
 import { useSettings } from '@/hooks/use-settings'; 
@@ -30,7 +29,7 @@ interface SalesFormProps {
 }
 
 export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
-  const { addSale, getSaleById, updateSale, selectedSeller: globalSelectedSeller } = useSales();
+  const { addSale, getSaleById, updateSale, selectedSeller, isReadOnly } = useSales();
   const { getQuoteById: getQuoteByIdFromContext, updateQuote: updateQuoteStatus } = useQuotes();
   const { settings: appSettings, loadingSettings } = useSettings(); 
   const { toast } = useToast();
@@ -42,10 +41,7 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
   const fromQuoteId = searchParams.get('fromQuoteId');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [displayedSeller, setDisplayedSeller] = useState<Seller | typeof ALL_SELLERS_OPTION | undefined>(undefined);
-
-  const isEffectivelyReadOnly = globalSelectedSeller === ALL_SELLERS_OPTION || (fromQuoteId && displayedSeller && globalSelectedSeller !== displayedSeller);
-
+  const [originatingSeller, setOriginatingSeller] = useState<string | null>(null);
 
   const form = useForm<SalesFormData>({
     resolver: zodResolver(SalesFormSchema),
@@ -64,6 +60,7 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
 
   useEffect(() => {
     const initializeForm = async () => {
+      let formIsReadOnly = isReadOnly;
       if (editSaleId) {
         const saleToEdit = getSaleById(editSaleId);
         if (saleToEdit) {
@@ -78,7 +75,8 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
             status: saleToEdit.status,
             payment: saleToEdit.payment,
           });
-          setDisplayedSeller(saleToEdit.seller);
+          setOriginatingSeller(saleToEdit.seller);
+          if (selectedSeller !== saleToEdit.seller) formIsReadOnly = true;
         } else {
           toast({ title: "Erro", description: "Venda não encontrada para edição.", variant: "destructive" });
           router.push(pathname.startsWith('/editar-venda') ? '/editar-venda' : '/inserir-venda');
@@ -86,33 +84,34 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
       } else if (fromQuoteId) {
         const quoteToConvert = getQuoteByIdFromContext(fromQuoteId);
         if (quoteToConvert) {
-          if (globalSelectedSeller !== quoteToConvert.seller && globalSelectedSeller !== ALL_SELLERS_OPTION) {
+          if (selectedSeller !== quoteToConvert.seller) {
              toast({
                 title: "Aviso de Vendedor",
-                description: `Para converter a proposta de ${quoteToConvert.seller}, selecione ${quoteToConvert.seller} no seletor global. O formulário estará em modo leitura até lá.`,
+                description: `Para converter a proposta de ${quoteToConvert.seller}, o usuário logado deve ser o mesmo. O formulário está em modo leitura.`,
                 variant: "default",
                 duration: 7000,
              });
+             formIsReadOnly = true;
           }
           form.reset({
-            date: new Date(), // Data da venda é a data atual
+            date: new Date(),
             company: quoteToConvert.company,
             project: `${quoteToConvert.clientName} - ${quoteToConvert.description.substring(0,50)}${quoteToConvert.description.length > 50 ? '...' : ''}`,
-            os: '', // OS será preenchido pelo usuário se necessário
+            os: '',
             area: quoteToConvert.area,
             clientService: quoteToConvert.clientName,
             salesValue: quoteToConvert.proposedValue,
-            status: "Á INICAR", // Status inicial sugerido para a venda
-            payment: 0, // Pagamento inicial é zero
+            status: "Á INICAR",
+            payment: 0,
           });
-          setDisplayedSeller(quoteToConvert.seller); // Vendedor da venda é o da proposta
+          setOriginatingSeller(quoteToConvert.seller);
         } else {
           toast({ title: "Erro", description: "Proposta não encontrada para conversão.", variant: "destructive" });
-          router.push('/inserir-venda'); // Volta para inserir venda normal
+          router.push('/inserir-venda');
         }
-      } else { // Novo formulário (não edição, não conversão)
+      } else { // Novo formulário
         form.reset({
-          date: undefined, 
+          date: new Date(),
           company: undefined,
           project: '',
           os: '',
@@ -122,17 +121,18 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
           status: undefined,
           payment: undefined,
         });
-        form.setValue('date', new Date(), { shouldValidate: true, shouldDirty: true });
-        
-        if (SELLERS.includes(globalSelectedSeller as Seller)) {
-          setDisplayedSeller(globalSelectedSeller as Seller);
-        } else {
-          setDisplayedSeller(ALL_SELLERS_OPTION);
-        }
+        setOriginatingSeller(null);
+      }
+      
+      // Forçar desabilitação do formulário se necessário
+      if(formIsReadOnly) {
+        Object.keys(form.getValues()).forEach((key: any) => {
+            form.control.getFieldState(key).isDirty = false;
+        });
       }
     };
     initializeForm();
-  }, [editSaleId, fromQuoteId, getSaleById, getQuoteByIdFromContext, form, toast, router, globalSelectedSeller, pathname]);
+  }, [editSaleId, fromQuoteId, getSaleById, getQuoteByIdFromContext, form, toast, router, pathname, isReadOnly, selectedSeller]);
 
 
   const triggerEmailNotification = (sale: Sale) => {
@@ -176,12 +176,15 @@ Sistema de Controle de Vendas ENGEAR
   };
 
   const onSubmit = async (data: SalesFormData) => {
-    if (isEffectivelyReadOnly) {
-       let message = "Selecione um vendedor específico (SERGIO ou RODRIGO) para salvar.";
-       if (fromQuoteId && displayedSeller && globalSelectedSeller !== displayedSeller && globalSelectedSeller !== ALL_SELLERS_OPTION) {
-           message = `Para salvar a venda do vendedor ${displayedSeller}, selecione ${displayedSeller} no seletor global.`;
-       } else if (fromQuoteId && globalSelectedSeller === ALL_SELLERS_OPTION) {
-           message = `Para salvar a venda do vendedor ${displayedSeller}, selecione ${displayedSeller} no seletor global.`;
+    let formIsReadOnly = isReadOnly;
+    if((editSaleId || fromQuoteId) && selectedSeller !== originatingSeller) {
+        formIsReadOnly = true;
+    }
+
+    if (formIsReadOnly) {
+       let message = "Faça login com um usuário de vendas autorizado para salvar.";
+       if (originatingSeller) {
+           message = `Apenas o vendedor ${originatingSeller} pode modificar este item.`;
        }
       toast({ title: "Ação Não Permitida", description: message, variant: "destructive" });
       return;
@@ -191,39 +194,12 @@ Sistema de Controle de Vendas ENGEAR
         return;
     }
 
-    let sellerForPayload: Seller;
-    if (editSaleId) { // Edição de venda existente
-      const saleToEdit = getSaleById(editSaleId);
-      if (!saleToEdit) {
-        toast({ title: "Erro", description: "Venda original não encontrada.", variant: "destructive" });
-        return;
-      }
-      sellerForPayload = saleToEdit.seller;
-    } else if (fromQuoteId) { // Conversão de proposta
-        const quote = getQuoteByIdFromContext(fromQuoteId);
-        if (!quote) {
-             toast({ title: "Erro", description: "Proposta original não encontrada para conversão.", variant: "destructive" });
-             return;
-        }
-        if (globalSelectedSeller !== quote.seller) {
-            toast({ title: "Ação Não Permitida", description: `Para salvar a venda do vendedor ${quote.seller}, selecione ${quote.seller} no seletor global.`, variant: "destructive" });
-            return;
-        }
-        sellerForPayload = quote.seller;
-    } else { // Nova venda
-      if (!SELLERS.includes(globalSelectedSeller as Seller)) {
-        toast({ title: "Erro de Validação", description: "Selecione SERGIO ou RODRIGO no seletor global para registrar uma nova venda.", variant: "destructive" });
-        return;
-      }
-      sellerForPayload = globalSelectedSeller as Seller;
-    }
-
     setIsSubmitting(true);
 
     const salePayload: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'> = {
       ...data,
       date: format(data.date, 'yyyy-MM-dd'),
-      seller: sellerForPayload,
+      seller: selectedSeller as any, // Assumes selectedSeller is 'SERGIO' or 'RODRIGO'
       salesValue: Number(data.salesValue) || 0,
       payment: Number(data.payment) || 0,
     };
@@ -244,7 +220,7 @@ Sistema de Controle de Vendas ENGEAR
       }
 
       form.reset({
-        date: undefined,
+        date: new Date(),
         company: undefined,
         project: '',
         os: '',
@@ -254,28 +230,11 @@ Sistema de Controle de Vendas ENGEAR
         status: undefined,
         payment: undefined,
       });
-       // Define a data para hoje apenas se não estiver editando ou vindo de uma cotação
-      if(!editSaleId && !fromQuoteId) {
-        form.setValue('date', new Date(), { shouldValidate: true, shouldDirty: true });
-      }
 
-
-      if (SELLERS.includes(globalSelectedSeller as Seller)) {
-        setDisplayedSeller(globalSelectedSeller as Seller);
-      } else {
-        setDisplayedSeller(ALL_SELLERS_OPTION);
-      }
-
-      // Lógica de redirecionamento
       if (pathname.startsWith('/editar-venda') && editSaleId) {
-        router.push('/editar-venda'); // Volta para a página de busca de edição
-      } else if (pathname.startsWith('/inserir-venda')) {
-        if (fromQuoteId) {
-           router.push('/inserir-venda', { scroll: false }); // Remove query param e fica na página
-        }
-        // Se for inserção normal, permanece na página e o formulário é resetado
-      } else {
-        router.push('/dados'); // Fallback para página de dados
+        router.push('/editar-venda'); 
+      } else if (pathname.startsWith('/inserir-venda') && fromQuoteId) {
+         router.push('/inserir-venda', { scroll: false }); 
       }
 
     } catch (error) {
@@ -286,19 +245,19 @@ Sistema de Controle de Vendas ENGEAR
     }
   };
 
+  const finalIsReadOnly = isReadOnly || ((editSaleId || fromQuoteId) && selectedSeller !== originatingSeller);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {showReadOnlyAlert && isEffectivelyReadOnly && (
+        {showReadOnlyAlert && finalIsReadOnly && (
           <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
             <Info className="h-4 w-4 !text-amber-600" />
             <AlertTitle>Modo Somente Leitura</AlertTitle>
             <AlertDescription>
-              { fromQuoteId && displayedSeller && globalSelectedSeller !== displayedSeller && globalSelectedSeller !== ALL_SELLERS_OPTION
-                ? `Para modificar e salvar esta venda (originada da proposta de ${displayedSeller}), por favor, selecione ${displayedSeller} no seletor do cabeçalho.`
-                : editSaleId 
-                  ? `Para modificar esta venda de ${displayedSeller}, por favor, selecione ${displayedSeller} no seletor do cabeçalho.`
-                  : "Para inserir uma nova venda, por favor, selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho."
+              { originatingSeller
+                ? `Apenas o vendedor ${originatingSeller} pode modificar este item.`
+                : "Faça login com uma conta de vendedor autorizada para habilitar o formulário."
               }
             </AlertDescription>
           </Alert>
@@ -315,17 +274,10 @@ Sistema de Controle de Vendas ENGEAR
                     <FormControl>
                       <Button
                         variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                        disabled={isEffectivelyReadOnly || isSubmitting}
+                        className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                        disabled={finalIsReadOnly || isSubmitting}
                       >
-                        {field.value ? (
-                          format(field.value, "PPP", { locale: ptBR })
-                        ) : (
-                          <span>Selecione uma data</span>
-                        )}
+                        {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -335,9 +287,7 @@ Sistema de Controle de Vendas ENGEAR
                       mode="single"
                       selected={field.value || undefined} 
                       onSelect={field.onChange}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01") || isEffectivelyReadOnly || isSubmitting
-                      }
+                      disabled={(date) => date > new Date() || date < new Date("1900-01-01") || finalIsReadOnly || isSubmitting}
                       initialFocus
                     />
                   </PopoverContent>
@@ -349,19 +299,18 @@ Sistema de Controle de Vendas ENGEAR
 
           <FormItem>
             <FormLabel>Vendedor</FormLabel>
-            <Select value={displayedSeller || ""} disabled>
+            <Select value={originatingSeller || selectedSeller} disabled>
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Vendedor definido no cabeçalho" />
+                  <SelectValue />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {SELLERS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                <SelectItem value={ALL_SELLERS_OPTION}>{ALL_SELLERS_OPTION}</SelectItem>
+                 {SELLERS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
             <FormDescription>
-              {editSaleId ? "Vendedor original da venda." : (fromQuoteId ? `Vendedor da proposta: ${displayedSeller}` : "Definido no cabeçalho.")}
+              {editSaleId || fromQuoteId ? `Vendedor original: ${originatingSeller}` : "Vendedor definido pelo usuário logado."}
             </FormDescription>
           </FormItem>
 
@@ -374,7 +323,7 @@ Sistema de Controle de Vendas ENGEAR
                 <Select
                   onValueChange={field.onChange}
                   value={field.value}
-                  disabled={isEffectivelyReadOnly || isSubmitting}
+                  disabled={finalIsReadOnly || isSubmitting}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -382,11 +331,7 @@ Sistema de Controle de Vendas ENGEAR
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {COMPANY_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
+                    {COMPANY_OPTIONS.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -401,7 +346,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>Projeto</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome ou Descrição do Projeto" {...field} disabled={isEffectivelyReadOnly || isSubmitting} />
+                  <Input placeholder="Nome ou Descrição do Projeto" {...field} disabled={finalIsReadOnly || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -415,7 +360,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>O.S. (Ordem de Serviço)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Número da O.S., 0000 ou deixe em branco" {...field} disabled={isEffectivelyReadOnly || isSubmitting} />
+                  <Input placeholder="Número da O.S., 0000 ou deixe em branco" {...field} disabled={finalIsReadOnly || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -428,7 +373,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Área</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isEffectivelyReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={finalIsReadOnly || isSubmitting}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a Área" />
@@ -450,7 +395,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>Cliente/Serviço</FormLabel>
                 <FormControl>
-                  <Input placeholder="Tipo de Cliente ou Serviço Prestado" {...field} disabled={isEffectivelyReadOnly || isSubmitting} />
+                  <Input placeholder="Tipo de Cliente ou Serviço Prestado" {...field} disabled={finalIsReadOnly || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -471,14 +416,11 @@ Sistema de Controle de Vendas ENGEAR
                       placeholder="0,00"
                       className="pl-8"
                       value={field.value === undefined || field.value === null || isNaN(Number(field.value)) ? '' : String(field.value)}
-                      onChange={e => {
-                        const val = e.target.value;
-                        field.onChange(val === '' ? undefined : parseFloat(val));
-                      }}
+                      onChange={e => { const val = e.target.value; field.onChange(val === '' ? undefined : parseFloat(val)); }}
                       onBlur={field.onBlur}
                       name={field.name}
                       ref={field.ref}
-                      disabled={isEffectivelyReadOnly || isSubmitting}
+                      disabled={finalIsReadOnly || isSubmitting}
                       step="0.01"
                     />
                   </div>
@@ -494,7 +436,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isEffectivelyReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={finalIsReadOnly || isSubmitting}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o Status da Venda" />
@@ -523,14 +465,11 @@ Sistema de Controle de Vendas ENGEAR
                       placeholder="0,00"
                       className="pl-8"
                       value={field.value === undefined || field.value === null || isNaN(Number(field.value)) ? '' : String(field.value)}
-                      onChange={e => {
-                        const val = e.target.value;
-                        field.onChange(val === '' ? undefined : parseFloat(val));
-                      }}
+                      onChange={e => { const val = e.target.value; field.onChange(val === '' ? undefined : parseFloat(val)); }}
                       onBlur={field.onBlur}
                       name={field.name}
                       ref={field.ref}
-                      disabled={isEffectivelyReadOnly || isSubmitting}
+                      disabled={finalIsReadOnly || isSubmitting}
                       step="0.01"
                     />
                   </div>
@@ -542,39 +481,16 @@ Sistema de Controle de Vendas ENGEAR
         </div>
 
         <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              form.reset({ 
-                date: undefined,
-                company: undefined,
-                project: '',
-                os: '',
-                area: undefined,
-                clientService: '',
-                salesValue: undefined,
-                status: undefined,
-                payment: undefined,
-              });
-              // Reset to default view: new sale with current date
-              if(!editSaleId && !fromQuoteId) {
-                 form.setValue('date', new Date(), { shouldValidate: true, shouldDirty: true });
-              } else if (editSaleId) { // If was editing, go back to edit search page
-                 router.push('/editar-venda');
-              } else if (fromQuoteId) { // If was converting, go back to new sale page (clears query param)
-                 router.push('/inserir-venda');
-              }
+          <Button type="button" variant="ghost" onClick={() => {
+              form.reset({ date: new Date(), company: undefined, project: '', os: '', area: undefined, clientService: '', salesValue: undefined, status: undefined, payment: undefined });
+              if (editSaleId) router.push('/editar-venda');
+              if (fromQuoteId) router.push('/inserir-venda');
             }}
-            disabled={isSubmitting}
-            className="w-full sm:w-auto"
-          >
+            disabled={isSubmitting} className="w-full sm:w-auto">
             <RotateCcw className="mr-2 h-4 w-4" />
             Limpar / Cancelar
           </Button>
-          <Button type="submit"
-            disabled={isEffectivelyReadOnly || isSubmitting}
-            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button type="submit" disabled={finalIsReadOnly || isSubmitting} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
             <Save className="mr-2 h-4 w-4" />
             {isSubmitting ? 'Salvando...' : (editSaleId ? 'Atualizar Venda' : 'Salvar Venda')}
           </Button>

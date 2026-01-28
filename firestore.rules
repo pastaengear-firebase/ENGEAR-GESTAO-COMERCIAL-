@@ -1,40 +1,31 @@
-rules_version = '2';
 
-// ** ATENÇÃO: REGRAS DE SEGURANÇA INSEGURAS PARA PRODUÇÃO **
-// As regras abaixo permitem que qualquer pessoa leia, escreva e exclua dados
-// em seu banco de dados. Elas são adequadas APENAS para desenvolvimento inicial.
-//
-// ANTES DE PUBLICAR SUA APLICAÇÃO OU USAR DADOS REAIS, VOCÊ DEVE
-// IMPLEMENTAR O FIREBASE AUTHENTICATION E PROTEGER SEUS DADOS.
-//
-// Exemplo de regra segura com Firebase Auth:
-// match /sales/{saleId} {
-//   allow read, write: if request.auth != null;
-// }
-//
-// O login com senha simples atual NÃO protege seu banco de dados.
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Only authenticated users can access the database
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
 
-    // Rules for 'users' collection (now unused)
+    // User profile is publicly readable, but only the user can write to their own document.
     match /users/{userId} {
-      allow read, write: if false;
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
     }
 
-    // Rules for 'sales' collection
+    // Sales, Quotes, and Settings can be read and written by any authenticated user.
+    // You may want to restrict this further based on user roles or ownership.
     match /sales/{saleId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
 
-    // Rules for 'quotes' collection
     match /quotes/{quoteId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
-    
-    // Rules for 'settings' collection
+
     match /settings/{docId} {
-       allow read, write: if true;
+       allow read, write: if request.auth != null;
     }
   }
 }

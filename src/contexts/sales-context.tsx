@@ -4,40 +4,51 @@ import type React from 'react';
 import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useFirestore, useCollection } from '@/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, writeBatch } from 'firebase/firestore';
-import { SELLERS, ALL_SELLERS_OPTION, LOCAL_STORAGE_SELECTED_SELLER_KEY } from '@/lib/constants';
+import { ALL_SELLERS_OPTION, SELLER_EMAIL_MAP } from '@/lib/constants';
 import type { Sale, Seller, SalesContextType, SalesFilters } from '@/lib/types';
+import { useAuth } from '@/hooks/use-auth';
 
 export const SalesContext = createContext<SalesContextType | undefined>(undefined);
 
 export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const firestore = useFirestore();
+  const { user, loading: authLoading } = useAuth();
   
   const salesCollection = useMemo(() => firestore ? collection(firestore, 'sales') : null, [firestore]);
   
   const { data: sales, loading: salesLoading } = useCollection<Sale>(salesCollection);
 
-  const [selectedSeller, setSelectedSellerState] = useState<Seller | typeof ALL_SELLERS_OPTION>(ALL_SELLERS_OPTION);
+  const [selectedSeller, setSelectedSeller] = useState<Seller | typeof ALL_SELLERS_OPTION>(ALL_SELLERS_OPTION);
   const [filters, setFiltersState] = useState<SalesFilters>({ selectedYear: 'all' });
   
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedSeller = localStorage.getItem(LOCAL_STORAGE_SELECTED_SELLER_KEY);
-      if (storedSeller && (SELLERS.includes(storedSeller as Seller) || storedSeller === ALL_SELLERS_OPTION)) {
-        setSelectedSellerState(storedSeller as Seller | typeof ALL_SELLERS_OPTION);
+    if (authLoading) return;
+    if (user && user.email) {
+      const seller = SELLER_EMAIL_MAP[user.email.toLowerCase() as keyof typeof SELLER_EMAIL_MAP];
+      if (seller) {
+        setSelectedSeller(seller);
+      } else {
+        setSelectedSeller(ALL_SELLERS_OPTION);
       }
+    } else {
+      setSelectedSeller(ALL_SELLERS_OPTION);
     }
-  }, []);
+  }, [user, authLoading]);
+
+  const isReadOnly = useMemo(() => selectedSeller === ALL_SELLERS_OPTION, [selectedSeller]);
 
   const addSale = useCallback(async (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>): Promise<Sale> => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
+    if (isReadOnly) throw new Error("Usuário não tem permissão para adicionar vendas.");
 
     const docRef = await addDoc(salesCollection, {
       ...saleData,
+      seller: selectedSeller,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    return { ...saleData, id: docRef.id, createdAt: Date.now() };
-  }, [salesCollection]);
+    return { ...saleData, seller: selectedSeller, id: docRef.id, createdAt: Date.now() };
+  }, [salesCollection, selectedSeller, isReadOnly]);
 
   const addBulkSales = useCallback(async (newSalesData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>[]) => {
     if (!firestore || !salesCollection) throw new Error("Firestore não está inicializado.");
@@ -51,30 +62,29 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateSale = useCallback(async (id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Sale | undefined> => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
-
+    const originalSale = sales?.find(s => s.id === id);
+    if (isReadOnly || (originalSale && originalSale.seller !== selectedSeller)) {
+      throw new Error("Usuário não tem permissão para modificar esta venda.");
+    }
     const saleRef = doc(salesCollection, id);
     await updateDoc(saleRef, { ...saleUpdateData, updatedAt: serverTimestamp() });
-    const originalSale = sales?.find(s => s.id === id);
+    
     return originalSale ? { ...originalSale, ...saleUpdateData, id, updatedAt: Date.now() } : undefined;
-  }, [sales, salesCollection]);
+  }, [sales, salesCollection, selectedSeller, isReadOnly]);
 
   const deleteSale = useCallback(async (id: string) => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
-    
+    const originalSale = sales?.find(s => s.id === id);
+     if (isReadOnly || (originalSale && originalSale.seller !== selectedSeller)) {
+      throw new Error("Usuário não tem permissão para excluir esta venda.");
+    }
     const saleRef = doc(salesCollection, id);
     await deleteDoc(saleRef);
-  }, [salesCollection]);
+  }, [salesCollection, sales, selectedSeller, isReadOnly]);
 
   const getSaleById = useCallback((id: string): Sale | undefined => {
     return sales?.find(sale => sale.id === id);
   }, [sales]);
-
-  const setSelectedSeller = useCallback((seller: Seller | typeof ALL_SELLERS_OPTION) => {
-    setSelectedSellerState(seller);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(LOCAL_STORAGE_SELECTED_SELLER_KEY, seller);
-    }
-  }, []);
 
   const setFilters = useCallback((newFilters: Partial<SalesFilters>) => {
     setFiltersState(prevFilters => ({ ...prevFilters, ...newFilters }));
@@ -83,7 +93,10 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const filteredSales = useMemo(() => {
     return (sales || [])
       .filter(sale => {
-        if (selectedSeller === ALL_SELLERS_OPTION) return true;
+        // With auth, selectedSeller is now a derived state, not a filter.
+        // If the user is a specific seller, they only see their sales.
+        // If they are not a seller (isReadOnly), they see all sales.
+        if (isReadOnly) return true;
         return sale.seller === selectedSeller;
       })
       .filter(sale => {
@@ -101,9 +114,9 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const saleYear = new Date(sale.date).getFullYear();
         return saleYear === filters.selectedYear;
       });
-  }, [sales, selectedSeller, filters]);
+  }, [sales, selectedSeller, filters, isReadOnly]);
 
-  const loading = salesLoading;
+  const loading = salesLoading || authLoading;
 
   return (
     <SalesContext.Provider
@@ -111,7 +124,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sales: sales || [],
         filteredSales,
         selectedSeller,
-        setSelectedSeller,
+        isReadOnly,
         addSale,
         addBulkSales,
         updateSale,

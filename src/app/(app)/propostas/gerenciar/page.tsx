@@ -1,7 +1,7 @@
 
 // src/app/(app)/propostas/gerenciar/page.tsx
 "use client";
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useQuotes } from '@/hooks/use-quotes';
 import { useSales } from '@/hooks/use-sales'; 
@@ -17,7 +17,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, FileText, PlusCircle, RotateCcw, Info } from 'lucide-react'; 
 import { useToast } from '@/hooks/use-toast';
 import type { Quote } from '@/lib/types';
-import { ALL_SELLERS_OPTION } from '@/lib/constants';
 
 export default function GerenciarPropostasPage() {
   const { 
@@ -26,8 +25,8 @@ export default function GerenciarPropostasPage() {
     managementSearchTerm,
     deleteQuote, 
     loadingQuotes 
-  } = useQuotes(); // Usar as propriedades específicas para gerenciamento
-  const { selectedSeller: globalSelectedSeller } = useSales();
+  } = useQuotes();
+  const { isReadOnly } = useSales();
   const { toast } = useToast();
 
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
@@ -36,17 +35,11 @@ export default function GerenciarPropostasPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<string | null>(null);
 
-  const isEffectivelyReadOnly = globalSelectedSeller === ALL_SELLERS_OPTION;
-
-  // A filtragem agora é feita no contexto, usando managementFilteredQuotes
-  // O useEffect para searchTerm local e filteredQuotes local não é mais necessário aqui
-  // pois managementFilteredQuotes já considera o searchTerm do contexto.
-
   const handleEditClick = (quote: Quote) => {
-    if (isEffectivelyReadOnly) {
+    if (isReadOnly) {
        toast({
         title: "Ação Não Permitida",
-        description: "Selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho para modificar propostas.",
+        description: "Faça login com um usuário de vendas para modificar propostas.",
         variant: "destructive",
       });
       return;
@@ -56,10 +49,10 @@ export default function GerenciarPropostasPage() {
   };
 
   const confirmDelete = (id: string) => {
-    if (isEffectivelyReadOnly) {
+    if (isReadOnly) {
        toast({
         title: "Ação Não Permitida",
-        description: "Selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho para excluir propostas.",
+        description: "Faça login com um usuário de vendas para excluir propostas.",
         variant: "destructive",
       });
       return;
@@ -82,7 +75,7 @@ export default function GerenciarPropostasPage() {
   };
   
   const handleClearSearch = () => {
-    setManagementSearchTerm(''); // Limpar o termo de busca no contexto
+    setManagementSearchTerm('');
   };
 
   const handleFormSubmitted = () => {
@@ -108,13 +101,13 @@ export default function GerenciarPropostasPage() {
         </Button>
       </div>
 
-      {isEffectivelyReadOnly && (
+      {isReadOnly && (
          <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
           <Info className="h-4 w-4 !text-amber-600" />
           <AlertTitle>Funcionalidade Limitada</AlertTitle>
           <AlertDescription>
-            Para modificar ou excluir propostas, por favor, selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho.
-            A visualização e busca estão habilitadas.
+            Para modificar ou excluir propostas, por favor, faça login com uma conta de vendedor autorizada.
+            A visualização e busca estão habilitadas para todos.
           </AlertDescription>
         </Alert>
       )}
@@ -129,8 +122,8 @@ export default function GerenciarPropostasPage() {
               <Input
                 type="search"
                 placeholder="Buscar propostas..."
-                value={managementSearchTerm} // Usar o termo de busca do contexto
-                onChange={(e) => setManagementSearchTerm(e.target.value)} // Atualizar o termo de busca no contexto
+                value={managementSearchTerm}
+                onChange={(e) => setManagementSearchTerm(e.target.value)}
                 className="pl-10 w-full"
               />
             </div>
@@ -143,10 +136,10 @@ export default function GerenciarPropostasPage() {
           {loadingQuotes && <p className="p-4 text-center">Carregando propostas...</p>}
           {!loadingQuotes && (
             <QuotesTable 
-              quotesData={managementFilteredQuotes} // Usar as propostas filtradas pelo contexto
+              quotesData={managementFilteredQuotes}
               onEdit={handleEditClick} 
               onDelete={confirmDelete}
-              disabledActions={isEffectivelyReadOnly}
+              disabledActions={isReadOnly}
             />
           )}
         </CardContent>
@@ -164,7 +157,7 @@ export default function GerenciarPropostasPage() {
               </DialogTitle>
               <DialogDescription>
                 {editingQuote ? `Alterando proposta para: ${editingQuote.clientName}` : 'Preencha os dados da nova proposta.'}
-                {isEffectivelyReadOnly && " (Modo Somente Leitura)"}
+                {isReadOnly && " (Modo Somente Leitura)"}
               </DialogDescription>
             </DialogHeader>
             <div className="p-4">

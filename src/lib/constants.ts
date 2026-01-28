@@ -3,6 +3,12 @@ export const SELLERS = ['SERGIO', 'RODRIGO'] as const;
 export type Seller = (typeof SELLERS)[number];
 export const ALL_SELLERS_OPTION = 'EQUIPE COMERCIAL';
 
+export const SELLER_EMAIL_MAP = {
+  'sergio@engearpb.com.br': 'SERGIO',
+  'rodrigobarros@engearpb.com.br': 'RODRIGO',
+  'pastaengear@gmail.com': 'SERGIO', // Example mapping, adjust as needed
+} as const;
+
 export const COMPANY_OPTIONS = ['ENGEAR', 'CLIMAZONE'] as const;
 export type CompanyOption = (typeof COMPANY_OPTIONS)[number];
 

@@ -1,73 +1,71 @@
 // src/contexts/auth-context.tsx
 "use client";
 import type React from 'react';
-import { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { createContext, useCallback } from 'react';
+import { useUser } from '@/firebase/auth/use-user';
+import type { User as FirebaseUser } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import type { AppUser } from '@/lib/types';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 
 interface AuthContextType {
-  isAuthenticated: boolean;
-  login: (password: string) => boolean;
-  logout: () => void;
+  user: AppUser | null;
   loading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const CORRECT_PASSWORD = '1313';
-const SESSION_STORAGE_KEY = 'isAuthenticated';
+const formatUser = (user: FirebaseUser): AppUser => ({
+  uid: user.uid,
+  email: user.email,
+  displayName: user.displayName,
+  photoURL: user.photoURL,
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { user: firebaseUser, loading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
+  const user = firebaseUser ? formatUser(firebaseUser) : null;
 
-  useEffect(() => {
+  const updateUserProfile = useCallback(async (userToUpdate: FirebaseUser) => {
+    if (!firestore) return;
+    const userRef = doc(firestore, 'users', userToUpdate.uid);
+    const profile: AppUser = {
+      uid: userToUpdate.uid,
+      email: userToUpdate.email,
+      displayName: userToUpdate.displayName,
+      photoURL: userToUpdate.photoURL,
+    };
+    await setDoc(userRef, { ...profile, updatedAt: serverTimestamp() }, { merge: true });
+  }, [firestore]);
+
+  const signInWithGoogle = async () => {
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
     try {
-        const storedAuth = sessionStorage.getItem(SESSION_STORAGE_KEY);
-        if (storedAuth === 'true') {
-            setIsAuthenticated(true);
-        }
+      const result = await signInWithPopup(auth, provider);
+      await updateUserProfile(result.user);
     } catch (error) {
-        console.error("Could not access session storage:", error);
+      console.error("Error during Google sign-in:", error);
     }
-    setLoading(false);
-  }, []);
+  };
 
-  const login = useCallback((password: string): boolean => {
-    if (password === CORRECT_PASSWORD) {
-      try {
-        sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
-      } catch (error) {
-         console.error("Could not set session storage:", error);
-      }
-      setIsAuthenticated(true);
-      router.replace('/dashboard');
-      return true;
-    }
-    return false;
-  }, [router]);
-
-  const logout = useCallback(() => {
-    try {
-        sessionStorage.removeItem(SESSION_STORAGE_KEY);
-    } catch (error) {
-        console.error("Could not remove from session storage:", error);
-    }
-    setIsAuthenticated(false);
-    router.replace('/login');
-  }, [router]);
+  const signOut = async () => {
+    const auth = getAuth();
+    await firebaseSignOut(auth);
+    router.push('/login');
+  };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export { AuthContext };

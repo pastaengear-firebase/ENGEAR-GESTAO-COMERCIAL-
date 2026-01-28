@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { QuoteFormSchema, type QuoteFormData } from '@/lib/schemas';
-import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_OPTIONS, SELLERS, ALL_SELLERS_OPTION, FOLLOW_UP_DAYS_OPTIONS, PROPOSAL_NOTIFICATION_EMAILS } from '@/lib/constants';
+import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_OPTIONS, SELLERS, FOLLOW_UP_DAYS_OPTIONS, PROPOSAL_NOTIFICATION_EMAILS } from '@/lib/constants';
 import type { Seller, FollowUpDaysOptionValue } from '@/lib/constants';
 import { useQuotes } from '@/hooks/use-quotes';
 import { useSales } from '@/hooks/use-sales'; 
@@ -35,14 +35,12 @@ interface QuoteFormProps {
 
 export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert }: QuoteFormProps) {
   const { addQuote, updateQuote } = useQuotes();
-  const { selectedSeller: globalSelectedSeller } = useSales();
+  const { selectedSeller, isReadOnly } = useSales();
   const { settings: appSettings, loadingSettings } = useSettings(); 
   const { toast } = useToast();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [displayedSeller, setDisplayedSeller] = useState<Seller | typeof ALL_SELLERS_OPTION | undefined>(undefined);
 
-  const isEffectivelyReadOnly = globalSelectedSeller === ALL_SELLERS_OPTION;
   const editMode = !!quoteToEdit;
 
   const form = useForm<QuoteFormData>({
@@ -91,11 +89,10 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
         followUpDaysOffset: followUpDaysOffsetValue,
         sendProposalNotification: quoteToEdit.sendProposalNotification || false,
       });
-      setDisplayedSeller(quoteToEdit.seller);
     } else if (!editMode) {
       form.reset({ 
         clientName: '',
-        proposalDate: undefined, 
+        proposalDate: new Date(), 
         validityDate: undefined,
         company: undefined,
         area: undefined,
@@ -107,15 +104,8 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
         followUpDaysOffset: 0,
         sendProposalNotification: false,
       });
-      form.setValue('proposalDate', new Date(), { shouldValidate: true, shouldDirty: true });
-      
-      if (SELLERS.includes(globalSelectedSeller as Seller)) {
-        setDisplayedSeller(globalSelectedSeller as Seller);
-      } else {
-        setDisplayedSeller(ALL_SELLERS_OPTION);
-      }
     }
-  }, [quoteToEdit, editMode, form, globalSelectedSeller]);
+  }, [quoteToEdit, editMode, form]);
 
   const triggerProposalEmailNotification = (quote: Quote, isUpdate: boolean) => {
     if (loadingSettings || !appSettings.enableProposalEmailNotifications) {
@@ -164,10 +154,10 @@ Sistema de Controle de Vendas ENGEAR
 
 
   const onSubmit = async (data: QuoteFormData) => {
-    if (isEffectivelyReadOnly) { 
+    if (isReadOnly) { 
        toast({
         title: "Ação Não Permitida",
-        description: "Selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho para criar ou modificar uma proposta.",
+        description: "Faça login com uma conta de vendedor para criar ou modificar uma proposta.",
         variant: "destructive",
       });
       return;
@@ -179,17 +169,7 @@ Sistema de Controle de Vendas ENGEAR
     }
 
     setIsSubmitting(true);
-    let sellerForPayload: Seller;
-    if(editMode && quoteToEdit) {
-        sellerForPayload = quoteToEdit.seller;
-    } else if (SELLERS.includes(globalSelectedSeller as Seller)) {
-        sellerForPayload = globalSelectedSeller as Seller;
-    } else {
-        toast({ title: "Erro Interno", description: "Não foi possível determinar o vendedor para a nova proposta.", variant: "destructive" });
-        setIsSubmitting(false);
-        return;
-    }
-
+    
     const quotePayload = {
       ...data,
       proposalDate: format(data.proposalDate, 'yyyy-MM-dd'), 
@@ -214,7 +194,7 @@ Sistema de Controle de Vendas ENGEAR
 
       form.reset({
         clientName: '',
-        proposalDate: undefined, 
+        proposalDate: new Date(), 
         validityDate: undefined,
         company: undefined,
         area: undefined,
@@ -226,15 +206,6 @@ Sistema de Controle de Vendas ENGEAR
         followUpDaysOffset: 0,
         sendProposalNotification: false,
       });
-      if (!editMode) {
-        form.setValue('proposalDate', new Date(), { shouldValidate: true, shouldDirty: true });
-      }
-      
-      if (SELLERS.includes(globalSelectedSeller as Seller)) {
-        setDisplayedSeller(globalSelectedSeller as Seller);
-      } else {
-        setDisplayedSeller(ALL_SELLERS_OPTION);
-      }
       
       if (onFormSubmit) {
         onFormSubmit();
@@ -255,12 +226,12 @@ Sistema de Controle de Vendas ENGEAR
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {showReadOnlyAlert && isEffectivelyReadOnly && (
+        {showReadOnlyAlert && isReadOnly && (
           <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
             <Info className="h-4 w-4 !text-amber-600" />
             <AlertTitle>Modo Somente Leitura</AlertTitle>
             <AlertDescription>
-              Para {editMode ? 'modificar esta proposta' : 'criar uma nova proposta'}, por favor, selecione um vendedor específico (SERGIO ou RODRIGO) no seletor do cabeçalho.
+              Para {editMode ? 'modificar esta proposta' : 'criar uma nova proposta'}, por favor, faça login com uma conta de vendedor autorizada.
             </AlertDescription>
           </Alert>
         )}
@@ -276,7 +247,7 @@ Sistema de Controle de Vendas ENGEAR
                   <Input 
                     placeholder="Nome completo ou Razão Social" 
                     {...field} 
-                    disabled={isEffectivelyReadOnly || isSubmitting} 
+                    disabled={isReadOnly || isSubmitting} 
                   />
                 </FormControl>
                 <FormMessage />
@@ -286,19 +257,18 @@ Sistema de Controle de Vendas ENGEAR
 
           <FormItem>
             <FormLabel>Vendedor</FormLabel>
-            <Select value={displayedSeller || ""} disabled>
+            <Select value={selectedSeller} disabled>
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Vendedor definido no cabeçalho" />
+                  <SelectValue />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {SELLERS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                <SelectItem value={ALL_SELLERS_OPTION}>{ALL_SELLERS_OPTION}</SelectItem>
               </SelectContent>
             </Select>
             <FormDescription>
-              {editMode ? "Vendedor original da proposta." : "Definido no cabeçalho."}
+              Vendedor definido pelo usuário logado.
             </FormDescription>
           </FormItem>
 
@@ -314,7 +284,7 @@ Sistema de Controle de Vendas ENGEAR
                       <Button
                         variant={"outline"}
                         className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        disabled={(editMode && isEffectivelyReadOnly) || isSubmitting}
+                        disabled={isReadOnly || isSubmitting}
                       >
                         {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -327,7 +297,7 @@ Sistema de Controle de Vendas ENGEAR
                         selected={field.value || undefined}
                         onSelect={field.onChange} 
                         initialFocus 
-                        disabled={(date) => date > new Date() || (editMode && isEffectivelyReadOnly) || isSubmitting} 
+                        disabled={(date) => date > new Date() || isReadOnly || isSubmitting} 
                     />
                   </PopoverContent>
                 </Popover>
@@ -348,7 +318,7 @@ Sistema de Controle de Vendas ENGEAR
                       <Button
                         variant={"outline"}
                         className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        disabled={isEffectivelyReadOnly || isSubmitting}
+                        disabled={isReadOnly || isSubmitting}
                       >
                         {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -360,7 +330,7 @@ Sistema de Controle de Vendas ENGEAR
                         mode="single" 
                         selected={field.value || undefined}
                         onSelect={field.onChange} 
-                        disabled={(date) => date < (form.getValues("proposalDate") || new Date()) || isEffectivelyReadOnly || isSubmitting} />
+                        disabled={(date) => date < (form.getValues("proposalDate") || new Date()) || isReadOnly || isSubmitting} />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -374,7 +344,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Empresa da Proposta</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isEffectivelyReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || isSubmitting}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione a Empresa" /></SelectTrigger></FormControl>
                   <SelectContent>{COMPANY_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
                 </Select>
@@ -389,7 +359,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Área de Atuação</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isEffectivelyReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || isSubmitting}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione a Área" /></SelectTrigger></FormControl>
                   <SelectContent>{AREA_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
                 </Select>
@@ -404,7 +374,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Fonte do Contato</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isEffectivelyReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || isSubmitting}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione a Fonte" /></SelectTrigger></FormControl>
                   <SelectContent>{CONTACT_SOURCE_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
                 </Select>
@@ -434,7 +404,7 @@ Sistema de Controle de Vendas ENGEAR
                       onBlur={field.onBlur}
                       name={field.name}
                       ref={field.ref}
-                      disabled={isEffectivelyReadOnly || isSubmitting} 
+                      disabled={isReadOnly || isSubmitting} 
                       step="0.01"
                     />
                   </div>
@@ -449,7 +419,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status da Proposta</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isEffectivelyReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || isSubmitting}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione o Status" /></SelectTrigger></FormControl>
                   <SelectContent>{PROPOSAL_STATUS_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
                 </Select>
@@ -466,7 +436,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>Descrição/Escopo da Proposta</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Detalhe o que está sendo proposto..." {...field} disabled={isEffectivelyReadOnly || isSubmitting} rows={3} />
+                  <Textarea placeholder="Detalhe o que está sendo proposto..." {...field} disabled={isReadOnly || isSubmitting} rows={3} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -483,7 +453,7 @@ Sistema de Controle de Vendas ENGEAR
                     <Select 
                         onValueChange={(value) => field.onChange(parseInt(value,10))} 
                         value={String(field.value ?? 0)} 
-                        disabled={isEffectivelyReadOnly || isSubmitting}
+                        disabled={isReadOnly || isSubmitting}
                     >
                     <FormControl><SelectTrigger><SelectValue placeholder="Agendar follow-up" /></SelectTrigger></FormControl>
                     <SelectContent>{FOLLOW_UP_DAYS_OPTIONS.map(opt => <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>)}</SelectContent>
@@ -503,7 +473,7 @@ Sistema de Controle de Vendas ENGEAR
                         <Checkbox
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isEffectivelyReadOnly || isSubmitting || loadingSettings || !appSettings.enableProposalEmailNotifications}
+                            disabled={isReadOnly || isSubmitting || loadingSettings || !appSettings.enableProposalEmailNotifications}
                         />
                     </FormControl>
                     <div className="space-y-1 leading-none">
@@ -527,7 +497,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>Observações (Opcional)</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Qualquer informação adicional relevante..." {...field} disabled={isEffectivelyReadOnly || isSubmitting} rows={3} />
+                  <Textarea placeholder="Qualquer informação adicional relevante..." {...field} disabled={isReadOnly || isSubmitting} rows={3} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -541,7 +511,7 @@ Sistema de Controle de Vendas ENGEAR
             onClick={() => {
               form.reset({ 
                 clientName: '',
-                proposalDate: undefined, 
+                proposalDate: new Date(),
                 validityDate: undefined,
                 company: undefined,
                 area: undefined,
@@ -553,9 +523,6 @@ Sistema de Controle de Vendas ENGEAR
                 followUpDaysOffset: 0,
                 sendProposalNotification: false,
               });
-              if (!editMode) {
-                 form.setValue('proposalDate', new Date(), { shouldValidate: true, shouldDirty: true });
-              }
               if (onFormSubmit && editMode) onFormSubmit(); 
             }}
             disabled={isSubmitting}
@@ -565,7 +532,7 @@ Sistema de Controle de Vendas ENGEAR
             {editMode ? 'Cancelar Edição' : 'Limpar Formulário'}
           </Button>
           <Button type="submit"
-            disabled={(isEffectivelyReadOnly && !editMode) || isSubmitting} 
+            disabled={isReadOnly || isSubmitting} 
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
             <Save className="mr-2 h-4 w-4" />
             {isSubmitting ? 'Salvando...' : (editMode ? 'Atualizar Proposta' : 'Salvar Proposta')}

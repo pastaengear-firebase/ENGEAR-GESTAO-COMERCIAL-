@@ -1,7 +1,13 @@
 
 import type { Seller, AreaOption, StatusOption, CompanyOption, ProposalStatusOption, ContactSourceOption, FollowUpDaysOptionValue } from './constants';
-import type { ALL_SELLERS_OPTION } from './constants'; // Import específico
+import type { ALL_SELLERS_OPTION } from './constants';
 
+export interface AppUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+}
 
 export interface Sale {
   id: string;
@@ -15,8 +21,8 @@ export interface Sale {
   salesValue: number;
   status: StatusOption;
   payment: number;
-  createdAt: number; // timestamp
-  updatedAt?: number; // timestamp
+  createdAt: any; // Can be a server timestamp
+  updatedAt?: any; // Can be a server timestamp
 }
 
 export type SalesFilters = {
@@ -28,8 +34,8 @@ export type SalesContextType = {
   sales: Sale[];
   filteredSales: Sale[];
   selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
-  setSelectedSeller: (seller: Seller | typeof ALL_SELLERS_OPTION) => void;
-  addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Sale>;
+  isReadOnly: boolean;
+  addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller'>) => Promise<Sale>;
   addBulkSales: (newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
   updateSale: (id: string, saleData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<Sale | undefined>;
   deleteSale: (id: string) => Promise<void>;
@@ -77,8 +83,8 @@ export interface Quote {
   followUpDate?: string | null;
   followUpDone?: boolean;
   sendProposalNotification?: boolean;
-  createdAt: number; // timestamp
-  updatedAt?: number; // timestamp
+  createdAt: any; // Can be a server timestamp
+  updatedAt?: any; // Can be a server timestamp
 }
 
 export type QuotesContextType = {

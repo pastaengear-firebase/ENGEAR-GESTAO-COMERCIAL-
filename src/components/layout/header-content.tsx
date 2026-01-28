@@ -1,11 +1,13 @@
 // src/components/layout/header-content.tsx
 "use client";
-import SellerSelector from '@/components/common/seller-selector';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Menu, LogOut } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Moon, Sun, Menu, LogOut, User as UserIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth } from '@/hooks/use-auth';
+import { useSales } from '@/hooks/use-sales'; // To display current seller
 
 interface HeaderContentProps {
   toggleMobileMenu: () => void;
@@ -13,10 +15,19 @@ interface HeaderContentProps {
 
 export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) {
   const { theme, setTheme } = useTheme();
-  const { logout } = useAuth();
+  const { user, signOut } = useAuth();
+  const { selectedSeller } = useSales();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('');
+  };
 
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-white dark:bg-white">
@@ -29,8 +40,9 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
         </div>
         
         <div className="flex flex-1 items-center justify-end space-x-2 sm:space-x-4">
-          <div className="hidden md:block">
-            <SellerSelector />
+          <div className="hidden md:flex items-center gap-2 text-sm font-medium text-sidebar-foreground mr-4">
+             <UserIcon className="h-5 w-5" />
+             <span>{selectedSeller}</span>
           </div>
 
           {mounted && (
@@ -45,19 +57,35 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
             </Button>
           )}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={logout}
-            aria-label="Sair"
-            className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'Avatar do usuário'} />
+                  <AvatarFallback>{user?.displayName ? getInitials(user.displayName) : <UserIcon />}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.displayName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={signOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
         </div>
       </div>
-      <div className="md:hidden border-t p-2 flex justify-center bg-white dark:bg-white">
-         <SellerSelector />
+      <div className="md:hidden border-t p-2 flex justify-center bg-white dark:bg-white text-sm font-medium text-sidebar-foreground">
+         <UserIcon className="h-5 w-5 mr-2" />
+         <span>{selectedSeller}</span>
       </div>
     </header>
   );
