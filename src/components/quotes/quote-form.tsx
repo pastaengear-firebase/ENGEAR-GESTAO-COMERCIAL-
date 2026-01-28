@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { QuoteFormSchema, type QuoteFormData } from '@/lib/schemas';
-import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_OPTIONS, SELLERS, FOLLOW_UP_DAYS_OPTIONS, PROPOSAL_NOTIFICATION_EMAILS } from '@/lib/constants';
+import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_OPTIONS, SELLERS, FOLLOW_UP_DAYS_OPTIONS } from '@/lib/constants';
 import type { Seller, FollowUpDaysOptionValue } from '@/lib/constants';
 import { useQuotes } from '@/hooks/use-quotes';
 import { useSales } from '@/hooks/use-sales'; 
@@ -107,12 +107,18 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
   }, [quoteToEdit, editMode, form]);
 
   const triggerProposalEmailNotification = (quote: Quote, isUpdate: boolean) => {
-    if (loadingSettings || !appSettings.enableProposalEmailNotifications) {
-      console.log("Notificação por e-mail de propostas desabilitada nas configurações.");
+    if (loadingSettings || !appSettings.enableProposalEmailNotifications || appSettings.notificationEmails.length === 0) {
+      if (!loadingSettings && appSettings.enableProposalEmailNotifications && appSettings.notificationEmails.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Lista de E-mails Vazia",
+          description: "Adicione e-mails na página de Configurações para enviar notificações de propostas.",
+        });
+      }
       return;
     }
     
-    const recipients = PROPOSAL_NOTIFICATION_EMAILS.join(';');
+    const recipients = appSettings.notificationEmails.join(',');
     const action = isUpdate ? 'Atualizada' : 'Registrada';
     const subject = `Proposta Comercial ${action}: ${quote.clientName} / ${quote.description.substring(0,30)}...`;
     const appBaseUrl = window.location.origin;

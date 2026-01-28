@@ -42,14 +42,4 @@ export const FOLLOW_UP_DAYS_OPTIONS = [
 ] as const;
 export type FollowUpDaysOptionValue = (typeof FOLLOW_UP_DAYS_OPTIONS)[number]['value'];
 
-export const PROPOSAL_NOTIFICATION_EMAILS = [
-  'carlosroberto@engearpb.com.br',
-  'gitana@engearpb.com.br',
-  'sergio@engearpb.com.br',
-  'rodrigobarros@engearpb.com.br',
-  'vendas@engearpb.com.br',
-  'pastaengear@gmail.com',
-] as const;
-
-
 export const LOCAL_STORAGE_SELECTED_SELLER_KEY = 'salesAppSelectedSeller';
