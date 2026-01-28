@@ -1,4 +1,3 @@
-
 // src/app/(app)/dados/page.tsx
 "use client";
 import SalesTable from '@/components/sales/sales-table';
@@ -147,9 +146,9 @@ export default function DadosPage() {
             os: String(row['O.S.'] ?? ''),
             area: area as AreaOption,
             clientService: clientService,
-            salesValue: Math.round((salesValue || 0) * 100) / 100,
+            salesValue: Number(Math.round(+(salesValue || 0) + 'e+2') + 'e-2'),
             status: status as StatusOption,
-            payment: Math.round((payment || 0) * 100) / 100,
+            payment: Number(Math.round(+(payment || 0) + 'e+2') + 'e-2'),
           });
         });
 

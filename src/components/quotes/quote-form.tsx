@@ -1,4 +1,3 @@
-
 // src/components/quotes/quote-form.tsx
 "use client";
 import type React from 'react';
@@ -174,7 +173,7 @@ Sistema de Controle de Vendas ENGEAR
       ...data,
       proposalDate: format(data.proposalDate, 'yyyy-MM-dd'),
       validityDate: data.validityDate ? format(data.validityDate, 'yyyy-MM-dd') : undefined,
-      proposedValue: Math.round((Number(data.proposedValue) || 0) * 100) / 100,
+      proposedValue: Number(Math.round(+(Number(data.proposedValue) || 0) + 'e+2') + 'e-2'),
       sendProposalNotification: data.sendProposalNotification || false,
     };
 
