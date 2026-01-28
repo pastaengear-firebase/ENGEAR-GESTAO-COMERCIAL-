@@ -1,5 +1,19 @@
 rules_version = '2';
 
+// ** ATENÇÃO: REGRAS DE SEGURANÇA INSEGURAS PARA PRODUÇÃO **
+// As regras abaixo permitem que qualquer pessoa leia, escreva e exclua dados
+// em seu banco de dados. Elas são adequadas APENAS para desenvolvimento inicial.
+//
+// ANTES DE PUBLICAR SUA APLICAÇÃO OU USAR DADOS REAIS, VOCÊ DEVE
+// IMPLEMENTAR O FIREBASE AUTHENTICATION E PROTEGER SEUS DADOS.
+//
+// Exemplo de regra segura com Firebase Auth:
+// match /sales/{saleId} {
+//   allow read, write: if request.auth != null;
+// }
+//
+// O login com senha simples atual NÃO protege seu banco de dados.
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
