@@ -30,8 +30,8 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b bg-accent/30">
-      <div className="container flex h-12 items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 w-full border-b bg-[hsl(43_88%_90%)] dark:bg-[hsl(43_25%_15%)]">
+      <div className="container flex h-10 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center">
           <Button variant="ghost" size="icon" onClick={toggleMobileMenu} className="mr-2 md:hidden text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
             <Menu className="h-6 w-6" />
@@ -83,7 +83,7 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
 
         </div>
       </div>
-      <div className="md:hidden border-t p-1 flex justify-center bg-accent/30 text-sm font-medium text-sidebar-foreground">
+      <div className="md:hidden border-t p-1 flex justify-center bg-[hsl(43_88%_90%)] dark:bg-[hsl(43_25%_15%)] text-sm font-medium text-sidebar-foreground">
          <UserIcon className="h-5 w-5 mr-2" />
          <span>{selectedSeller}</span>
       </div>
