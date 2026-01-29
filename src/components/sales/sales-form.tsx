@@ -146,11 +146,11 @@ export default function SalesForm({ showReadOnlyAlert }: SalesFormProps) {
 
 
   const triggerEmailNotification = (sale: Sale) => {
-    if (loadingSettings || !appSettings.enableEmailNotifications || appSettings.notificationEmails.length === 0) {
+    if (loadingSettings || !appSettings.enableSalesEmailNotifications || appSettings.salesNotificationEmails.length === 0) {
       return;
     }
 
-    const recipients = appSettings.notificationEmails.join(',');
+    const recipients = appSettings.salesNotificationEmails.join(',');
     
     // Truncate long strings for the subject to avoid overly long mailto links
     const subjectProject = sale.project.length > 25 ? `${sale.project.substring(0, 22)}...` : sale.project;
@@ -220,8 +220,8 @@ Sistema de Controle de Vendas ENGEAR
     const salePayload: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'> = {
       ...data,
       date: format(data.date, 'yyyy-MM-dd'),
-      salesValue: Number((Math.round(+(Number(data.salesValue) || 0) * 100) / 100).toFixed(2)),
-      payment: Number((Math.round(+(Number(data.payment) || 0) * 100) / 100).toFixed(2)),
+      salesValue: Number(Number(data.salesValue || 0).toFixed(2)),
+      payment: Number(Number(data.payment || 0).toFixed(2)),
     };
 
     try {
@@ -534,14 +534,14 @@ Sistema de Controle de Vendas ENGEAR
                   <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={finalIsReadOnly || isSubmitting || loadingSettings || !appSettings.enableEmailNotifications}
+                      disabled={finalIsReadOnly || isSubmitting || loadingSettings || !appSettings.enableSalesEmailNotifications}
                   />
                   </FormControl>
                   <div className="space-y-1 leading-none">
                   <FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4 text-primary" />ENVIAR E-MAIL COM A NOVA VENDA</FormLabel>
                   <FormDescription>
                       {loadingSettings ? "Carregando config..." : 
-                      !appSettings.enableEmailNotifications ? "Notificações de vendas desabilitadas em Configurações." :
+                      !appSettings.enableSalesEmailNotifications ? "Notificações de vendas desabilitadas em Configurações." :
                       "Se marcado, um e-mail com os dados da venda será preparado para envio à equipe."
                       }
                   </FormDescription>

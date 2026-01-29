@@ -55,9 +55,10 @@ export type NavItem = {
 };
 
 export interface AppSettings {
-  enableEmailNotifications: boolean;
-  notificationEmails: string[];
+  enableSalesEmailNotifications: boolean;
+  salesNotificationEmails: string[];
   enableProposalEmailNotifications: boolean;
+  proposalNotificationEmails: string[];
 }
 
 export type SettingsContextType = {

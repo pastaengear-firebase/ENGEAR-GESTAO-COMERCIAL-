@@ -107,18 +107,18 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
   }, [quoteToEdit, editMode, form]);
 
   const triggerProposalEmailNotification = (quote: Quote, isUpdate: boolean) => {
-    if (loadingSettings || !appSettings.enableProposalEmailNotifications || appSettings.notificationEmails.length === 0) {
-      if (!loadingSettings && appSettings.enableProposalEmailNotifications && appSettings.notificationEmails.length === 0) {
+    if (loadingSettings || !appSettings.enableProposalEmailNotifications || appSettings.proposalNotificationEmails.length === 0) {
+      if (!loadingSettings && appSettings.enableProposalEmailNotifications && appSettings.proposalNotificationEmails.length === 0) {
         toast({
           variant: "destructive",
           title: "Lista de E-mails Vazia",
-          description: "Adicione e-mails na página de Configurações para enviar notificações de propostas.",
+          description: "Adicione e-mails de proposta na página de Configurações para enviar notificações.",
         });
       }
       return;
     }
     
-    const recipients = appSettings.notificationEmails.join(',');
+    const recipients = appSettings.proposalNotificationEmails.join(',');
     const action = isUpdate ? 'Atualizada' : 'Registrada';
     const subject = `Proposta Comercial ${action}: ${quote.clientName} / ${quote.description.substring(0,30)}...`;
     const appBaseUrl = window.location.origin;
@@ -179,7 +179,7 @@ Sistema de Controle de Vendas ENGEAR
       ...data,
       proposalDate: format(data.proposalDate, 'yyyy-MM-dd'),
       validityDate: data.validityDate ? format(data.validityDate, 'yyyy-MM-dd') : undefined,
-      proposedValue: Number(Math.round(+(Number(data.proposedValue) || 0) + 'e+2') + 'e-2'),
+      proposedValue: Number(Number(data.proposedValue || 0).toFixed(2)),
       sendProposalNotification: data.sendProposalNotification || false,
     };
 

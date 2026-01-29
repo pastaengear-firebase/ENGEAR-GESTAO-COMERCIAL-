@@ -23,12 +23,14 @@ export default function ConfiguracoesPage() {
   const [enableSalesNotifications, setEnableSalesNotifications] = useState(false);
   const [salesEmailList, setSalesEmailList] = useState('');
   const [enableProposalNotifications, setEnableProposalNotifications] = useState(false);
+  const [proposalEmailList, setProposalEmailList] = useState('');
 
   useEffect(() => {
     if (!loadingSettings) {
-      setEnableSalesNotifications(settings.enableEmailNotifications);
-      setSalesEmailList(settings.notificationEmails.join(', '));
+      setEnableSalesNotifications(settings.enableSalesEmailNotifications);
+      setSalesEmailList(settings.salesNotificationEmails.join(', '));
       setEnableProposalNotifications(settings.enableProposalEmailNotifications);
+      setProposalEmailList(settings.proposalNotificationEmails.join(', '));
     }
   }, [settings, loadingSettings]);
 
@@ -37,11 +39,17 @@ export default function ConfiguracoesPage() {
       .split(',')
       .map(email => email.trim())
       .filter(email => email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+      
+    const proposalEmails = proposalEmailList
+      .split(',')
+      .map(email => email.trim())
+      .filter(email => email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
 
     updateSettings({
-      enableEmailNotifications: enableSalesNotifications,
-      notificationEmails: salesEmails,
+      enableSalesEmailNotifications: enableSalesNotifications,
+      salesNotificationEmails: salesEmails,
       enableProposalEmailNotifications: enableProposalNotifications,
+      proposalNotificationEmails: proposalEmails,
     });
 
     toast({
@@ -159,11 +167,19 @@ export default function ConfiguracoesPage() {
                     Habilitar preparação de e-mail para novas propostas
                   </Label>
                 </div>
-                {/* Futuro: adicionar textarea para emails de proposta se se tornarem configuráveis */}
                 {enableProposalNotifications && (
-                    <p className="text-xs text-muted-foreground">
-                        Os e-mails de notificação de propostas serão preparados para a lista pré-definida no sistema.
-                    </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="proposal-notification-emails" className="text-base">
+                      E-mails para Notificação de Propostas (separados por vírgula)
+                    </Label>
+                    <Textarea
+                      id="proposal-notification-emails"
+                      placeholder="financeiro@dominio.com, diretor@dominio.com"
+                      value={proposalEmailList}
+                      onChange={(e) => setProposalEmailList(e.target.value)}
+                      className="min-h-[80px]"
+                    />
+                  </div>
                 )}
               </CardContent>
               <CardFooter>

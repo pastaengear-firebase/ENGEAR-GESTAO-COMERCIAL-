@@ -7,9 +7,10 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { AppSettings, SettingsContextType } from '@/lib/types';
 
 const defaultSettings: AppSettings = {
-  enableEmailNotifications: false,
-  notificationEmails: [],
+  enableSalesEmailNotifications: false,
+  salesNotificationEmails: [],
   enableProposalEmailNotifications: false,
+  proposalNotificationEmails: [],
 };
 
 const SETTINGS_DOC_ID = 'global'; // Use a single document for all app settings

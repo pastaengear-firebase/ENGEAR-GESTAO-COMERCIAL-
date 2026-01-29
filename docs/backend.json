@@ -64,9 +64,10 @@
       "description": "Application settings.",
       "type": "object",
       "properties": {
-        "enableEmailNotifications": { "type": "boolean" },
-        "notificationEmails": { "type": "array", "items": { "type": "string" } },
+        "enableSalesEmailNotifications": { "type": "boolean" },
+        "salesNotificationEmails": { "type": "array", "items": { "type": "string" } },
         "enableProposalEmailNotifications": { "type": "boolean" },
+        "proposalNotificationEmails": { "type": "array", "items": { "type": "string" } },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
     }
