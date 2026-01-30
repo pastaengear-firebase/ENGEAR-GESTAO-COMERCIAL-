@@ -19,7 +19,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarIcon, DollarSign, Save, RotateCcw, Info, Mail } from 'lucide-react';
+import { CalendarIcon, DollarSign, Save, RotateCcw, Info, Mail, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -40,6 +40,7 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
   const { toast } = useToast();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [originatingSeller, setOriginatingSeller] = useState<string | null>(null);
 
   const editMode = !!saleToEdit;
@@ -211,6 +212,7 @@ Sistema de Controle de Vendas ENGEAR
     }
 
     setIsSubmitting(true);
+    setIsSaved(false);
 
     const salePayload: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'> = {
       ...data,
@@ -222,19 +224,18 @@ Sistema de Controle de Vendas ENGEAR
     try {
       if (editMode && saleToEdit) {
         await updateSale(saleToEdit.id, salePayload);
-        toast({ title: "Sucesso!", description: "Venda atualizada com sucesso." });
       } else {
         const newSale = await addSale(salePayload);
-        toast({ title: "Sucesso!", description: "Nova venda registrada com sucesso." });
         if (data.sendSaleNotification) {
           triggerEmailNotification(newSale);
         }
         
         if (fromQuoteId) {
             await updateQuoteStatus(fromQuoteId, { status: "Aceita" } as any);
-            toast({ title: "Proposta Atualizada", description: "O status da proposta original foi alterado para 'Aceita'." });
         }
       }
+
+      setIsSaved(true);
 
       form.reset({
         date: new Date(),
@@ -259,6 +260,7 @@ Sistema de Controle de Vendas ENGEAR
       toast({ title: "Erro ao Salvar", description: (error as Error).message || "Não foi possível salvar a venda.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
+      setTimeout(() => setIsSaved(false), 2000);
     }
   };
   
@@ -556,9 +558,9 @@ Sistema de Controle de Vendas ENGEAR
             <RotateCcw className="mr-2 h-4 w-4" />
             {editMode ? 'Cancelar Edição' : 'Limpar Formulário'}
           </Button>
-          <Button type="submit" disabled={finalIsReadOnly || isSubmitting} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? 'Salvando...' : (editMode ? 'Atualizar Venda' : 'Salvar Venda')}
+          <Button type="submit" disabled={finalIsReadOnly || isSubmitting || isSaved} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
+            {isSaved ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+            {isSubmitting ? 'Salvando...' : isSaved ? 'Salvo!' : (editMode ? 'Atualizar Venda' : 'Salvar Venda')}
           </Button>
         </div>
       </form>

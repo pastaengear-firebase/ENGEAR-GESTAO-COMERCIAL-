@@ -18,7 +18,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarIcon, DollarSign, Save, RotateCcw, Info, BellRing } from 'lucide-react';
+import { CalendarIcon, DollarSign, Save, RotateCcw, Info, BellRing, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -37,6 +37,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
   const { toast } = useToast();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const editMode = !!quoteToEdit;
 
@@ -118,6 +119,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
     }
 
     setIsSubmitting(true);
+    setIsSaved(false);
     
     const { validityDate, ...restOfData } = data;
 
@@ -131,12 +133,12 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
     try {
       if (editMode && quoteToEdit) {
         await updateQuote(quoteToEdit.id, quotePayload as any);
-        toast({ title: "Sucesso!", description: "Proposta atualizada com sucesso." });
       } else {
         await addQuote(quotePayload as any);
-        toast({ title: "Sucesso!", description: "Nova proposta registrada com sucesso." });
       }
       
+      setIsSaved(true);
+
       form.reset({
         clientName: '',
         proposalDate: new Date(), 
@@ -164,6 +166,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
       });
     } finally {
       setIsSubmitting(false);
+      setTimeout(() => setIsSaved(false), 2000);
     }
   };
 
@@ -451,10 +454,10 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
             {editMode ? 'Cancelar Edição' : 'Limpar Formulário'}
           </Button>
           <Button type="submit"
-            disabled={isReadOnly || isSubmitting} 
+            disabled={isReadOnly || isSubmitting || isSaved} 
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? 'Salvando...' : (editMode ? 'Atualizar Proposta' : 'Salvar Proposta')}
+            {isSaved ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+            {isSubmitting ? 'Salvando...' : isSaved ? 'Salvo!' : (editMode ? 'Atualizar Proposta' : 'Salvar Proposta')}
           </Button>
         </div>
       </form>

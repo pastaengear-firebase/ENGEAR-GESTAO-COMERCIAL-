@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Mail, Save } from 'lucide-react';
+import { Settings, Mail, Save, Check } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function ConfiguracoesPage() {
@@ -18,6 +18,8 @@ export default function ConfiguracoesPage() {
 
   const [enableSalesNotifications, setEnableSalesNotifications] = useState(false);
   const [salesEmailList, setSalesEmailList] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
   useEffect(() => {
     if (!loadingSettings) {
@@ -27,6 +29,9 @@ export default function ConfiguracoesPage() {
   }, [settings, loadingSettings]);
 
   const handleSaveNotificationSettings = async () => {
+    setIsSubmitting(true);
+    setIsSaved(false);
+
     const salesEmails = salesEmailList
       .split(',')
       .map(email => email.trim())
@@ -38,16 +43,16 @@ export default function ConfiguracoesPage() {
           salesNotificationEmails: salesEmails,
         });
 
-        toast({
-          title: "Configurações de Notificação Salvas",
-          description: "Suas preferências de notificação foram atualizadas.",
-        });
+        setIsSaved(true);
     } catch(error) {
         toast({
             title: "Erro ao Salvar",
             description: "Não foi possível salvar as configurações.",
             variant: "destructive"
         });
+    } finally {
+        setIsSubmitting(false);
+        setTimeout(() => setIsSaved(false), 2000);
     }
   };
 
@@ -116,9 +121,9 @@ export default function ConfiguracoesPage() {
                 )}
               </CardContent>
               <CardFooter>
-                <Button onClick={handleSaveNotificationSettings}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar Configurações de Notificação
+                <Button onClick={handleSaveNotificationSettings} disabled={isSubmitting || isSaved}>
+                  {isSaved ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+                  {isSubmitting ? 'Salvando...' : isSaved ? 'Salvo!' : 'Salvar Configurações'}
                 </Button>
               </CardFooter>
             </Card>
