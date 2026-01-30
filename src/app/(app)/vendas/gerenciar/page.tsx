@@ -1,3 +1,4 @@
+
 // src/app/(app)/vendas/gerenciar/page.tsx
 "use client";
 import type { ChangeEvent } from 'react';
@@ -94,18 +95,17 @@ export default function GerenciarVendasPage() {
 
   const handleDelete = () => {
     if (saleToDelete) {
-      deleteSale(saleToDelete)
-        .then(() => {
-          toast({ title: "Sucesso!", description: "Venda excluída com sucesso." });
-          if (editingSale?.id === saleToDelete) {
-              setShowEditModal(false);
-              setEditingSale(null);
-          }
-          setSaleToDelete(null);
-        })
-        .catch(err => {
-          toast({ title: "Erro ao excluir", description: err.message, variant: 'destructive'});
-        });
+      try {
+        deleteSale(saleToDelete);
+        toast({ title: "Sucesso!", description: "Venda excluída com sucesso." });
+        if (editingSale?.id === saleToDelete) {
+            setShowEditModal(false);
+            setEditingSale(null);
+        }
+        setSaleToDelete(null);
+      } catch (err: any) {
+        toast({ title: "Erro ao excluir", description: err.message, variant: 'destructive'});
+      }
     }
     setShowDeleteDialog(false);
   };

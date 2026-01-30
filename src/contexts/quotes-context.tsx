@@ -1,9 +1,10 @@
+
 // src/contexts/quotes-context.tsx
 "use client";
 import type React from 'react';
 import { createContext, useState, useCallback, useContext, useMemo } from 'react';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, setDoc } from 'firebase/firestore';
 import { ALL_SELLERS_OPTION, SELLERS } from '@/lib/constants';
 import type { Quote, QuotesContextType, Seller, FollowUpOptionValue, QuoteDashboardFilters } from '@/lib/types';
 import { useSales } from '@/hooks/use-sales';
@@ -48,17 +49,18 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user } = useAuth();
 
 
-  const addQuote = useCallback(async (
+  const addQuote = useCallback((
     quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid' | 'followUpDate' | 'followUpDone' | 'followUpSequence'> & { followUpOption: FollowUpOptionValue }
-  ): Promise<Quote> => {
-    if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
-    if (isReadOnly || !user) {
+  ): Quote => {
+    if (!quotesCollection || !user) throw new Error("Firestore ou usuário não está inicializado.");
+    if (isReadOnly) {
       throw new Error("Usuário sem permissão para adicionar proposta.");
     }
     
     const { followUpOption, ...restOfQuoteData } = quoteData;
     const { date, sequence, done } = calculateFollowUp(quoteData.proposalDate, followUpOption);
 
+    const docRef = doc(quotesCollection);
     const newQuoteData = {
       ...restOfQuoteData,
       seller: selectedSeller as Seller,
@@ -66,13 +68,15 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       followUpDate: date,
       followUpDone: done,
       followUpSequence: sequence,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
     };
 
-    const docRef = await addDoc(quotesCollection, newQuoteData);
+    setDoc(docRef, { ...newQuoteData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
-    return { ...newQuoteData, seller: selectedSeller as Seller, sellerUid: user.uid, id: docRef.id, createdAt: new Date() } as Quote;
+    return { 
+        ...newQuoteData,
+        id: docRef.id,
+        createdAt: new Date().toISOString() 
+    } as Quote;
   }, [selectedSeller, quotesCollection, isReadOnly, user]);
 
   const addBulkQuotes = useCallback(async (newQuotesData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'sellerUid'>[]) => {
@@ -85,13 +89,13 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await batch.commit();
   }, [firestore, quotesCollection, user]);
 
-  const updateQuote = useCallback(async (
+  const updateQuote = useCallback((
     id: string, 
     quoteUpdateData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpSequence'>> & { followUpOption: FollowUpOptionValue, followUpDone?: boolean }
-  ): Promise<Quote | undefined> => {
+  ) => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
     const originalQuote = quotes?.find(q => q.id === id);
-    if (!originalQuote) return undefined;
+    if (!originalQuote) return;
     if (isReadOnly || selectedSeller !== originalQuote.seller) throw new Error("Usuário não tem permissão para modificar esta proposta.");
 
     const quoteRef = doc(quotesCollection, id);
@@ -106,23 +110,21 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updatePayload = { ...updatePayload, followUpDate: date, followUpSequence: sequence, followUpDone: done };
     }
     
-    await updateDoc(quoteRef, { ...updatePayload, updatedAt: serverTimestamp() });
-    
-    return { ...originalQuote, ...updatePayload, id, updatedAt: new Date() };
+    updateDoc(quoteRef, { ...updatePayload, updatedAt: serverTimestamp() });
   }, [quotes, quotesCollection, isReadOnly, selectedSeller]);
 
-  const deleteQuote = useCallback(async (id: string) => {
+  const deleteQuote = useCallback((id: string) => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
     const originalQuote = quotes?.find(q => q.id === id);
     if (isReadOnly || (originalQuote && selectedSeller !== originalQuote.seller)) throw new Error("Usuário não tem permissão para excluir esta proposta.");
-    await deleteDoc(doc(quotesCollection, id));
+    deleteDoc(doc(quotesCollection, id));
   }, [quotes, quotesCollection, isReadOnly, selectedSeller]);
 
   const getQuoteById = useCallback((id: string): Quote | undefined => {
     return quotes?.find(quote => quote.id === id);
   }, [quotes]);
 
-  const toggleFollowUpDone = useCallback(async (quoteId: string) => {
+  const toggleFollowUpDone = useCallback((quoteId: string) => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas.");
     const quote = quotes?.find(q => q.id === quoteId);
     if (!quote) return;
@@ -132,13 +134,13 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // If it's being marked as "not done", just revert the 'done' status.
     if (quote.followUpDone) {
-        await updateDoc(quoteRef, { followUpDone: false, updatedAt: serverTimestamp() });
+        updateDoc(quoteRef, { followUpDone: false, updatedAt: serverTimestamp() });
         return;
     }
 
     // If no sequence, just mark as done.
     if (!quote.followUpSequence || !quote.followUpDate) {
-        await updateDoc(quoteRef, { followUpDone: true, updatedAt: serverTimestamp() });
+        updateDoc(quoteRef, { followUpDone: true, updatedAt: serverTimestamp() });
         return;
     }
 
@@ -158,12 +160,12 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (currentIndex === -1 || currentIndex >= sequence.length - 1) {
         // Not found in sequence or it's the last one
-        await updateDoc(quoteRef, { followUpDone: true, updatedAt: serverTimestamp() });
+        updateDoc(quoteRef, { followUpDone: true, updatedAt: serverTimestamp() });
     } else {
         // Advance to the next date in the sequence
         const nextOffset = sequence[currentIndex + 1];
         const nextFollowUpDate = format(addDays(proposalD, nextOffset), 'yyyy-MM-dd');
-        await updateDoc(quoteRef, { 
+        updateDoc(quoteRef, { 
             followUpDate: nextFollowUpDate,
             followUpDone: false, // It's not done, it's newly scheduled
             updatedAt: serverTimestamp() 

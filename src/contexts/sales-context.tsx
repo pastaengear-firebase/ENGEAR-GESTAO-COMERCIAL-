@@ -1,9 +1,10 @@
+
 // src/contexts/sales-context.tsx
 "use client";
 import type React from 'react';
 import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, writeBatch, setDoc } from 'firebase/firestore';
 import { ALL_SELLERS_OPTION, SELLER_EMAIL_MAP } from '@/lib/constants';
 import type { Sale, Seller, SalesContextType, SalesFilters } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
@@ -37,18 +38,26 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const isReadOnly = useMemo(() => selectedSeller === ALL_SELLERS_OPTION && (!user || !Object.keys(SELLER_EMAIL_MAP).includes(user.email?.toLowerCase() || '')), [selectedSeller, user]);
 
-  const addSale = useCallback(async (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>): Promise<Sale> => {
-    if (!salesCollection) throw new Error("Firestore não está inicializado.");
-    if (isReadOnly || !user) throw new Error("Usuário não tem permissão para adicionar vendas.");
+  const addSale = useCallback((saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>): Sale => {
+    if (!salesCollection || !user) throw new Error("Firestore ou usuário não está inicializado.");
+    if (isReadOnly) throw new Error("Usuário não tem permissão para adicionar vendas.");
 
-    const docRef = await addDoc(salesCollection, {
+    const docRef = doc(salesCollection);
+    const newSaleData = {
       ...saleData,
       seller: selectedSeller,
       sellerUid: user.uid,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return { ...saleData, seller: selectedSeller as Seller, sellerUid: user.uid, id: docRef.id, createdAt: Date.now() } as Sale;
+    };
+    
+    // Fire-and-forget
+    setDoc(docRef, { ...newSaleData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    
+    return { 
+        ...newSaleData, 
+        seller: selectedSeller as Seller, 
+        id: docRef.id, 
+        createdAt: new Date().toISOString() 
+    } as Sale;
   }, [salesCollection, selectedSeller, isReadOnly, user]);
 
   const addBulkSales = useCallback(async (newSalesData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'sellerUid'>[]) => {
@@ -61,26 +70,24 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await batch.commit();
   }, [firestore, salesCollection, user]);
 
-  const updateSale = useCallback(async (id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Sale | undefined> => {
+  const updateSale = useCallback((id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
     const originalSale = sales?.find(s => s.id === id);
     if (isReadOnly || (originalSale && originalSale.seller !== selectedSeller)) {
       throw new Error("Usuário não tem permissão para modificar esta venda.");
     }
     const saleRef = doc(salesCollection, id);
-    await updateDoc(saleRef, { ...saleUpdateData, updatedAt: serverTimestamp() });
-    
-    return originalSale ? { ...originalSale, ...saleUpdateData, id, updatedAt: Date.now() } : undefined;
+    updateDoc(saleRef, { ...saleUpdateData, updatedAt: serverTimestamp() });
   }, [sales, salesCollection, selectedSeller, isReadOnly]);
 
-  const deleteSale = useCallback(async (id: string) => {
+  const deleteSale = useCallback((id: string) => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
     const originalSale = sales?.find(s => s.id === id);
      if (isReadOnly || (originalSale && originalSale.seller !== selectedSeller)) {
       throw new Error("Usuário não tem permissão para excluir esta venda.");
     }
     const saleRef = doc(salesCollection, id);
-    await deleteDoc(saleRef);
+    deleteDoc(saleRef);
   }, [salesCollection, sales, selectedSeller, isReadOnly]);
 
   const getSaleById = useCallback((id: string): Sale | undefined => {

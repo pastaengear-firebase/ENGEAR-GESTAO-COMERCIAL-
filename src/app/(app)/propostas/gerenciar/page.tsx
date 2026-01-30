@@ -1,3 +1,4 @@
+
 // src/app/(app)/propostas/gerenciar/page.tsx
 "use client";
 import type { ChangeEvent } from 'react';
@@ -67,13 +68,17 @@ export default function GerenciarPropostasPage() {
 
   const handleDelete = () => {
     if (quoteToDelete) {
-      deleteQuote(quoteToDelete);
-      toast({ title: "Sucesso!", description: "Proposta excluída com sucesso." });
-      if (editingQuote?.id === quoteToDelete) {
-        setShowEditModal(false);
-        setEditingQuote(null);
+      try {
+        deleteQuote(quoteToDelete);
+        toast({ title: "Sucesso!", description: "Proposta excluída com sucesso." });
+        if (editingQuote?.id === quoteToDelete) {
+          setShowEditModal(false);
+          setEditingQuote(null);
+        }
+        setQuoteToDelete(null);
+      } catch (err: any) {
+        toast({ title: "Erro ao excluir", description: err.message, variant: 'destructive'});
       }
-      setQuoteToDelete(null);
     }
     setDialogOpen(false);
   };

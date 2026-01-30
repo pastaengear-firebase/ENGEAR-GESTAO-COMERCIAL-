@@ -1,3 +1,4 @@
+
 // src/components/sales/sales-form.tsx
 "use client";
 import type React from 'react';
@@ -61,7 +62,7 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
   });
 
   useEffect(() => {
-    const initializeForm = async () => {
+    const initializeForm = () => {
       let formIsReadOnly = isReadOnly;
       if (editMode && saleToEdit) {
         if (saleToEdit) {
@@ -190,7 +191,7 @@ Sistema de Controle de Vendas ENGEAR
     toast({ title: "Preparando E-mail", description: "Seu cliente de e-mail foi aberto para enviar a notificação." });
   };
 
-  const onSubmit = async (data: SalesFormData) => {
+  const onSubmit = (data: SalesFormData) => {
     let formIsReadOnly = isReadOnly;
     if((editMode || fromQuoteId) && selectedSeller !== originatingSeller) {
         formIsReadOnly = true;
@@ -220,17 +221,17 @@ Sistema de Controle de Vendas ENGEAR
 
     try {
       if (editMode && saleToEdit) {
-        await updateSale(saleToEdit.id, salePayload);
+        updateSale(saleToEdit.id, salePayload);
         toast({ title: "Sucesso!", description: "Venda atualizada com sucesso." });
       } else {
-        const newSale = await addSale(salePayload);
+        const newSale = addSale(salePayload);
         toast({ title: "Sucesso!", description: "Nova venda registrada com sucesso." });
         if (data.sendSaleNotification) {
           triggerEmailNotification(newSale);
         }
         
         if (fromQuoteId) {
-            await updateQuoteStatus(fromQuoteId, { status: "Aceita" });
+            updateQuoteStatus(fromQuoteId, { status: "Aceita" } as any);
             toast({ title: "Proposta Atualizada", description: "O status da proposta original foi alterado para 'Aceita'." });
         }
       }
