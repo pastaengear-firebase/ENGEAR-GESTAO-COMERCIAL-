@@ -17,7 +17,7 @@ const navItems: NavItem[] = [
   },
   {
     title: 'Propostas',
-    href: '/propostas/gerenciar',
+    href: '/propostas/nova',
     icon: FileText,
     isActive: (pathname) => pathname.startsWith('/propostas'),
   },
