@@ -93,10 +93,10 @@ export default function GerenciarVendasPage() {
     setShowDeleteDialog(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (saleToDelete) {
       try {
-        deleteSale(saleToDelete);
+        await deleteSale(saleToDelete);
         toast({ title: "Sucesso!", description: "Venda excluída com sucesso." });
         if (editingSale?.id === saleToDelete) {
             setShowEditModal(false);
@@ -139,7 +139,7 @@ export default function GerenciarVendasPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'array', cellDates: true });
@@ -231,7 +231,7 @@ export default function GerenciarVendasPage() {
         }
         
         if (newSales.length > 0) {
-          addBulkSales(newSales as any);
+          await addBulkSales(newSales as any);
           toast({ title: "Importação Concluída", description: `${newSales.length} novas vendas foram importadas.` });
         } else {
           toast({ variant: "destructive", title: "Nenhuma Venda Válida", description: "Nenhuma venda para importar foi encontrada no arquivo." });

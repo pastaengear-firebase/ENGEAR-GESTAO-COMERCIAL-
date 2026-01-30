@@ -191,7 +191,7 @@ Sistema de Controle de Vendas ENGEAR
     toast({ title: "Preparando E-mail", description: "Seu cliente de e-mail foi aberto para enviar a notificação." });
   };
 
-  const onSubmit = (data: SalesFormData) => {
+  const onSubmit = async (data: SalesFormData) => {
     let formIsReadOnly = isReadOnly;
     if((editMode || fromQuoteId) && selectedSeller !== originatingSeller) {
         formIsReadOnly = true;
@@ -221,17 +221,17 @@ Sistema de Controle de Vendas ENGEAR
 
     try {
       if (editMode && saleToEdit) {
-        updateSale(saleToEdit.id, salePayload);
+        await updateSale(saleToEdit.id, salePayload);
         toast({ title: "Sucesso!", description: "Venda atualizada com sucesso." });
       } else {
-        const newSale = addSale(salePayload);
+        const newSale = await addSale(salePayload);
         toast({ title: "Sucesso!", description: "Nova venda registrada com sucesso." });
         if (data.sendSaleNotification) {
           triggerEmailNotification(newSale);
         }
         
         if (fromQuoteId) {
-            updateQuoteStatus(fromQuoteId, { status: "Aceita" } as any);
+            await updateQuoteStatus(fromQuoteId, { status: "Aceita" } as any);
             toast({ title: "Proposta Atualizada", description: "O status da proposta original foi alterado para 'Aceita'." });
         }
       }

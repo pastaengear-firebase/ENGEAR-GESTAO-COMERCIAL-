@@ -66,10 +66,10 @@ export default function GerenciarPropostasPage() {
     setDialogOpen(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (quoteToDelete) {
       try {
-        deleteQuote(quoteToDelete);
+        await deleteQuote(quoteToDelete);
         toast({ title: "Sucesso!", description: "Proposta excluída com sucesso." });
         if (editingQuote?.id === quoteToDelete) {
           setShowEditModal(false);
@@ -123,7 +123,7 @@ export default function GerenciarPropostasPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'array', cellDates: true });
@@ -225,7 +225,7 @@ export default function GerenciarPropostasPage() {
         }
         
         if (newQuotes.length > 0) {
-          addBulkQuotes(newQuotes);
+          await addBulkQuotes(newQuotes);
           toast({ title: "Importação Concluída", description: `${newQuotes.length} novas propostas foram importadas.` });
         } else {
           toast({ variant: "destructive", title: "Nenhuma Proposta Válida", description: "Nenhuma proposta para importar foi encontrada no arquivo." });

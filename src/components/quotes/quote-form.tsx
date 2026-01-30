@@ -102,7 +102,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
     }
   }, [quoteToEdit, editMode, form]);
 
-  const onSubmit = (data: QuoteFormData) => {
+  const onSubmit = async (data: QuoteFormData) => {
     if (isReadOnly) { 
        toast({
         title: "Ação Não Permitida",
@@ -130,10 +130,10 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
 
     try {
       if (editMode && quoteToEdit) {
-        updateQuote(quoteToEdit.id, quotePayload as any);
+        await updateQuote(quoteToEdit.id, quotePayload as any);
         toast({ title: "Sucesso!", description: "Proposta atualizada com sucesso." });
       } else {
-        addQuote(quotePayload as any);
+        await addQuote(quotePayload as any);
         toast({ title: "Sucesso!", description: "Nova proposta registrada com sucesso." });
       }
       

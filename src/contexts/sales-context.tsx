@@ -38,23 +38,21 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const isReadOnly = useMemo(() => selectedSeller === ALL_SELLERS_OPTION && (!user || !Object.keys(SELLER_EMAIL_MAP).includes(user.email?.toLowerCase() || '')), [selectedSeller, user]);
 
-  const addSale = useCallback((saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>): Sale => {
+  const addSale = useCallback(async (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>): Promise<Sale> => {
     if (!salesCollection || !user) throw new Error("Firestore ou usuário não está inicializado.");
     if (isReadOnly) throw new Error("Usuário não tem permissão para adicionar vendas.");
 
     const docRef = doc(salesCollection);
     const newSaleData = {
       ...saleData,
-      seller: selectedSeller,
+      seller: selectedSeller as Seller,
       sellerUid: user.uid,
     };
     
-    // Fire-and-forget
-    setDoc(docRef, { ...newSaleData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    await setDoc(docRef, { ...newSaleData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     
     return { 
         ...newSaleData, 
-        seller: selectedSeller as Seller, 
         id: docRef.id, 
         createdAt: new Date().toISOString() 
     } as Sale;
@@ -70,24 +68,24 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await batch.commit();
   }, [firestore, salesCollection, user]);
 
-  const updateSale = useCallback((id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => {
+  const updateSale = useCallback(async (id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
     const originalSale = sales?.find(s => s.id === id);
     if (isReadOnly || (originalSale && originalSale.seller !== selectedSeller)) {
       throw new Error("Usuário não tem permissão para modificar esta venda.");
     }
     const saleRef = doc(salesCollection, id);
-    updateDoc(saleRef, { ...saleUpdateData, updatedAt: serverTimestamp() });
+    await updateDoc(saleRef, { ...saleUpdateData, updatedAt: serverTimestamp() });
   }, [sales, salesCollection, selectedSeller, isReadOnly]);
 
-  const deleteSale = useCallback((id: string) => {
+  const deleteSale = useCallback(async (id: string) => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
     const originalSale = sales?.find(s => s.id === id);
      if (isReadOnly || (originalSale && originalSale.seller !== selectedSeller)) {
       throw new Error("Usuário não tem permissão para excluir esta venda.");
     }
     const saleRef = doc(salesCollection, id);
-    deleteDoc(saleRef);
+    await deleteDoc(saleRef);
   }, [salesCollection, sales, selectedSeller, isReadOnly]);
 
   const getSaleById = useCallback((id: string): Sale | undefined => {

@@ -49,9 +49,9 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user } = useAuth();
 
 
-  const addQuote = useCallback((
+  const addQuote = useCallback(async (
     quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid' | 'followUpDate' | 'followUpDone' | 'followUpSequence'> & { followUpOption: FollowUpOptionValue }
-  ): Quote => {
+  ): Promise<Quote> => {
     if (!quotesCollection || !user) throw new Error("Firestore ou usuário não está inicializado.");
     if (isReadOnly) {
       throw new Error("Usuário sem permissão para adicionar proposta.");
@@ -70,7 +70,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       followUpSequence: sequence,
     };
 
-    setDoc(docRef, { ...newQuoteData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    await setDoc(docRef, { ...newQuoteData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
     return { 
         ...newQuoteData,
@@ -89,7 +89,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await batch.commit();
   }, [firestore, quotesCollection, user]);
 
-  const updateQuote = useCallback((
+  const updateQuote = useCallback(async (
     id: string, 
     quoteUpdateData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpSequence'>> & { followUpOption: FollowUpOptionValue, followUpDone?: boolean }
   ) => {
@@ -110,21 +110,21 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updatePayload = { ...updatePayload, followUpDate: date, followUpSequence: sequence, followUpDone: done };
     }
     
-    updateDoc(quoteRef, { ...updatePayload, updatedAt: serverTimestamp() });
+    await updateDoc(quoteRef, { ...updatePayload, updatedAt: serverTimestamp() });
   }, [quotes, quotesCollection, isReadOnly, selectedSeller]);
 
-  const deleteQuote = useCallback((id: string) => {
+  const deleteQuote = useCallback(async (id: string) => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
     const originalQuote = quotes?.find(q => q.id === id);
     if (isReadOnly || (originalQuote && selectedSeller !== originalQuote.seller)) throw new Error("Usuário não tem permissão para excluir esta proposta.");
-    deleteDoc(doc(quotesCollection, id));
+    await deleteDoc(doc(quotesCollection, id));
   }, [quotes, quotesCollection, isReadOnly, selectedSeller]);
 
   const getQuoteById = useCallback((id: string): Quote | undefined => {
     return quotes?.find(quote => quote.id === id);
   }, [quotes]);
 
-  const toggleFollowUpDone = useCallback((quoteId: string) => {
+  const toggleFollowUpDone = useCallback(async (quoteId: string) => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas.");
     const quote = quotes?.find(q => q.id === quoteId);
     if (!quote) return;
@@ -134,13 +134,13 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // If it's being marked as "not done", just revert the 'done' status.
     if (quote.followUpDone) {
-        updateDoc(quoteRef, { followUpDone: false, updatedAt: serverTimestamp() });
+        await updateDoc(quoteRef, { followUpDone: false, updatedAt: serverTimestamp() });
         return;
     }
 
     // If no sequence, just mark as done.
     if (!quote.followUpSequence || !quote.followUpDate) {
-        updateDoc(quoteRef, { followUpDone: true, updatedAt: serverTimestamp() });
+        await updateDoc(quoteRef, { followUpDone: true, updatedAt: serverTimestamp() });
         return;
     }
 
@@ -160,12 +160,12 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (currentIndex === -1 || currentIndex >= sequence.length - 1) {
         // Not found in sequence or it's the last one
-        updateDoc(quoteRef, { followUpDone: true, updatedAt: serverTimestamp() });
+        await updateDoc(quoteRef, { followUpDone: true, updatedAt: serverTimestamp() });
     } else {
         // Advance to the next date in the sequence
         const nextOffset = sequence[currentIndex + 1];
         const nextFollowUpDate = format(addDays(proposalD, nextOffset), 'yyyy-MM-dd');
-        updateDoc(quoteRef, { 
+        await updateDoc(quoteRef, { 
             followUpDate: nextFollowUpDate,
             followUpDone: false, // It's not done, it's newly scheduled
             updatedAt: serverTimestamp() 

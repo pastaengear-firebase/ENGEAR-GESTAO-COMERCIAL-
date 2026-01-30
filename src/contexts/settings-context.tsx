@@ -36,25 +36,18 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [firestoreSettings]);
 
-  const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
+  const updateSettings = useCallback(async (newSettings: Partial<AppSettings>) => {
       if (!settingsDocRef) {
           console.error("Cannot update settings: Firestore is not available.");
-          return;
+          throw new Error("Firestore not available");
       }
-      const updatedSettings = { ...settings, ...newSettings };
-      setSettings(updatedSettings); // Optimistic update
       
-      try {
-        // Fire and forget
-        setDoc(settingsDocRef, {
-            ...newSettings, 
-            updatedAt: serverTimestamp() 
-        }, { merge: true });
-      } catch (error) {
-          console.error("Error updating settings in Firestore:", error);
-          setSettings(settings); 
-      }
-  }, [settingsDocRef, settings]);
+      await setDoc(settingsDocRef, {
+          ...newSettings, 
+          updatedAt: serverTimestamp() 
+      }, { merge: true });
+      
+  }, [settingsDocRef]);
 
   const loadingSettings = loadingFirestoreSettings;
 

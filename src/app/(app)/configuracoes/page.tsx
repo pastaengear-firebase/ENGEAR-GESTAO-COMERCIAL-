@@ -1,3 +1,4 @@
+
 // src/app/(app)/configuracoes/page.tsx
 "use client";
 import { useState, useEffect } from 'react';
@@ -25,21 +26,29 @@ export default function ConfiguracoesPage() {
     }
   }, [settings, loadingSettings]);
 
-  const handleSaveNotificationSettings = () => {
+  const handleSaveNotificationSettings = async () => {
     const salesEmails = salesEmailList
       .split(',')
       .map(email => email.trim())
       .filter(email => email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
       
-    updateSettings({
-      enableSalesEmailNotifications: enableSalesNotifications,
-      salesNotificationEmails: salesEmails,
-    });
+    try {
+        await updateSettings({
+          enableSalesEmailNotifications: enableSalesNotifications,
+          salesNotificationEmails: salesEmails,
+        });
 
-    toast({
-      title: "Configurações de Notificação Salvas",
-      description: "Suas preferências de notificação foram atualizadas.",
-    });
+        toast({
+          title: "Configurações de Notificação Salvas",
+          description: "Suas preferências de notificação foram atualizadas.",
+        });
+    } catch(error) {
+        toast({
+            title: "Erro ao Salvar",
+            description: "Não foi possível salvar as configurações.",
+            variant: "destructive"
+        });
+    }
   };
 
 
