@@ -51,7 +51,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return { ...saleData, seller: selectedSeller as Seller, sellerUid: user.uid, id: docRef.id, createdAt: Date.now() } as Sale;
   }, [salesCollection, selectedSeller, isReadOnly, user]);
 
-  const addBulkSales = useCallback(async (newSalesData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>[]) => {
+  const addBulkSales = useCallback(async (newSalesData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'sellerUid'>[]) => {
     if (!firestore || !salesCollection || !user) throw new Error("Firestore ou usuário não está inicializado.");
     const batch = writeBatch(firestore);
     newSalesData.forEach(saleData => {

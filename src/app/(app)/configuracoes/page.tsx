@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Mail, Save, FileText } from 'lucide-react';
+import { Settings, Mail, Save } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function ConfiguracoesPage() {
@@ -17,15 +17,11 @@ export default function ConfiguracoesPage() {
 
   const [enableSalesNotifications, setEnableSalesNotifications] = useState(false);
   const [salesEmailList, setSalesEmailList] = useState('');
-  const [enableProposalNotifications, setEnableProposalNotifications] = useState(false);
-  const [proposalEmailList, setProposalEmailList] = useState('');
-
+  
   useEffect(() => {
     if (!loadingSettings) {
       setEnableSalesNotifications(settings.enableSalesEmailNotifications);
       setSalesEmailList(settings.salesNotificationEmails.join(', '));
-      setEnableProposalNotifications(settings.enableProposalEmailNotifications);
-      setProposalEmailList(settings.proposalNotificationEmails.join(', '));
     }
   }, [settings, loadingSettings]);
 
@@ -35,16 +31,9 @@ export default function ConfiguracoesPage() {
       .map(email => email.trim())
       .filter(email => email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
       
-    const proposalEmails = proposalEmailList
-      .split(',')
-      .map(email => email.trim())
-      .filter(email => email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
-
     updateSettings({
       enableSalesEmailNotifications: enableSalesNotifications,
       salesNotificationEmails: salesEmails,
-      enableProposalEmailNotifications: enableProposalNotifications,
-      proposalNotificationEmails: proposalEmails,
     });
 
     toast({
@@ -112,38 +101,6 @@ export default function ConfiguracoesPage() {
                       placeholder="exemplo1@dominio.com, exemplo2@dominio.com"
                       value={salesEmailList}
                       onChange={(e) => setSalesEmailList(e.target.value)}
-                      className="min-h-[80px]"
-                    />
-                  </div>
-                )}
-              </CardContent>
-              <CardHeader className="pb-2 pt-4">
-                 <CardTitle className="text-lg flex items-center"><FileText className="mr-2 h-5 w-5 text-primary"/> Novas Propostas</CardTitle>
-                <CardDescription>
-                  Controle o preparo de e-mails quando uma nova proposta é criada ou atualizada.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-2">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="proposal-email-notifications-toggle"
-                    checked={enableProposalNotifications}
-                    onCheckedChange={setEnableProposalNotifications}
-                  />
-                  <Label htmlFor="proposal-email-notifications-toggle" className="text-base">
-                    Habilitar preparação de e-mail para novas propostas
-                  </Label>
-                </div>
-                {enableProposalNotifications && (
-                  <div className="space-y-2">
-                    <Label htmlFor="proposal-notification-emails" className="text-base">
-                      E-mails para Notificação de Propostas (separados por vírgula)
-                    </Label>
-                    <Textarea
-                      id="proposal-notification-emails"
-                      placeholder="financeiro@dominio.com, diretor@dominio.com"
-                      value={proposalEmailList}
-                      onChange={(e) => setProposalEmailList(e.target.value)}
                       className="min-h-[80px]"
                     />
                   </div>

@@ -42,7 +42,6 @@ export const QuoteFormSchema = z.object({
         message: "Selecione uma opção válida para o follow-up."
     })
     .default('0'),
-  sendProposalNotification: z.boolean().optional().default(false),
   followUpDone: z.boolean().optional().default(false),
 });
 export type QuoteFormData = z.infer<typeof QuoteFormSchema>;

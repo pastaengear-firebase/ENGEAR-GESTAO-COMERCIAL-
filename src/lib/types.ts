@@ -38,7 +38,7 @@ export type SalesContextType = {
   selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
   isReadOnly: boolean;
   addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>) => Promise<Sale>;
-  addBulkSales: (newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>[]) => Promise<void>;
+  addBulkSales: (newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'sellerUid'>[]) => Promise<void>;
   updateSale: (id: string, saleData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<Sale | undefined>;
   deleteSale: (id: string) => Promise<void>;
   getSaleById: (id: string) => Sale | undefined;
@@ -57,8 +57,6 @@ export type NavItem = {
 export interface AppSettings {
   enableSalesEmailNotifications: boolean;
   salesNotificationEmails: string[];
-  enableProposalEmailNotifications: boolean;
-  proposalNotificationEmails: string[];
 }
 
 export type SettingsContextType = {
@@ -87,7 +85,6 @@ export interface Quote {
   followUpDate?: string | null;
   followUpDone?: boolean;
   followUpSequence?: string;
-  sendProposalNotification?: boolean;
   createdAt: any; // Can be a server timestamp
   updatedAt?: any; // Can be a server timestamp
 }
@@ -104,8 +101,9 @@ export type QuotesContextType = {
   setDashboardFilters: (filters: Partial<QuoteDashboardFilters>) => void;
   dashboardFilters: QuoteDashboardFilters;
   
-  addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid' | 'followUpDate' | 'followUpDone' | 'followUpSequence'> & { followUpOption: FollowUpOptionValue, sendProposalNotification?: boolean }) => Promise<Quote>;
-  updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpSequence'>> & { followUpOption: FollowUpOptionValue, sendProposalNotification?: boolean, followUpDone?: boolean }) => Promise<Quote | undefined>;
+  addQuote: (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid' | 'followUpDate' | 'followUpDone' | 'followUpSequence'> & { followUpOption: FollowUpOptionValue }) => Promise<Quote>;
+  addBulkQuotes: (newQuotes: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'sellerUid'>[]) => Promise<void>;
+  updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpSequence'>> & { followUpOption: FollowUpOptionValue, followUpDone?: boolean }) => Promise<Quote | undefined>;
   deleteQuote: (id: string) => Promise<void>;
   getQuoteById: (id: string) => Quote | undefined;
   toggleFollowUpDone: (quoteId: string) => Promise<void>; 

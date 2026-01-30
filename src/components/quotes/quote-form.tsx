@@ -9,17 +9,15 @@ import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_
 import type { Seller, FollowUpOptionValue } from '@/lib/constants';
 import { useQuotes } from '@/hooks/use-quotes';
 import { useSales } from '@/hooks/use-sales'; 
-import { useSettings } from '@/hooks/use-settings'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarIcon, DollarSign, Save, RotateCcw, Info, BellRing, Mail } from 'lucide-react';
+import { CalendarIcon, DollarSign, Save, RotateCcw, Info, BellRing } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -35,7 +33,6 @@ interface QuoteFormProps {
 export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert }: QuoteFormProps) {
   const { addQuote, updateQuote } = useQuotes();
   const { selectedSeller, isReadOnly } = useSales();
-  const { settings: appSettings, loadingSettings } = useSettings(); 
   const { toast } = useToast();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +53,6 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
       status: "Pendente",
       notes: '',
       followUpOption: '0', 
-      sendProposalNotification: false,
     },
   });
 
@@ -87,7 +83,6 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
         status: quoteToEdit.status,
         notes: quoteToEdit.notes || '',
         followUpOption: followUpOptionValue,
-        sendProposalNotification: quoteToEdit.sendProposalNotification || false,
       });
     } else if (!editMode) {
       form.reset({ 
@@ -102,68 +97,15 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
         status: "Pendente",
         notes: '',
         followUpOption: '0',
-        sendProposalNotification: false,
       });
     }
   }, [quoteToEdit, editMode, form]);
-
-  const triggerProposalEmailNotification = (quote: Quote, isUpdate: boolean) => {
-    if (loadingSettings || !appSettings.enableProposalEmailNotifications || appSettings.proposalNotificationEmails.length === 0) {
-      if (!loadingSettings && appSettings.enableProposalEmailNotifications && appSettings.proposalNotificationEmails.length === 0) {
-        toast({
-          variant: "destructive",
-          title: "Lista de E-mails Vazia",
-          description: "Adicione e-mails de proposta na página de Configurações para enviar notificações.",
-        });
-      }
-      return;
-    }
-    
-    const recipients = appSettings.proposalNotificationEmails.join(',');
-    const action = isUpdate ? 'Atualizada' : 'Registrada';
-    const subject = `Proposta Comercial ${action}: ${quote.clientName} / ${quote.description.substring(0,30)}...`;
-    const appBaseUrl = window.location.origin;
-    const proposalManagementLink = `${appBaseUrl}/propostas/gerenciar`;
-
-    const body = `
-Prezados,
-
-Uma proposta comercial foi ${action.toLowerCase()} no sistema:
-
-Detalhes da Proposta:
---------------------------------------------------
-ID da Proposta: ${quote.id}
-Cliente: ${quote.clientName}
-Data da Proposta: ${format(parseISO(quote.proposalDate), 'dd/MM/yyyy', { locale: ptBR })}
-${quote.validityDate ? `Data de Validade: ${format(parseISO(quote.validityDate), 'dd/MM/yyyy', { locale: ptBR })}\n` : ''}
-Vendedor: ${quote.seller}
-Empresa: ${quote.company}
-Área: ${quote.area}
-Valor Proposto: ${quote.proposedValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-Status: ${quote.status}
-Descrição: ${quote.description}
-${quote.notes ? `Observações: ${quote.notes}\n` : ''}
-${quote.followUpDate ? `Próximo Acompanhamento: ${format(parseISO(quote.followUpDate), 'dd/MM/yyyy', { locale: ptBR })}\n` : ''}
---------------------------------------------------
-
-Acesse a aplicação para mais detalhes: ${appBaseUrl}
-Gerenciar propostas: ${proposalManagementLink}
-
-Atenciosamente,
-Sistema de Controle de Vendas ENGEAR
-    `;
-
-    const mailtoLink = `mailto:${recipients}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoLink, '_blank');
-    toast({ title: "Preparando E-mail", description: "Seu cliente de e-mail foi aberto para enviar a notificação da proposta." });
-  };
-
 
   const onSubmit = async (data: QuoteFormData) => {
     if (isReadOnly) { 
        toast({
         title: "Ação Não Permitida",
-        description: "Faça login com uma conta de vendedor para criar ou modificar uma proposta.",
+        description: "Faça login com um usuário de vendas para criar ou modificar uma proposta.",
         variant: "destructive",
       });
       return;
@@ -183,23 +125,17 @@ Sistema de Controle de Vendas ENGEAR
       proposalDate: format(data.proposalDate, 'yyyy-MM-dd'),
       ...(validityDate && { validityDate: format(validityDate, 'yyyy-MM-dd') }),
       proposedValue: Number(Math.round(+(data.proposedValue || 0) + 'e+2') + 'e-2'),
-      sendProposalNotification: data.sendProposalNotification || false,
     };
 
     try {
-      let savedQuote: Quote | undefined;
       if (editMode && quoteToEdit) {
-        savedQuote = await updateQuote(quoteToEdit.id, quotePayload as any);
+        await updateQuote(quoteToEdit.id, quotePayload as any);
         toast({ title: "Sucesso!", description: "Proposta atualizada com sucesso." });
       } else {
-        savedQuote = await addQuote(quotePayload as any);
+        await addQuote(quotePayload as any);
         toast({ title: "Sucesso!", description: "Nova proposta registrada com sucesso." });
       }
       
-      if (savedQuote && savedQuote.sendProposalNotification) {
-        triggerProposalEmailNotification(savedQuote, editMode);
-      }
-
       form.reset({
         clientName: '',
         proposalDate: new Date(), 
@@ -212,7 +148,6 @@ Sistema de Controle de Vendas ENGEAR
         status: "Pendente",
         notes: '',
         followUpOption: '0',
-        sendProposalNotification: false,
       });
       
       if (onFormSubmit) {
@@ -472,30 +407,6 @@ Sistema de Controle de Vendas ENGEAR
                 )}
             />
 
-            <FormField
-                control={form.control}
-                name="sendProposalNotification"
-                render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-4 md:mt-0 shadow-sm bg-muted/30">
-                     <FormControl>
-                        <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isReadOnly || isSubmitting || loadingSettings || !appSettings.enableProposalEmailNotifications}
-                        />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                    <FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4 text-primary" />Notificar equipe por e-mail?</FormLabel>
-                    <FormDescription>
-                        {loadingSettings ? "Carregando config..." : 
-                          !appSettings.enableProposalEmailNotifications ? "Notificações de proposta desabilitadas em Configurações." :
-                          "Se marcado, um e-mail com os dados da proposta será preparado para envio."
-                        }
-                    </FormDescription>
-                    </div>
-                </FormItem>
-                )}
-            />
         </div>
 
         <FormField
@@ -529,7 +440,6 @@ Sistema de Controle de Vendas ENGEAR
                 status: "Pendente",
                 notes: '',
                 followUpOption: '0',
-                sendProposalNotification: false,
               });
               if (onFormSubmit && editMode) onFormSubmit(); 
             }}

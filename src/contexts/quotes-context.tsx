@@ -3,7 +3,7 @@
 import type React from 'react';
 import { createContext, useState, useCallback, useContext, useMemo } from 'react';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { ALL_SELLERS_OPTION, SELLERS } from '@/lib/constants';
 import type { Quote, QuotesContextType, Seller, FollowUpOptionValue, QuoteDashboardFilters } from '@/lib/types';
 import { useSales } from '@/hooks/use-sales';
@@ -49,7 +49,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 
   const addQuote = useCallback(async (
-    quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid' | 'followUpDate' | 'followUpDone' | 'followUpSequence'> & { followUpOption: FollowUpOptionValue, sendProposalNotification?: boolean }
+    quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid' | 'followUpDate' | 'followUpDone' | 'followUpSequence'> & { followUpOption: FollowUpOptionValue }
   ): Promise<Quote> => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
     if (isReadOnly || !user) {
@@ -66,7 +66,6 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       followUpDate: date,
       followUpDone: done,
       followUpSequence: sequence,
-      sendProposalNotification: quoteData.sendProposalNotification || false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -76,9 +75,19 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { ...newQuoteData, seller: selectedSeller as Seller, sellerUid: user.uid, id: docRef.id, createdAt: new Date() } as Quote;
   }, [selectedSeller, quotesCollection, isReadOnly, user]);
 
+  const addBulkQuotes = useCallback(async (newQuotesData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'sellerUid'>[]) => {
+    if (!firestore || !quotesCollection || !user) throw new Error("Firestore ou usuário não está inicializado.");
+    const batch = writeBatch(firestore);
+    newQuotesData.forEach(quoteData => {
+        const docRef = doc(quotesCollection);
+        batch.set(docRef, { ...quoteData, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    });
+    await batch.commit();
+  }, [firestore, quotesCollection, user]);
+
   const updateQuote = useCallback(async (
     id: string, 
-    quoteUpdateData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpSequence'>> & { followUpOption: FollowUpOptionValue, sendProposalNotification?: boolean, followUpDone?: boolean }
+    quoteUpdateData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpSequence'>> & { followUpOption: FollowUpOptionValue, followUpDone?: boolean }
   ): Promise<Quote | undefined> => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
     const originalQuote = quotes?.find(q => q.id === id);
@@ -219,6 +228,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         dashboardFilters,
         
         addQuote,
+        addBulkQuotes,
         updateQuote,
         deleteQuote,
         getQuoteById,

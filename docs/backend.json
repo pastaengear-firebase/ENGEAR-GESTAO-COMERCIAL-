@@ -54,7 +54,6 @@
         "followUpDate": { "type": "string", "format": "date" },
         "followUpDone": { "type": "boolean" },
         "followUpSequence": { "type": "string", "description": "A comma-separated string of day offsets for a follow-up sequence, e.g., '5,15,30'." },
-        "sendProposalNotification": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -67,8 +66,6 @@
       "properties": {
         "enableSalesEmailNotifications": { "type": "boolean" },
         "salesNotificationEmails": { "type": "array", "items": { "type": "string" } },
-        "enableProposalEmailNotifications": { "type": "boolean" },
-        "proposalNotificationEmails": { "type": "array", "items": { "type": "string" } },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
     }
