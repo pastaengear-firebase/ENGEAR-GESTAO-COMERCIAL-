@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
-const PUBLIC_PATHS = ['/login'];
+const PUBLIC_PATHS = ['/login', '/busca-ia'];
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -26,8 +26,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // If user is logged in and trying to access a public page (like login), redirect to dashboard
-    if (user && isPublicPath) {
+    // If user is logged in and trying to access the login page, redirect to dashboard
+    if (user && pathname === '/login') {
       router.replace('/dashboard');
       return;
     }
