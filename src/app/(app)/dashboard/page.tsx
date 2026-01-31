@@ -156,11 +156,14 @@ export default function DashboardPage() {
     return "0.00";
   }, [totalProposalsCount, workingDaysInPeriod]);
 
-  // Lógica para Faturamentos Atrasados
+  // Lógica para Faturamentos Atrasados (Contínuo, ignora filtro de ano)
   const pendingBillingSales = useMemo(() => {
     const thirtyDaysAgo = subDays(new Date(), 30);
-    // O alerta de faturamentos atrasados agora respeita os filtros de ano e vendedor selecionados.
-    return filteredSales.filter(sale => {
+    // Este alerta é contínuo e ignora o filtro de ano, mas respeita o vendedor selecionado.
+    return allSales.filter(sale => {
+        const isCorrectSeller = selectedSeller === ALL_SELLERS_OPTION || sale.seller === selectedSeller;
+        if (!isCorrectSeller) return false;
+
         try {
             const saleDate = parseISO(sale.date);
             const isPendingPayment = sale.payment < sale.salesValue;
@@ -171,7 +174,8 @@ export default function DashboardPage() {
             return false;
         }
     });
-  }, [filteredSales]);
+  }, [allSales, selectedSeller]); // Depende de todas as vendas e do vendedor, não dos filtros de ano.
+
 
   const handlePrint = () => {
     window.print();
