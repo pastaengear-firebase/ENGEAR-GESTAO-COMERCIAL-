@@ -26,7 +26,7 @@
         "area": { "type": "string", "enum": ["INST. AC", "MANUT. AC", "PRÉ", "CI", "GÁS", "SAS", "AQG", "EXAUST", "LOCAÇÃO"] },
         "clientService": { "type": "string" },
         "salesValue": { "type": "number" },
-        "status": { "type": "string", "enum": ["Á INICAR", "EM ANDAMENTO", "FINALIZADO", "CANCELADO"] },
+        "status": { "type": "string", "enum": ["Á INICAR", "EM ANDAMENTO", "AGUARDANDO PAGAMENTO", "FINALIZADO", "CANCELADO"] },
         "payment": { "type": "number" },
         "summary": { "type": "string", "description": "A quick summary of the sale and service to be performed." },
         "createdAt": { "type": "string", "format": "date-time" },

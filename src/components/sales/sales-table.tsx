@@ -31,6 +31,7 @@ export default function SalesTable({ salesData, onEdit, onDelete, disabledAction
         return 'default'; 
       case 'Á INICAR':
       case 'EM ANDAMENTO':
+      case 'AGUARDANDO PAGAMENTO':
         return 'secondary'; 
       case 'CANCELADO':
         return 'destructive'; 

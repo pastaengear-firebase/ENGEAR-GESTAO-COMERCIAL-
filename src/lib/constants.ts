@@ -25,7 +25,7 @@ export const AREA_OPTIONS = [
 ] as const;
 export type AreaOption = (typeof AREA_OPTIONS)[number];
 
-export const STATUS_OPTIONS = ["Á INICAR", "EM ANDAMENTO", "FINALIZADO", "CANCELADO"] as const;
+export const STATUS_OPTIONS = ["Á INICAR", "EM ANDAMENTO", "AGUARDANDO PAGAMENTO", "FINALIZADO", "CANCELADO"] as const;
 export type StatusOption = (typeof STATUS_OPTIONS)[number];
 
 export const PROPOSAL_STATUS_OPTIONS = ["Pendente", "Enviada", "Em Negociação", "Aceita", "Recusada", "Cancelada"] as const;

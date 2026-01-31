@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Search, Send, Printer, DollarSign, AlertTriangle, CheckCircle, Info, Receipt } from 'lucide-react';
+import { Search, Send, Printer, DollarSign, AlertTriangle, CheckCircle, Info, Receipt, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Sale } from '@/lib/types';
 import { format, parseISO, isBefore, subDays, differenceInDays } from 'date-fns';
@@ -19,7 +19,7 @@ import { ptBR } from 'date-fns/locale';
 type PendingSale = Sale & { daysPending: number };
 
 export default function FaturamentoPage() {
-  const { sales, loading: salesLoading } = useSales();
+  const { sales, updateSale, loading: salesLoading } = useSales();
   const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,6 +29,7 @@ export default function FaturamentoPage() {
   const [billingInfo, setBillingInfo] = useState('');
   const [billingAmount, setBillingAmount] = useState<number | string>('');
   const [recipientEmail, setRecipientEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [pendingSales, setPendingSales] = useState<PendingSale[]>([]);
 
@@ -90,11 +91,11 @@ export default function FaturamentoPage() {
   const handleSelectSale = (sale: Sale) => {
     setSelectedSale(sale);
     setBillingInfo('');
-    setBillingAmount(sale.salesValue);
+    setBillingAmount(sale.salesValue - sale.payment);
     setRecipientEmail('');
   };
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!selectedSale) {
       toast({ title: "Erro", description: "Nenhuma venda selecionada.", variant: "destructive" });
       return;
@@ -107,6 +108,8 @@ export default function FaturamentoPage() {
       toast({ title: "Erro", description: "Por favor, insira um valor a faturar válido.", variant: "destructive" });
       return;
     }
+    
+    setIsSubmitting(true);
 
     const subject = `Faturamento: Venda ${selectedSale.project} / OS ${selectedSale.os}`;
     const body = `
@@ -141,8 +144,19 @@ Equipe Comercial ENGEAR
     `;
 
     const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoLink, '_blank');
-    toast({ title: "Sucesso", description: "Seu cliente de e-mail foi aberto para enviar os dados." });
+
+    try {
+        await updateSale(selectedSale.id, { status: "AGUARDANDO PAGAMENTO" });
+        window.open(mailtoLink, '_blank');
+        toast({ title: "Sucesso!", description: "Status da venda atualizado e cliente de e-mail aberto." });
+
+        setSelectedSale(null);
+    } catch (e) {
+        console.error("Billing request error:", e);
+        toast({ title: "Erro", description: "Não foi possível atualizar o status da venda. Tente novamente.", variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
   
   const handlePrint = (printArea: 'main' | 'pending') => {
@@ -311,8 +325,9 @@ Equipe Comercial ENGEAR
               </div>
             </CardContent>
             <CardFooter className="print-hide border-t pt-4">
-              <Button onClick={handleSendEmail} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
-                <Send className="mr-2 h-4 w-4" /> Enviar Dados por E-mail
+              <Button onClick={handleSendEmail} disabled={isSubmitting} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                {isSubmitting ? 'Processando...' : 'Enviar Dados por E-mail'}
               </Button>
             </CardFooter>
           </Card>

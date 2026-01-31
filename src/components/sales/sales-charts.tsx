@@ -19,6 +19,7 @@ const CHART_COLORS = {
   RODRIGO: 'hsl(var(--chart-2))',
   "Á INICAR": 'hsl(var(--chart-3))',
   "EM ANDAMENTO": 'hsl(var(--chart-4))',
+  "AGUARDANDO PAGAMENTO": 'hsl(var(--chart-2))',
   "FINALIZADO": 'hsl(var(--chart-5))', 
   "CANCELADO": 'hsl(var(--destructive))', 
   ENGEAR: 'hsl(var(--chart-1))',
