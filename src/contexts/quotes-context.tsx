@@ -1,9 +1,10 @@
 
+
 // src/contexts/quotes-context.tsx
 "use client";
 import type React from 'react';
 import { createContext, useState, useCallback, useContext, useMemo } from 'react';
-import { useFirestore, useCollection, useAuth } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, setDoc } from 'firebase/firestore';
 import { ALL_SELLERS_OPTION, SELLERS } from '@/lib/constants';
 import type { Quote, QuotesContextType, Seller, FollowUpOptionValue, QuoteDashboardFilters } from '@/lib/types';
@@ -44,12 +45,12 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [managementSearchTerm, setManagementSearchTermState] = useState<string>('');
   const [dashboardFilters, setDashboardFiltersState] = useState<QuoteDashboardFilters>({ selectedYear: 'all' });
 
-  const { selectedSeller, isReadOnly, user } = useSales();
+  const { viewingAsSeller, userRole, user } = useSales();
   
   const addQuote = useCallback(async (
     quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid' | 'followUpDate' | 'followUpDone' | 'followUpSequence'> & { followUpOption: FollowUpOptionValue }
   ): Promise<Quote> => {
-    if (!quotesCollection || !user || isReadOnly) throw new Error("Usuário não tem permissão para adicionar uma proposta.");
+    if (!quotesCollection || !user || userRole === ALL_SELLERS_OPTION) throw new Error("Usuário não tem permissão para adicionar uma proposta.");
     
     const { followUpOption, ...restOfQuoteData } = quoteData;
     const { date, sequence, done } = calculateFollowUp(quoteData.proposalDate, followUpOption);
@@ -57,7 +58,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const docRef = doc(quotesCollection);
     const newQuoteData = {
       ...restOfQuoteData,
-      seller: selectedSeller as Seller,
+      seller: userRole as Seller,
       sellerUid: user.uid,
       followUpDate: date,
       followUpDone: done,
@@ -71,17 +72,17 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         id: docRef.id,
         createdAt: new Date().toISOString() 
     } as Quote;
-  }, [selectedSeller, quotesCollection, user, isReadOnly]);
+  }, [userRole, quotesCollection, user]);
 
   const addBulkQuotes = useCallback(async (newQuotesData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>[]) => {
-    if (!firestore || !quotesCollection || !user || isReadOnly) throw new Error("Usuário não tem permissão para importar propostas.");
+    if (!firestore || !quotesCollection || !user || userRole === ALL_SELLERS_OPTION) throw new Error("Usuário não tem permissão para importar propostas.");
     const batch = writeBatch(firestore);
     newQuotesData.forEach(quoteData => {
         const docRef = doc(quotesCollection);
-        batch.set(docRef, { ...quoteData, seller: selectedSeller, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        batch.set(docRef, { ...quoteData, seller: userRole, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     });
     await batch.commit();
-  }, [firestore, quotesCollection, isReadOnly, user, selectedSeller]);
+  }, [firestore, quotesCollection, user, userRole]);
 
   const updateQuote = useCallback(async (
     id: string, 
@@ -165,8 +166,8 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const managementFilteredQuotes = useMemo(() => {
     return (quotes || [])
       .filter(quote => {
-        if (selectedSeller === ALL_SELLERS_OPTION) return true;
-        return quote.seller === selectedSeller;
+        if (viewingAsSeller === ALL_SELLERS_OPTION) return true;
+        return quote.seller === viewingAsSeller;
       })
       .filter(quote => {
         if (!managementSearchTerm.trim()) return true;
@@ -178,7 +179,7 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           String(quote.proposedValue).includes(lowerSearchTerm)
         );
       });
-  }, [quotes, selectedSeller, managementSearchTerm]);
+  }, [quotes, viewingAsSeller, managementSearchTerm]);
 
   const setDashboardFilters = useCallback((newFilters: Partial<QuoteDashboardFilters>) => {
     setDashboardFiltersState(prevFilters => ({ ...prevFilters, ...newFilters }));
@@ -187,15 +188,15 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const dashboardFilteredQuotes = useMemo(() => {
     return (quotes || [])
       .filter(quote => {
-        if (selectedSeller === ALL_SELLERS_OPTION) return true;
-        return quote.seller === selectedSeller;
+        if (viewingAsSeller === ALL_SELLERS_OPTION) return true;
+        return quote.seller === viewingAsSeller;
       })
       .filter(quote => {
         if (!dashboardFilters.selectedYear || dashboardFilters.selectedYear === 'all') return true;
         const quoteYear = new Date(quote.proposalDate).getFullYear();
         return quoteYear === dashboardFilters.selectedYear;
       });
-  }, [quotes, selectedSeller, dashboardFilters]);
+  }, [quotes, viewingAsSeller, dashboardFilters]);
   
   const loadingQuotes = loadingQuotesData;
 
@@ -203,7 +204,6 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     <QuotesContext.Provider
       value={{
         quotes: quotes || [],
-        selectedSeller, 
         
         managementFilteredQuotes,
         setManagementSearchTerm,

@@ -1,3 +1,4 @@
+
 // src/app/(app)/vendas/nova/page.tsx
 "use client";
 import SalesForm from '@/components/sales/sales-form';
@@ -6,12 +7,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, PlusCircle } from 'lucide-react';
 import { useSales } from '@/hooks/use-sales';
 import { useSearchParams } from 'next/navigation';
+import { ALL_SELLERS_OPTION } from '@/lib/constants';
 
 export default function NovaVendaPage() {
-  const { isReadOnly } = useSales();
+  const { userRole } = useSales();
   const searchParams = useSearchParams();
   const fromQuoteId = searchParams.get('fromQuoteId');
 
+  const isFormDisabled = userRole === ALL_SELLERS_OPTION;
 
   return (
     <div className="space-y-6">
@@ -30,7 +33,7 @@ export default function NovaVendaPage() {
         </div>
       </div>
       
-      {isReadOnly && (
+      {isFormDisabled && (
         <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
           <Info className="h-4 w-4 !text-amber-600" />
           <AlertTitle>Ação Necessária</AlertTitle>
@@ -45,7 +48,7 @@ export default function NovaVendaPage() {
         <CardHeader>
           <CardTitle>Detalhes da Venda</CardTitle>
           <CardDescription>
-            {isReadOnly
+            {isFormDisabled
               ? "Faça login com um usuário de vendas para habilitar." 
               : "Preencha todos os campos para registrar uma nova venda."
             }

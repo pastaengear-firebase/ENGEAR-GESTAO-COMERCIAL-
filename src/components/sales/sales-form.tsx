@@ -1,3 +1,4 @@
+
 // src/components/sales/sales-form.tsx
 "use client";
 import type React from 'react';
@@ -5,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SalesFormSchema, type SalesFormData } from '@/lib/schemas';
-import { AREA_OPTIONS, STATUS_OPTIONS, SELLERS, COMPANY_OPTIONS } from '@/lib/constants';
+import { AREA_OPTIONS, STATUS_OPTIONS, SELLERS, COMPANY_OPTIONS, ALL_SELLERS_OPTION } from '@/lib/constants';
 import { useSales } from '@/hooks/use-sales';
 import { useQuotes } from '@/hooks/use-quotes'; // Para buscar e atualizar propostas
 import { useSettings } from '@/hooks/use-settings'; 
@@ -33,7 +34,7 @@ interface SalesFormProps {
 }
 
 export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showReadOnlyAlert }: SalesFormProps) {
-  const { addSale, updateSale, selectedSeller, isReadOnly, user } = useSales();
+  const { addSale, updateSale, userRole } = useSales();
   const { getQuoteById: getQuoteByIdFromContext, updateQuote: updateQuoteStatus } = useQuotes();
   const { settings: appSettings, loadingSettings } = useSettings(); 
   const { toast } = useToast();
@@ -60,12 +61,12 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
       sendSaleNotification: false,
     },
   });
+  
+  const isFormDisabled = (userRole === ALL_SELLERS_OPTION && !editMode) || (editMode && userRole !== saleToEdit.seller);
 
   useEffect(() => {
     const initializeForm = () => {
-      let formIsReadOnly = isReadOnly;
       if (editMode && saleToEdit) {
-        if (saleToEdit) {
           form.reset({
             date: parseISO(saleToEdit.date), 
             company: saleToEdit.company,
@@ -77,22 +78,19 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
             status: saleToEdit.status,
             payment: saleToEdit.payment,
             summary: saleToEdit.summary || '',
-            sendSaleNotification: false, // Don't send email on edit
+            sendSaleNotification: false,
           });
           setOriginatingSeller(saleToEdit.seller);
-          if (selectedSeller !== saleToEdit.seller) formIsReadOnly = true;
-        }
       } else if (fromQuoteId) {
         const quoteToConvert = getQuoteByIdFromContext(fromQuoteId);
         if (quoteToConvert) {
-          if (selectedSeller !== quoteToConvert.seller) {
+          if (userRole !== quoteToConvert.seller) {
              toast({
                 title: "Aviso de Vendedor",
                 description: `Para converter a proposta de ${quoteToConvert.seller}, o usuário logado deve ser o mesmo. O formulário está em modo leitura.`,
                 variant: "default",
                 duration: 7000,
              });
-             formIsReadOnly = true;
           }
           form.reset({
             date: new Date(),
@@ -105,7 +103,7 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
             status: "Á INICAR",
             payment: 0,
             summary: quoteToConvert.description, // Pre-fill summary from quote description
-            sendSaleNotification: false,
+            sendSaleNotification: appSettings.enableSalesEmailNotifications,
           });
           setOriginatingSeller(quoteToConvert.seller);
         } else {
@@ -131,7 +129,7 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
       
     };
     initializeForm();
-  }, [editMode, saleToEdit, fromQuoteId, getQuoteByIdFromContext, form, toast, onFormSubmit, isReadOnly, selectedSeller, appSettings.enableSalesEmailNotifications]);
+  }, [editMode, saleToEdit, fromQuoteId, getQuoteByIdFromContext, form, toast, onFormSubmit, userRole, appSettings.enableSalesEmailNotifications]);
 
 
   const triggerEmailNotification = async (sale: Sale) => {
@@ -184,15 +182,10 @@ Sistema de Controle de Vendas ENGEAR
   };
 
   const onSubmit = async (data: SalesFormData) => {
-    let formIsReadOnly = isReadOnly;
-    if((editMode || fromQuoteId) && selectedSeller !== originatingSeller) {
-        formIsReadOnly = true;
-    }
-
-    if (formIsReadOnly) {
-       let message = "Faça login com um usuário de vendas autorizado para salvar.";
-       if (originatingSeller) {
-           message = `Apenas o vendedor ${originatingSeller} pode modificar este item.`;
+    if (isFormDisabled) {
+       let message = "Seu perfil de usuário não tem permissão para salvar.";
+       if (editMode && saleToEdit) {
+           message = `Apenas o vendedor ${saleToEdit.seller} pode modificar esta venda.`;
        }
       toast({ title: "Ação Não Permitida", description: message, variant: "destructive" });
       return;
@@ -259,19 +252,16 @@ Sistema de Controle de Vendas ENGEAR
       setTimeout(() => setIsSaved(false), 2000);
     }
   };
-  
-  const finalIsReadOnly = isReadOnly || ((editMode || fromQuoteId) && selectedSeller !== originatingSeller);
-
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {showReadOnlyAlert && finalIsReadOnly && (
+        {showReadOnlyAlert && isFormDisabled && (
           <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
             <Info className="h-4 w-4 !text-amber-600" />
             <AlertTitle>Modo Somente Leitura</AlertTitle>
             <AlertDescription>
-              { originatingSeller && selectedSeller !== originatingSeller
+              { originatingSeller && userRole !== originatingSeller
                 ? `Apenas o vendedor ${originatingSeller} pode modificar este item.`
                 : "Faça login com um usuário de vendas autorizado para habilitar o formulário."
               }
@@ -291,7 +281,7 @@ Sistema de Controle de Vendas ENGEAR
                       <Button
                         variant={"outline"}
                         className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        disabled={finalIsReadOnly || isSubmitting}
+                        disabled={isFormDisabled || isSubmitting}
                       >
                         {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -303,7 +293,7 @@ Sistema de Controle de Vendas ENGEAR
                       mode="single"
                       selected={field.value || undefined} 
                       onSelect={field.onChange}
-                      disabled={(date) => date > new Date() || date < new Date("1900-01-01") || finalIsReadOnly || isSubmitting}
+                      disabled={(date) => date > new Date() || date < new Date("1900-01-01") || isFormDisabled || isSubmitting}
                       initialFocus
                     />
                   </PopoverContent>
@@ -315,7 +305,7 @@ Sistema de Controle de Vendas ENGEAR
 
           <FormItem>
             <FormLabel>Vendedor</FormLabel>
-            <Select value={originatingSeller || (selectedSeller === 'EQUIPE COMERCIAL' ? '' : selectedSeller)} disabled>
+            <Select value={originatingSeller || (userRole === ALL_SELLERS_OPTION ? '' : userRole)} disabled>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Vendedor não definido" />
@@ -339,7 +329,7 @@ Sistema de Controle de Vendas ENGEAR
                 <Select
                   onValueChange={field.onChange}
                   value={field.value}
-                  disabled={finalIsReadOnly || isSubmitting}
+                  disabled={isFormDisabled || isSubmitting}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -362,7 +352,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>Projeto</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome ou Descrição do Projeto" {...field} disabled={finalIsReadOnly || isSubmitting} />
+                  <Input placeholder="Nome ou Descrição do Projeto" {...field} disabled={isFormDisabled || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -376,7 +366,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>O.S. (Ordem de Serviço)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Número da O.S., 0000 ou deixe em branco" {...field} disabled={finalIsReadOnly || isSubmitting} />
+                  <Input placeholder="Número da O.S., 0000 ou deixe em branco" {...field} disabled={isFormDisabled || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -389,7 +379,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Área</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={finalIsReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isFormDisabled || isSubmitting}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a Área" />
@@ -411,7 +401,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>Cliente/Serviço</FormLabel>
                 <FormControl>
-                  <Input placeholder="Tipo de Cliente ou Serviço Prestado" {...field} disabled={finalIsReadOnly || isSubmitting} />
+                  <Input placeholder="Tipo de Cliente ou Serviço Prestado" {...field} disabled={isFormDisabled || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -436,7 +426,7 @@ Sistema de Controle de Vendas ENGEAR
                       onBlur={field.onBlur}
                       name={field.name}
                       ref={field.ref}
-                      disabled={finalIsReadOnly || isSubmitting}
+                      disabled={isFormDisabled || isSubmitting}
                       step="0.01"
                     />
                   </div>
@@ -452,7 +442,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={finalIsReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isFormDisabled || isSubmitting}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o Status da Venda" />
@@ -485,7 +475,7 @@ Sistema de Controle de Vendas ENGEAR
                       onBlur={field.onBlur}
                       name={field.name}
                       ref={field.ref}
-                      disabled={finalIsReadOnly || isSubmitting}
+                      disabled={isFormDisabled || isSubmitting}
                       step="0.01"
                     />
                   </div>
@@ -507,7 +497,7 @@ Sistema de Controle de Vendas ENGEAR
                       <Textarea
                       placeholder="Insira um resumo rápido da venda e do serviço a ser executado..."
                       {...field}
-                      disabled={finalIsReadOnly || isSubmitting}
+                      disabled={isFormDisabled || isSubmitting}
                       rows={4}
                       />
                   </FormControl>
@@ -526,7 +516,7 @@ Sistema de Controle de Vendas ENGEAR
                   <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={finalIsReadOnly || isSubmitting || loadingSettings || !appSettings.enableSalesEmailNotifications}
+                      disabled={isFormDisabled || isSubmitting || loadingSettings || !appSettings.enableSalesEmailNotifications}
                   />
                   </FormControl>
                   <div className="space-y-1 leading-none">
@@ -554,7 +544,7 @@ Sistema de Controle de Vendas ENGEAR
             <RotateCcw className="mr-2 h-4 w-4" />
             {editMode ? 'Cancelar Edição' : 'Limpar Formulário'}
           </Button>
-          <Button type="submit" disabled={finalIsReadOnly || isSubmitting || isSaved} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button type="submit" disabled={isFormDisabled || isSubmitting || isSaved} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
             {isSaved ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
             {isSubmitting ? 'Salvando...' : isSaved ? 'Salvo!' : (editMode ? 'Atualizar Venda' : 'Salvar Venda')}
           </Button>

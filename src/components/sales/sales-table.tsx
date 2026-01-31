@@ -1,3 +1,4 @@
+
 // src/components/sales/sales-table.tsx
 "use client";
 import type { Sale } from '@/lib/types';
@@ -26,7 +27,7 @@ interface SalesTableProps {
 }
 
 export default function SalesTable({ salesData, onEdit, onDelete, disabledActions: globalDisabled }: SalesTableProps) {
-  const { user, isReadOnly, selectedSeller } = useSales();
+  const { userRole } = useSales();
 
   const getStatusBadgeVariant = (status: Sale['status']): React.ComponentProps<typeof Badge>['variant'] => {
     switch (status) {
@@ -78,9 +79,7 @@ export default function SalesTable({ salesData, onEdit, onDelete, disabledAction
         </TableHeader>
         <TableBody>
           {salesData.map((sale) => {
-            // Ações são desabilitadas se a prop global for true, se o usuário for read-only,
-            // ou se o vendedor selecionado não for o dono da venda.
-            const areActionsDisabled = globalDisabled || isReadOnly || selectedSeller !== sale.seller;
+            const areActionsDisabled = globalDisabled || userRole !== sale.seller;
             
             return (
             <TableRow key={sale.id} className="hover:bg-muted/50 transition-colors">

@@ -1,19 +1,19 @@
+
 // src/contexts/sales-context.tsx
 "use client";
 import type React from 'react';
 import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { useFirestore, useCollection, useAuth, useFirebaseApp } from '@/firebase';
+import { useFirestore, useCollection, useAuth } from '@/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, setDoc } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { ALL_SELLERS_OPTION, SELLER_EMAIL_MAP } from '@/lib/constants';
-import type { Sale, Seller, SalesContextType, SalesFilters, AppUser } from '@/lib/types';
+import type { Sale, SalesContextType, SalesFilters, AppUser, UserRole, Seller } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 
 export const SalesContext = createContext<SalesContextType | undefined>(undefined);
 
 export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
-  const firebaseApp = useFirebaseApp();
   const auth = useAuth();
   const firestore = useFirestore();
   
@@ -22,12 +22,16 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { data: sales, loading: salesLoading } = useCollection<Sale>(salesCollection);
 
   const [user, setUser] = useState<AppUser | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>(ALL_SELLERS_OPTION);
   const [loadingAuth, setLoadingAuth] = useState(true);
-  const [selectedSeller, setSelectedSellerState] = useState<Seller | typeof ALL_SELLERS_OPTION>(ALL_SELLERS_OPTION);
+  const [viewingAsSeller, setViewingAsSeller] = useState<UserRole>(ALL_SELLERS_OPTION);
   const [filters, setFiltersState] = useState<SalesFilters>({ selectedYear: 'all' });
   
   useEffect(() => {
-    if (!auth) return;
+    if (!auth) {
+        setLoadingAuth(false);
+        return;
+    };
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: User | null) => {
       if (firebaseUser) {
         const appUser: AppUser = {
@@ -38,19 +42,19 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
         setUser(appUser);
         
-        const sellerRole = SELLER_EMAIL_MAP[firebaseUser.email?.toLowerCase() as keyof typeof SELLER_EMAIL_MAP] || ALL_SELLERS_OPTION;
-        setSelectedSellerState(sellerRole);
+        const role = SELLER_EMAIL_MAP[firebaseUser.email?.toLowerCase() as keyof typeof SELLER_EMAIL_MAP] || ALL_SELLERS_OPTION;
+        setUserRole(role);
+        setViewingAsSeller(role);
 
       } else {
         setUser(null);
-        setSelectedSellerState(ALL_SELLERS_OPTION);
+        setUserRole(ALL_SELLERS_OPTION);
+        setViewingAsSeller(ALL_SELLERS_OPTION);
       }
       setLoadingAuth(false);
     });
     return () => unsubscribe();
   }, [auth]);
-
-  const isReadOnly = useMemo(() => selectedSeller === ALL_SELLERS_OPTION, [selectedSeller]);
   
   const logout = useCallback(async () => {
     if (!auth) return;
@@ -59,12 +63,12 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [auth, router]);
 
   const addSale = useCallback(async (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>): Promise<Sale> => {
-    if (!salesCollection || !user || isReadOnly) throw new Error("Usuário não tem permissão para adicionar uma venda.");
+    if (!salesCollection || !user || userRole === ALL_SELLERS_OPTION) throw new Error("Usuário não tem permissão para adicionar uma venda.");
 
     const docRef = doc(salesCollection);
     const newSaleData = {
       ...saleData,
-      seller: selectedSeller as Seller,
+      seller: userRole as Seller,
       sellerUid: user.uid,
     };
     
@@ -75,17 +79,17 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         id: docRef.id, 
         createdAt: new Date().toISOString() 
     } as Sale;
-  }, [salesCollection, selectedSeller, user, isReadOnly]);
+  }, [salesCollection, userRole, user]);
 
   const addBulkSales = useCallback(async (newSalesData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>[]) => {
-    if (!firestore || !salesCollection || !user || isReadOnly) throw new Error("Usuário não tem permissão para importar vendas.");
+    if (!firestore || !salesCollection || !user || userRole === ALL_SELLERS_OPTION) throw new Error("Usuário não tem permissão para importar vendas.");
     const batch = writeBatch(firestore);
     newSalesData.forEach(saleData => {
         const docRef = doc(salesCollection);
-        batch.set(docRef, { ...saleData, seller: selectedSeller, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        batch.set(docRef, { ...saleData, seller: userRole, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     });
     await batch.commit();
-  }, [firestore, salesCollection, isReadOnly, user, selectedSeller]);
+  }, [firestore, salesCollection, user, userRole]);
 
   const updateSale = useCallback(async (id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
@@ -110,8 +114,8 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const filteredSales = useMemo(() => {
     return (sales || [])
       .filter(sale => {
-        if (selectedSeller === ALL_SELLERS_OPTION) return true;
-        return sale.seller === selectedSeller;
+        if (viewingAsSeller === ALL_SELLERS_OPTION) return true;
+        return sale.seller === viewingAsSeller;
       })
       .filter(sale => {
         if (!filters.searchTerm) return true;
@@ -128,7 +132,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const saleYear = new Date(sale.date).getFullYear();
         return saleYear === filters.selectedYear;
       });
-  }, [sales, selectedSeller, filters]);
+  }, [sales, viewingAsSeller, filters]);
 
   const loading = salesLoading;
 
@@ -136,12 +140,13 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <SalesContext.Provider
       value={{
         user,
+        userRole,
         loadingAuth,
         logout,
         sales: sales || [],
         filteredSales,
-        selectedSeller,
-        isReadOnly,
+        viewingAsSeller,
+        setViewingAsSeller,
         addSale,
         addBulkSales,
         updateSale,

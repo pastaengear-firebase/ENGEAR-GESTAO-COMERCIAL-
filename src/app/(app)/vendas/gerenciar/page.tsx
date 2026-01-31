@@ -1,7 +1,8 @@
+
 // src/app/(app)/vendas/gerenciar/page.tsx
 "use client";
 import type { ChangeEvent } from 'react';
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useSales } from '@/hooks/use-sales';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
@@ -17,12 +18,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, RotateCcw, FileUp, FileDown, Wrench, Printer } from 'lucide-react';
 
-import type { Sale, Seller, CompanyOption, AreaOption, StatusOption } from '@/lib/types';
-import { SELLERS, COMPANY_OPTIONS, AREA_OPTIONS, STATUS_OPTIONS } from '@/lib/constants';
+import type { Sale, CompanyOption, AreaOption, StatusOption } from '@/lib/types';
+import { COMPANY_OPTIONS, AREA_OPTIONS, STATUS_OPTIONS, ALL_SELLERS_OPTION } from '@/lib/constants';
 
 export default function GerenciarVendasPage() {
   // Hooks
-  const { sales, selectedSeller, addBulkSales, deleteSale, isReadOnly } = useSales();
+  const { sales, viewingAsSeller, userRole, addBulkSales, deleteSale } = useSales();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,8 +38,8 @@ export default function GerenciarVendasPage() {
   const displaySales = useMemo(() => {
     let filtered = sales;
     
-    if (selectedSeller !== 'EQUIPE COMERCIAL') {
-        filtered = filtered.filter(sale => sale.seller === selectedSeller);
+    if (viewingAsSeller !== 'EQUIPE COMERCIAL') {
+        filtered = filtered.filter(sale => sale.seller === viewingAsSeller);
     }
 
     if (searchTerm) {
@@ -51,10 +52,11 @@ export default function GerenciarVendasPage() {
         );
     }
     return filtered;
-  }, [sales, selectedSeller, searchTerm]);
+  }, [sales, viewingAsSeller, searchTerm]);
 
   const totalSalesValue = displaySales.reduce((sum, sale) => sum + sale.salesValue, 0);
   const totalPayments = displaySales.reduce((sum, sale) => sum + sale.payment, 0);
+  const isUserReadOnly = userRole === ALL_SELLERS_OPTION;
   
   // Handlers
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -66,7 +68,7 @@ export default function GerenciarVendasPage() {
   };
   
   const handleEditClick = (sale: Sale) => {
-    if (isReadOnly && sale.seller !== selectedSeller) {
+    if (userRole !== sale.seller) {
         toast({
             title: "Ação Não Permitida",
             description: `Apenas o vendedor ${sale.seller} pode modificar esta venda.`,
@@ -80,7 +82,7 @@ export default function GerenciarVendasPage() {
   
   const confirmDelete = (id: string) => {
     const sale = sales.find(s => s.id === id);
-     if (isReadOnly || (sale && sale.seller !== selectedSeller)) {
+     if (!sale || userRole !== sale.seller) {
         toast({
             title: "Ação Não Permitida",
             description: `Apenas o vendedor que criou a venda pode excluí-la.`,
@@ -159,7 +161,7 @@ export default function GerenciarVendasPage() {
           toast({
             variant: "destructive",
             title: "Cabeçalhos Inválidos",
-            description: `O arquivo não corresponde ao modelo. Cabeçalhos faltando: ${missingHeaders.join(', ')}. O campo 'Vendedor' não é mais necessário.`,
+            description: `O arquivo não corresponde ao modelo. Cabeçalhos faltando: ${missingHeaders.join(', ')}. O campo 'Vendedor' não é mais necessário e será preenchido automaticamente.`,
           });
           return;
         }
@@ -261,7 +263,7 @@ export default function GerenciarVendasPage() {
               <CardDescription>Visualize, filtre e gerencie os registros de vendas.</CardDescription>
             </div>
             <div className="flex items-center gap-2 print-hide w-full sm:w-auto">
-              <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm" className="w-full sm:w-auto" disabled={isReadOnly}>
+              <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm" className="w-full sm:w-auto" disabled={isUserReadOnly}>
                 <FileUp className="mr-2 h-4 w-4" />
                 Importar
               </Button>
@@ -271,7 +273,7 @@ export default function GerenciarVendasPage() {
                 onChange={handleFileChange}
                 className="hidden"
                 accept=".xlsx, .xls"
-                disabled={isReadOnly}
+                disabled={isUserReadOnly}
               />
               <Button onClick={handleExport} variant="outline" size="sm" className="w-full sm:w-auto">
                 <FileDown className="mr-2 h-4 w-4" />
@@ -305,7 +307,6 @@ export default function GerenciarVendasPage() {
             salesData={displaySales}
             onEdit={handleEditClick}
             onDelete={confirmDelete}
-            disabledActions={isReadOnly}
           />
         </CardContent>
         <CardFooter className="border-t p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-sm text-muted-foreground">

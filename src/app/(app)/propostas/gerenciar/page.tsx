@@ -1,4 +1,5 @@
 
+
 // src/app/(app)/propostas/gerenciar/page.tsx
 "use client";
 import type { ChangeEvent } from 'react';
@@ -18,7 +19,7 @@ import { Search, RotateCcw, Info, Printer, FileUp, FileDown } from 'lucide-react
 import { useToast } from '@/hooks/use-toast';
 import type { Quote, Seller, CompanyOption, AreaOption, ProposalStatusOption, ContactSourceOption } from '@/lib/types';
 import * as XLSX from 'xlsx';
-import { SELLERS, COMPANY_OPTIONS, AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS } from '@/lib/constants';
+import { SELLERS, COMPANY_OPTIONS, AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, ALL_SELLERS_OPTION } from '@/lib/constants';
 import { format, parseISO, isValid } from 'date-fns';
 
 export default function GerenciarPropostasPage() {
@@ -30,7 +31,7 @@ export default function GerenciarPropostasPage() {
     addBulkQuotes, 
     loadingQuotes 
   } = useQuotes();
-  const { isReadOnly } = useSales();
+  const { userRole } = useSales();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -40,11 +41,13 @@ export default function GerenciarPropostasPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<string | null>(null);
 
+  const isUserReadOnly = userRole === ALL_SELLERS_OPTION;
+
   const handleEditClick = (quote: Quote) => {
-    if (isReadOnly) {
+    if (userRole !== quote.seller) {
        toast({
         title: "Ação Não Permitida",
-        description: "Faça login com um usuário de vendas para modificar propostas.",
+        description: `Apenas o vendedor ${quote.seller} pode modificar esta proposta.`,
         variant: "destructive",
       });
       return;
@@ -54,10 +57,11 @@ export default function GerenciarPropostasPage() {
   };
 
   const confirmDelete = (id: string) => {
-    if (isReadOnly) {
+    const quote = managementFilteredQuotes.find(q => q.id === id);
+    if (!quote || userRole !== quote.seller) {
        toast({
         title: "Ação Não Permitida",
-        description: "Faça login com um usuário de vendas para excluir propostas.",
+        description: "Apenas o criador da proposta pode excluí-la.",
         variant: "destructive",
       });
       return;
@@ -136,7 +140,7 @@ export default function GerenciarPropostasPage() {
           return;
         }
 
-        const requiredHeaders = ['Cliente', 'Vendedor', 'Data Proposta', 'Empresa', 'Área', 'Fonte Contato', 'Descrição', 'Valor Proposto', 'Status'];
+        const requiredHeaders = ['Cliente', 'Data Proposta', 'Empresa', 'Área', 'Fonte Contato', 'Descrição', 'Valor Proposto', 'Status'];
         const actualHeaders = Object.keys(json[0]);
         const missingHeaders = requiredHeaders.filter(h => !actualHeaders.includes(h));
         
@@ -144,12 +148,12 @@ export default function GerenciarPropostasPage() {
           toast({
             variant: "destructive",
             title: "Cabeçalhos Inválidos",
-            description: `O arquivo não corresponde ao modelo. Cabeçalhos faltando: ${missingHeaders.join(', ')}`,
+            description: `O arquivo não corresponde ao modelo. Cabeçalhos faltando: ${missingHeaders.join(', ')}. O campo 'Vendedor' será preenchido automaticamente.`,
           });
           return;
         }
 
-        const newQuotes: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'sellerUid'>[] = [];
+        const newQuotes: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'sellerUid' | 'seller'>[] = [];
         const errors: string[] = [];
 
         json.forEach((row, index) => {
@@ -174,7 +178,6 @@ export default function GerenciarPropostasPage() {
               return;
           }
 
-          const seller = row['Vendedor'];
           const company = row['Empresa'];
           const area = row['Área'];
           const status = row['Status'];
@@ -182,7 +185,6 @@ export default function GerenciarPropostasPage() {
           const clientName = String(row['Cliente'] ?? '').trim();
           const description = String(row['Descrição'] ?? '').trim();
 
-          if (!SELLERS.includes(seller)) { errors.push(`Linha ${lineNumber}: Vendedor inválido: "${seller}".`); return; }
           if (!COMPANY_OPTIONS.includes(company)) { errors.push(`Linha ${lineNumber}: Empresa inválida: "${company}".`); return; }
           if (!AREA_OPTIONS.includes(area)) { errors.push(`Linha ${lineNumber}: Área inválida: "${area}".`); return; }
           if (!PROPOSAL_STATUS_OPTIONS.includes(status)) { errors.push(`Linha ${lineNumber}: Status inválido: "${status}".`); return; }
@@ -199,7 +201,6 @@ export default function GerenciarPropostasPage() {
           
           newQuotes.push({
             clientName,
-            seller: seller as Seller,
             proposalDate: format(proposalDate, 'yyyy-MM-dd'),
             validityDate: validityDate ? format(validityDate, 'yyyy-MM-dd') : undefined,
             company: company as CompanyOption,
@@ -225,7 +226,7 @@ export default function GerenciarPropostasPage() {
         }
         
         if (newQuotes.length > 0) {
-          await addBulkQuotes(newQuotes);
+          await addBulkQuotes(newQuotes as any);
           toast({ title: "Importação Concluída", description: `${newQuotes.length} novas propostas foram importadas.` });
         } else {
           toast({ variant: "destructive", title: "Nenhuma Proposta Válida", description: "Nenhuma proposta para importar foi encontrada no arquivo." });
@@ -257,13 +258,12 @@ export default function GerenciarPropostasPage() {
         </div>
       </div>
 
-      {isReadOnly && (
+      {isUserReadOnly && (
          <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
           <Info className="h-4 w-4 !text-amber-600" />
           <AlertTitle>Funcionalidade Limitada</AlertTitle>
           <AlertDescription>
-            Para modificar ou excluir propostas, por favor, faça login com uma conta de vendedor autorizada.
-            A visualização e busca estão habilitadas para todos.
+            Seu perfil é de leitura. Para modificar ou excluir propostas, por favor, faça login com uma conta de vendedor autorizada.
           </AlertDescription>
         </Alert>
       )}
@@ -294,7 +294,7 @@ export default function GerenciarPropostasPage() {
              <Button variant="outline" onClick={handleClearSearch} className="w-full sm:w-auto">
               <RotateCcw className="mr-2 h-4 w-4" /> Limpar Busca
             </Button>
-             <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm" className="w-full sm:w-auto" disabled={isReadOnly}>
+             <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm" className="w-full sm:w-auto" disabled={isUserReadOnly}>
               <FileUp className="mr-2 h-4 w-4" />
               Importar Dados
             </Button>
@@ -304,7 +304,7 @@ export default function GerenciarPropostasPage() {
               onChange={handleFileChange}
               className="hidden"
               accept=".xlsx, .xls"
-              disabled={isReadOnly}
+              disabled={isUserReadOnly}
             />
             <Button onClick={handleExport} variant="outline" size="sm" className="w-full sm:w-auto">
               <FileDown className="mr-2 h-4 w-4" />
@@ -319,7 +319,6 @@ export default function GerenciarPropostasPage() {
               quotesData={managementFilteredQuotes}
               onEdit={handleEditClick} 
               onDelete={confirmDelete}
-              disabledActions={isReadOnly}
             />
           )}
         </CardContent>
@@ -337,7 +336,6 @@ export default function GerenciarPropostasPage() {
               </DialogTitle>
               <DialogDescription>
                 {editingQuote ? `Alterando proposta para: ${editingQuote.clientName}` : 'Preencha os dados da nova proposta.'}
-                {isReadOnly && " (Modo Somente Leitura)"}
               </DialogDescription>
             </DialogHeader>
             <div className="p-4">

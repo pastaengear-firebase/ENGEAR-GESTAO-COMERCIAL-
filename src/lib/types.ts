@@ -32,14 +32,17 @@ export type SalesFilters = {
   selectedYear?: number | 'all';
 };
 
+export type UserRole = Seller | typeof ALL_SELLERS_OPTION;
+
 export type SalesContextType = {
   user: AppUser | null;
+  userRole: UserRole;
   loadingAuth: boolean;
   logout: () => void;
   sales: Sale[];
   filteredSales: Sale[];
-  selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
-  isReadOnly: boolean;
+  viewingAsSeller: UserRole;
+  setViewingAsSeller: (seller: UserRole) => void;
   addSale: (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>) => Promise<Sale>;
   addBulkSales: (newSales: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>[]) => Promise<void>;
   updateSale: (id: string, saleData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>;
@@ -96,7 +99,6 @@ export interface Quote {
 
 export type QuotesContextType = {
   quotes: Quote[];
-  selectedSeller: Seller | typeof ALL_SELLERS_OPTION;
   
   managementFilteredQuotes: Quote[]; 
   setManagementSearchTerm: (term: string) => void;

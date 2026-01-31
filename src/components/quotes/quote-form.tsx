@@ -1,3 +1,4 @@
+
 // src/components/quotes/quote-form.tsx
 "use client";
 import type React from 'react';
@@ -5,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { QuoteFormSchema, type QuoteFormData } from '@/lib/schemas';
-import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_OPTIONS, SELLERS, FOLLOW_UP_OPTIONS } from '@/lib/constants';
+import { AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, COMPANY_OPTIONS, SELLERS, FOLLOW_UP_OPTIONS, ALL_SELLERS_OPTION } from '@/lib/constants';
 import type { Seller, FollowUpOptionValue } from '@/lib/constants';
 import { useQuotes } from '@/hooks/use-quotes';
 import { useSales } from '@/hooks/use-sales';
@@ -34,7 +35,7 @@ interface QuoteFormProps {
 
 export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert }: QuoteFormProps) {
   const { addQuote, updateQuote } = useQuotes();
-  const { selectedSeller, isReadOnly } = useSales();
+  const { userRole } = useSales();
   const { settings: appSettings, loadingSettings } = useSettings(); 
   const { toast } = useToast();
   
@@ -42,6 +43,8 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
   const [isSaved, setIsSaved] = useState(false);
 
   const editMode = !!quoteToEdit;
+
+  const isFormDisabled = (userRole === ALL_SELLERS_OPTION && !editMode) || (editMode && userRole !== quoteToEdit.seller);
 
   const form = useForm<QuoteFormData>({
     resolver: zodResolver(QuoteFormSchema),
@@ -151,10 +154,10 @@ Sistema de Controle de Vendas ENGEAR
   };
 
   const onSubmit = async (data: QuoteFormData) => {
-    if (isReadOnly) { 
+    if (isFormDisabled) { 
       toast({
         title: "Ação Não Permitida",
-        description: "Faça login com uma conta de vendedor autorizada para salvar.",
+        description: "Seu perfil de usuário não tem permissão para salvar esta proposta.",
         variant: "destructive",
       });
       return;
@@ -221,7 +224,7 @@ Sistema de Controle de Vendas ENGEAR
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {showReadOnlyAlert && isReadOnly && (
+        {showReadOnlyAlert && isFormDisabled && (
           <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
             <Info className="h-4 w-4 !text-amber-600" />
             <AlertTitle>Modo Somente Leitura</AlertTitle>
@@ -242,7 +245,7 @@ Sistema de Controle de Vendas ENGEAR
                   <Input 
                     placeholder="Nome completo ou Razão Social" 
                     {...field} 
-                    disabled={isReadOnly || isSubmitting} 
+                    disabled={isFormDisabled || isSubmitting} 
                   />
                 </FormControl>
                 <FormMessage />
@@ -252,7 +255,7 @@ Sistema de Controle de Vendas ENGEAR
 
           <FormItem>
             <FormLabel>Vendedor</FormLabel>
-            <Select value={selectedSeller === 'EQUIPE COMERCIAL' ? '' : selectedSeller} disabled>
+            <Select value={editMode ? quoteToEdit.seller : (userRole === 'EQUIPE COMERCIAL' ? '' : userRole)} disabled>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Vendedor não definido"/>
@@ -279,7 +282,7 @@ Sistema de Controle de Vendas ENGEAR
                       <Button
                         variant={"outline"}
                         className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        disabled={isReadOnly || isSubmitting}
+                        disabled={isFormDisabled || isSubmitting}
                       >
                         {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -292,7 +295,7 @@ Sistema de Controle de Vendas ENGEAR
                         selected={field.value || undefined}
                         onSelect={field.onChange} 
                         initialFocus 
-                        disabled={(date) => date > new Date() || isReadOnly || isSubmitting} 
+                        disabled={(date) => date > new Date() || isFormDisabled || isSubmitting} 
                     />
                   </PopoverContent>
                 </Popover>
@@ -313,7 +316,7 @@ Sistema de Controle de Vendas ENGEAR
                       <Button
                         variant={"outline"}
                         className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        disabled={isReadOnly || isSubmitting}
+                        disabled={isFormDisabled || isSubmitting}
                       >
                         {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -325,7 +328,7 @@ Sistema de Controle de Vendas ENGEAR
                         mode="single" 
                         selected={field.value || undefined}
                         onSelect={field.onChange} 
-                        disabled={(date) => date < (form.getValues("proposalDate") || new Date()) || isReadOnly || isSubmitting} />
+                        disabled={(date) => date < (form.getValues("proposalDate") || new Date()) || isFormDisabled || isSubmitting} />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -339,7 +342,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Empresa da Proposta</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isFormDisabled || isSubmitting}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione a Empresa" /></SelectTrigger></FormControl>
                   <SelectContent>{COMPANY_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
                 </Select>
@@ -354,7 +357,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Área de Atuação</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isFormDisabled || isSubmitting}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione a Área" /></SelectTrigger></FormControl>
                   <SelectContent>{AREA_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
                 </Select>
@@ -369,7 +372,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Fonte do Contato</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isFormDisabled || isSubmitting}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione a Fonte" /></SelectTrigger></FormControl>
                   <SelectContent>{CONTACT_SOURCE_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
                 </Select>
@@ -399,7 +402,7 @@ Sistema de Controle de Vendas ENGEAR
                       onBlur={field.onBlur}
                       name={field.name}
                       ref={field.ref}
-                      disabled={isReadOnly || isSubmitting} 
+                      disabled={isFormDisabled || isSubmitting} 
                       step="0.01"
                     />
                   </div>
@@ -414,7 +417,7 @@ Sistema de Controle de Vendas ENGEAR
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status da Proposta</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isFormDisabled || isSubmitting}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione o Status" /></SelectTrigger></FormControl>
                   <SelectContent>{PROPOSAL_STATUS_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
                 </Select>
@@ -431,7 +434,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>Descrição/Escopo da Proposta</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Detalhe o que está sendo proposto..." {...field} disabled={isReadOnly || isSubmitting} rows={3} />
+                  <Textarea placeholder="Detalhe o que está sendo proposto..." {...field} disabled={isFormDisabled || isSubmitting} rows={3} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -448,7 +451,7 @@ Sistema de Controle de Vendas ENGEAR
                     <Select 
                         onValueChange={field.onChange} 
                         value={String(field.value ?? '0')} 
-                        disabled={isReadOnly || isSubmitting}
+                        disabled={isFormDisabled || isSubmitting}
                     >
                     <FormControl><SelectTrigger><SelectValue placeholder="Agendar follow-up" /></SelectTrigger></FormControl>
                     <SelectContent>{FOLLOW_UP_OPTIONS.map(opt => <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>)}</SelectContent>
@@ -468,7 +471,7 @@ Sistema de Controle de Vendas ENGEAR
               <FormItem>
                 <FormLabel>Observações (Opcional)</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Qualquer informação adicional relevante..." {...field} disabled={isReadOnly || isSubmitting} rows={3} />
+                  <Textarea placeholder="Qualquer informação adicional relevante..." {...field} disabled={isFormDisabled || isSubmitting} rows={3} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -485,7 +488,7 @@ Sistema de Controle de Vendas ENGEAR
                 <Checkbox
                     checked={field.value}
                     onCheckedChange={field.onChange}
-                    disabled={isReadOnly || isSubmitting || loadingSettings || !appSettings.enableProposalsEmailNotifications}
+                    disabled={isFormDisabled || isSubmitting || loadingSettings || !appSettings.enableProposalsEmailNotifications}
                 />
                 </FormControl>
                 <div className="space-y-1 leading-none">
@@ -531,7 +534,7 @@ Sistema de Controle de Vendas ENGEAR
             {editMode ? 'Cancelar Edição' : 'Limpar Formulário'}
           </Button>
           <Button type="submit"
-            disabled={isReadOnly || isSubmitting || isSaved} 
+            disabled={isFormDisabled || isSubmitting || isSaved} 
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
             {isSaved ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
             {isSubmitting ? 'Salvando...' : isSaved ? 'Salvo!' : (editMode ? 'Atualizar Proposta' : 'Salvar Proposta')}

@@ -1,3 +1,4 @@
+
 // src/app/(app)/faturamento/page.tsx
 "use client";
 import { useState, useEffect, useMemo } from 'react';
@@ -19,12 +20,13 @@ import type { Sale, BillingLog } from '@/lib/types';
 import { format, parseISO, isBefore, subDays, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ALL_SELLERS_OPTION } from '@/lib/constants';
 
 
 type PendingSale = Sale & { daysPending: number };
 
 export default function FaturamentoPage() {
-  const { sales, updateSale, loading: salesLoading, selectedSeller, isReadOnly, user } = useSales();
+  const { sales, updateSale, loading: salesLoading, userRole, viewingAsSeller, user } = useSales();
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -112,7 +114,7 @@ export default function FaturamentoPage() {
       toast({ title: "Erro", description: "Nenhuma venda selecionada ou usuário não autenticado.", variant: "destructive" });
       return;
     }
-    if (isReadOnly) {
+    if (userRole === ALL_SELLERS_OPTION) {
        toast({ title: "Ação Não Permitida", description: "Faça login como um vendedor para solicitar faturamento.", variant: "destructive" });
        return;
     }
@@ -168,7 +170,7 @@ Equipe Comercial ENGEAR
             billingInfo,
             billingAmount: Number(billingAmount),
             recipientEmail,
-            requestedBy: selectedSeller,
+            requestedBy: userRole,
             requestedByUid: user.uid,
         };
         
@@ -201,6 +203,8 @@ Equipe Comercial ENGEAR
     return format(ts.toDate(), 'dd/MM/yyyy HH:mm', { locale: ptBR });
   }
 
+  const isFormDisabled = userRole === ALL_SELLERS_OPTION;
+
   return (
     <div className="space-y-6">
       <div>
@@ -212,7 +216,7 @@ Equipe Comercial ENGEAR
         </p>
       </div>
 
-     {isReadOnly && (
+     {isFormDisabled && (
         <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
           <Info className="h-4 w-4 !text-amber-600" />
           <AlertTitle>Ação Necessária</AlertTitle>
@@ -335,7 +339,7 @@ Equipe Comercial ENGEAR
                         onChange={(e) => setBillingInfo(e.target.value)}
                         maxLength={300}
                         className="mt-1 min-h-[100px]"
-                        disabled={isReadOnly}
+                        disabled={isFormDisabled}
                     />
                     <p className="text-xs text-muted-foreground text-right mt-1">{billingInfo.length} / 300 caracteres</p>
                     </div>
@@ -352,7 +356,7 @@ Equipe Comercial ENGEAR
                             value={billingAmount}
                             onChange={(e) => setBillingAmount(e.target.value)}
                             className="pl-8"
-                            disabled={isReadOnly}
+                            disabled={isFormDisabled}
                         />
                     </div>
                     </div>
@@ -366,13 +370,13 @@ Equipe Comercial ENGEAR
                         value={recipientEmail}
                         onChange={(e) => setRecipientEmail(e.target.value)}
                         className="mt-1"
-                        disabled={isReadOnly}
+                        disabled={isFormDisabled}
                     />
                     </div>
                 </div>
                 </CardContent>
                 <CardFooter className="print-hide border-t pt-4">
-                <Button onClick={handleSendEmail} disabled={isSubmitting || isReadOnly} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
+                <Button onClick={handleSendEmail} disabled={isSubmitting || isFormDisabled} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                     {isSubmitting ? 'Processando...' : 'Enviar Dados por E-mail'}
                 </Button>

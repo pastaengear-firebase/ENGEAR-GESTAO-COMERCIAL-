@@ -1,15 +1,16 @@
+
 // src/app/(app)/propostas/nova/page.tsx
 "use client";
 import QuoteForm from '@/components/quotes/quote-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useSales } from '@/hooks/use-sales';
-import { FilePlus, Info } from 'lucide-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Info } from 'lucide-react';
+import { ALL_SELLERS_OPTION } from '@/lib/constants';
 
 export default function NovaPropostaPage() {
-  const { isReadOnly } = useSales();
+  const { userRole } = useSales();
+  const isFormDisabled = userRole === ALL_SELLERS_OPTION;
 
   return (
     <div className="space-y-6">
@@ -24,7 +25,7 @@ export default function NovaPropostaPage() {
         </div>
       </div>
       
-      {isReadOnly && (
+      {isFormDisabled && (
         <Alert variant="default" className="bg-amber-50 border-amber-300 text-amber-700">
           <Info className="h-4 w-4 !text-amber-600" />
           <AlertTitle>Ação Necessária</AlertTitle>
@@ -39,7 +40,7 @@ export default function NovaPropostaPage() {
         <CardHeader>
           <CardTitle>Detalhes da Proposta</CardTitle>
           <CardDescription>
-            {isReadOnly
+            {isFormDisabled
               ? "Faça login com um usuário de vendas para habilitar." 
               : "Todos os campos marcados com * são obrigatórios."
             }

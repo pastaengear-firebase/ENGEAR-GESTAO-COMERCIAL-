@@ -1,3 +1,4 @@
+
 // src/app/(app)/propostas/acompanhamento/page.tsx
 "use client";
 import { useState, useMemo } from 'react';
@@ -19,14 +20,14 @@ type QuotesByDate = {
 
 export default function AcompanhamentoPage() {
   const { quotes, loadingQuotes } = useQuotes();
-  const { selectedSeller } = useSales();
+  const { viewingAsSeller } = useSales();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
   const { quotesByDate, followUpDates } = useMemo(() => {
     const filteredQuotes = (quotes || [])
       .filter(q => q.followUpDate && !q.followUpDone)
-      .filter(q => selectedSeller === ALL_SELLERS_OPTION || q.seller === selectedSeller);
+      .filter(q => viewingAsSeller === ALL_SELLERS_OPTION || q.seller === viewingAsSeller);
 
     const quotesByDate: QuotesByDate = {};
     const followUpDates: Date[] = [];
@@ -47,7 +48,7 @@ export default function AcompanhamentoPage() {
     });
 
     return { quotesByDate, followUpDates };
-  }, [quotes, selectedSeller]);
+  }, [quotes, viewingAsSeller]);
 
   const selectedDayQuotes = useMemo(() => {
     if (!selectedDate) return [];
@@ -55,9 +56,9 @@ export default function AcompanhamentoPage() {
     return quotesByDate[dateKey] || [];
   }, [selectedDate, quotesByDate]);
 
-  const dashboardSubtitle = selectedSeller === ALL_SELLERS_OPTION 
+  const dashboardSubtitle = viewingAsSeller === ALL_SELLERS_OPTION 
     ? "Visão geral dos acompanhamentos da equipe comercial." 
-    : `Acompanhamentos pendentes para: ${selectedSeller}`;
+    : `Acompanhamentos pendentes para: ${viewingAsSeller}`;
     
   if (loadingQuotes) {
     return (

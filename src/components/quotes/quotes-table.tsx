@@ -1,3 +1,4 @@
+
 // src/components/quotes/quotes-table.tsx
 "use client";
 import type { Quote } from '@/lib/types';
@@ -22,6 +23,7 @@ import { ptBR } from 'date-fns/locale';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 interface QuotesTableProps {
   quotesData: Quote[];
@@ -32,8 +34,9 @@ interface QuotesTableProps {
 
 export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActions: globalDisabled }: QuotesTableProps) {
   const { toggleFollowUpDone } = useQuotes();
-  const { isReadOnly, selectedSeller } = useSales();
+  const { userRole } = useSales();
   const router = useRouter();
+  const { toast } = useToast();
 
   const getStatusBadgeVariant = (status: Quote['status']): React.ComponentProps<typeof Badge>['variant'] => {
     switch (status) {
@@ -65,9 +68,13 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
   };
 
   const handleConvertToSale = (quote: Quote) => {
-    if (isReadOnly || selectedSeller !== quote.seller) {
-        // Opcional: Adicionar um toast para informar o usuário
-        return;
+    if (userRole !== quote.seller) {
+       toast({
+        title: "Ação Não Permitida",
+        description: `Apenas o vendedor ${quote.seller} pode converter esta proposta.`,
+        variant: "destructive",
+      });
+      return;
     }
     router.push(`/vendas/nova?fromQuoteId=${quote.id}`);
   };
@@ -101,7 +108,7 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
         </TableHeader>
         <TableBody>
           {quotesData.map((quote) => {
-            const areActionsDisabled = globalDisabled || isReadOnly || selectedSeller !== quote.seller;
+            const areActionsDisabled = globalDisabled || userRole !== quote.seller;
 
             return (
             <TableRow key={quote.id} className="hover:bg-muted/50 transition-colors">
@@ -143,7 +150,7 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0" disabled={areActionsDisabled}>
+                    <Button variant="ghost" className="h-8 w-8 p-0" >
                       <span className="sr-only">Abrir menu</span>
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>

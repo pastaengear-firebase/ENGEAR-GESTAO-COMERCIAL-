@@ -1,3 +1,4 @@
+
 // src/hooks/use-sales.ts
 "use client";
 import { useContext } from 'react';

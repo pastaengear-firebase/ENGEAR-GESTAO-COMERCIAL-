@@ -1,3 +1,4 @@
+
 // src/app/(app)/dashboard/page.tsx
 "use client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -55,7 +56,7 @@ const getDisplayYears = (allSales: Sale[], allQuotes: Quote[]): Array<{ value: s
 
 
 export default function DashboardPage() {
-  const { sales: allSales, filteredSales, setFilters: setSalesFilters, selectedSeller } = useSales();
+  const { sales: allSales, filteredSales, setFilters: setSalesFilters, viewingAsSeller } = useSales();
   const { quotes: allQuotes, dashboardFilteredQuotes, setDashboardFilters: setQuotesDashboardFilters } = useQuotes(); // Use useQuotes
   
   const [displayYear, setDisplayYear] = useState<string>('all'); 
@@ -87,9 +88,9 @@ export default function DashboardPage() {
     setQuotesDashboardFilters({ selectedYear: yearToFilter }); // Aplicar filtro de ano às propostas
   }, [displayYear, setSalesFilters, setQuotesDashboardFilters]);
 
-  const dashboardSubtitle = selectedSeller === ALL_SELLERS_OPTION 
+  const dashboardSubtitle = viewingAsSeller === ALL_SELLERS_OPTION 
     ? "Visão geral do desempenho da equipe comercial." 
-    : `Desempenho do vendedor: ${selectedSeller}`;
+    : `Desempenho do vendedor: ${viewingAsSeller}`;
 
   // KPIs de Vendas
   const totalSalesValue = filteredSales.reduce((sum, sale) => sum + sale.salesValue, 0);
@@ -160,7 +161,7 @@ export default function DashboardPage() {
     const thirtyDaysAgo = subDays(new Date(), 30);
     // Este alerta é contínuo e ignora o filtro de ano, mas respeita o vendedor selecionado.
     return allSales.filter(sale => {
-        const isCorrectSeller = selectedSeller === ALL_SELLERS_OPTION || sale.seller === selectedSeller;
+        const isCorrectSeller = viewingAsSeller === ALL_SELLERS_OPTION || sale.seller === viewingAsSeller;
         if (!isCorrectSeller) return false;
 
         try {
@@ -173,7 +174,7 @@ export default function DashboardPage() {
             return false;
         }
     });
-  }, [allSales, selectedSeller]); // Depende de todas as vendas e do vendedor, não dos filtros de ano.
+  }, [allSales, viewingAsSeller]); // Depende de todas as vendas e do vendedor, não dos filtros de ano.
 
 
   const handlePrint = () => {
