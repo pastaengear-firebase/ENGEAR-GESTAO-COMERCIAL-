@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { AREA_OPTIONS, STATUS_OPTIONS, COMPANY_OPTIONS, SELLERS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, FOLLOW_UP_OPTIONS } from './constants';
 
 export const LoginSchema = z.object({
-  username: z.string().min(1, 'Usuário é obrigatório.'),
-  password: z.string().min(1, 'Senha é obrigatória.'),
+  email: z.string().email({ message: "Por favor, insira um endereço de e-mail válido." }),
+  password: z.string().min(6, { message: "A senha deve ter no mínimo 6 caracteres." }),
 });
 export type LoginFormData = z.infer<typeof LoginSchema>;
 

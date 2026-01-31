@@ -1,12 +1,18 @@
 // src/app/login/page.tsx
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import Logo from '@/components/common/logo';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { LoginSchema, type LoginFormData } from '@/lib/schemas';
+import { Separator } from '@/components/ui/separator';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -37,9 +43,15 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 
 export default function LoginPage() {
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: { email: '', password: '' },
+  });
 
   useEffect(() => {
     // If user is already authenticated, redirect them away from login page
@@ -48,6 +60,18 @@ export default function LoginPage() {
       router.replace(redirect);
     }
   }, [user, loading, router, searchParams]);
+
+  const handleAuthAction = async (action: 'login' | 'signup', data: LoginFormData) => {
+    setIsSubmitting(true);
+    if (action === 'login') {
+      await signInWithEmail(data.email, data.password);
+    } else {
+      await signUpWithEmail(data.email, data.password);
+    }
+    // If auth is successful, the useEffect will redirect.
+    // If it fails, the user remains on the page, so we reset the submitting state.
+    setIsSubmitting(false);
+  };
 
 
   if (loading || user) {
@@ -64,10 +88,58 @@ export default function LoginPage() {
             <CardHeader className="items-center text-center space-y-4">
                 <Logo width={200} height={60} />
             <CardTitle className="text-2xl">CONTROLE DE VENDAS</CardTitle>
-            <CardDescription>Faça login com sua conta Google para continuar</CardDescription>
+            <CardDescription>Acesse sua conta para continuar</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <Button onClick={signInWithGoogle} className="w-full" variant="outline">
+                <Form {...form}>
+                    <form className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>E-mail</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="seu@email.com" {...field} disabled={isSubmitting} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Senha</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </form>
+                </Form>
+                 <div className="flex flex-col space-y-2">
+                    <Button onClick={form.handleSubmit((data) => handleAuthAction('login', data))} disabled={isSubmitting} className="w-full">
+                        {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
+                        Entrar
+                    </Button>
+                     <Button onClick={form.handleSubmit((data) => handleAuthAction('signup', data))} disabled={isSubmitting} className="w-full" variant="secondary">
+                        {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
+                        Registrar Nova Conta
+                    </Button>
+                </div>
+                <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">OU</span>
+                    </div>
+                </div>
+                <Button onClick={signInWithGoogle} className="w-full" variant="outline" disabled={isSubmitting}>
                     <GoogleIcon className="mr-2 h-5 w-5" />
                     Entrar com Google
                 </Button>
