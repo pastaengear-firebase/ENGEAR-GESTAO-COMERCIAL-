@@ -68,6 +68,22 @@
         "salesNotificationEmails": { "type": "array", "items": { "type": "string" } },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
+    },
+    "BillingLog": {
+        "title": "Billing Log",
+        "description": "Represents a log entry for a billing request email.",
+        "type": "object",
+        "properties": {
+            "saleId": { "type": "string", "description": "The ID of the related sale." },
+            "saleData": { "$ref": "#/entities/Sale" },
+            "billingInfo": { "type": "string", "description": "Additional billing information provided." },
+            "billingAmount": { "type": "number", "description": "The amount that was requested for billing." },
+            "recipientEmail": { "type": "string", "format": "email", "description": "The email address the request was sent to." },
+            "requestedBy": { "type": "string", "description": "The name of the seller who made the request." },
+            "requestedByUid": { "type": "string", "description": "The UID of the seller who made the request." },
+            "requestedAt": { "type": "string", "format": "date-time", "description": "The timestamp of the request." }
+        },
+        "required": ["saleId", "saleData", "billingAmount", "recipientEmail", "requestedBy", "requestedByUid", "requestedAt"]
     }
   },
   "auth": {
@@ -89,6 +105,10 @@
     "/settings/{settingId}": {
         "schema": { "$ref": "#/entities/Setting" },
         "description": "Application settings documents."
+    },
+    "/billing-logs/{logId}": {
+      "schema": { "$ref": "#/entities/BillingLog" },
+      "description": "Collection of billing request log documents."
     }
   }
 }

@@ -109,3 +109,15 @@ export type QuotesContextType = {
   toggleFollowUpDone: (quoteId: string) => Promise<void>; 
   loadingQuotes: boolean;
 };
+
+export interface BillingLog {
+  id: string;
+  saleId: string;
+  saleData: Sale;
+  billingInfo: string;
+  billingAmount: number;
+  recipientEmail: string;
+  requestedBy: string;
+  requestedByUid: string;
+  requestedAt: any; // server timestamp
+}
