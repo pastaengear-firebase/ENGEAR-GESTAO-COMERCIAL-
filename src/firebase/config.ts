@@ -2,11 +2,11 @@
 
 // This configuration was provided by the user to connect to their Firebase project.
 export const firebaseConfig = {
-  apiKey: "AIzaSyDEp4s4w3f5H-PlCZDmyBpnxvTCrjpw73w",
-  authDomain: "controle-vendas-engearv5.firebaseapp.com",
-  projectId: "controle-vendas-engearv5",
-  storageBucket: "controle-vendas-engearv5.firebasestorage.app",
-  messagingSenderId: "73786943290",
-  appId: "1:73786943290:web:8583a6c0c389d950061203",
-  measurementId: "G-WZ5GQ4GZ6D"
+  apiKey: "AIzaSyC2_o9J8y7x6Z-f5G1h3k2l1j0m9n8b7v6",
+  authDomain: "engear---depto-comercial-v3.firebaseapp.com",
+  projectId: "engear---depto-comercial-v3",
+  storageBucket: "engear---depto-comercial-v3.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:a1b2c3d4e5f6a7b8c9d0e1",
+  measurementId: "G-ABC123DEF4"
 };
