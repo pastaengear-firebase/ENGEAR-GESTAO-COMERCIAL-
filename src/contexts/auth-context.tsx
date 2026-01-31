@@ -83,10 +83,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error("Error signing in with Google: ", error);
       let description = "Ocorreu um erro durante o login com Google.";
-      if (error.code === 'auth/account-exists-with-different-credential') {
-          description = 'Já existe uma conta com este e-mail, mas com um método de login diferente.';
+       if (error.code === 'auth/configuration-not-found') {
+          description = 'A configuração para este método de login está faltando. Verifique o painel do Firebase.';
       } else if (error.code === 'auth/popup-blocked') {
           description = 'O pop-up de login foi bloqueado pelo seu navegador. Por favor, habilite os pop-ups para este site.';
+      } else if (error.code === 'auth/cancelled-popup-request') {
+          description = 'A solicitação de pop-up foi cancelada.';
       }
       toast({
         title: "Falha no Login com Google",
