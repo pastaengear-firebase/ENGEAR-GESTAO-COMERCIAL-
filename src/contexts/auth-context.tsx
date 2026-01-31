@@ -43,8 +43,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Handle errors from the redirect flow
+    // Handle the redirect result from Google sign-in
     getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // Successfully signed in. onAuthStateChanged will handle the user state update.
+          // We can show a success toast.
+          toast({
+            title: 'Login bem-sucedido!',
+            description: `Bem-vindo(a) de volta, ${result.user.displayName}!`,
+          });
+        }
+      })
       .catch((error) => {
         console.error("Error from redirect result: ", error);
         let description = "Ocorreu um erro durante o login com Google.";
@@ -93,9 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      // Using redirect instead of popup
       await signInWithRedirect(auth, provider);
-      // The page will now redirect. The `useEffect` will handle the response.
     } catch (error: any) {
       console.error("Error starting Google sign-in redirect: ", error);
       toast({
@@ -114,7 +122,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     try {
         await signInWithEmailAndPassword(auth, email, password);
-        // onAuthStateChanged will handle success
     } catch (error: any) {
         console.error("Error signing in with email: ", error);
         let description = 'Ocorreu um erro desconhecido.';
@@ -134,7 +141,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     try {
         await createUserWithEmailAndPassword(auth, email, password);
-        // onAuthStateChanged will handle success
     } catch (error: any) {
         console.error("Error signing up with email: ", error);
         let description = 'Ocorreu um erro desconhecido.';
