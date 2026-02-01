@@ -16,7 +16,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { Sale, Seller, CompanyOption, AreaOption, StatusOption } from '@/lib/types';
-import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
 import { SELLERS, COMPANY_OPTIONS, AREA_OPTIONS, STATUS_OPTIONS } from '@/lib/constants';
 import { format, parseISO, isValid } from 'date-fns';
@@ -47,7 +46,8 @@ export default function DadosPage() {
     window.print();
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const XLSX = await import('xlsx');
     const dataToExport = displaySales.map(sale => ({
       'Data': sale.date,
       'Vendedor': sale.seller,
@@ -71,8 +71,9 @@ export default function DadosPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'array', cellDates: true });
         const sheetName = workbook.SheetNames[0];

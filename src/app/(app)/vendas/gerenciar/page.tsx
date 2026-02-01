@@ -5,7 +5,6 @@ import type { ChangeEvent } from 'react';
 import { useState, useMemo, useRef } from 'react';
 import { useSales } from '@/hooks/use-sales';
 import { useToast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx';
 import { format, parseISO, isValid } from 'date-fns';
 
 import SalesForm from '@/components/sales/sales-form';
@@ -116,7 +115,8 @@ export default function GerenciarVendasPage() {
     setEditingSale(null);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const XLSX = await import('xlsx');
     const dataToExport = displaySales.map(sale => ({
       'Data': sale.date,
       'Vendedor': sale.seller,
@@ -142,6 +142,7 @@ export default function GerenciarVendasPage() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'array', cellDates: true });
         const sheetName = workbook.SheetNames[0];

@@ -18,7 +18,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, RotateCcw, Info, Printer, FileUp, FileDown } from 'lucide-react'; 
 import { useToast } from '@/hooks/use-toast';
 import type { Quote, Seller, CompanyOption, AreaOption, ProposalStatusOption, ContactSourceOption } from '@/lib/types';
-import * as XLSX from 'xlsx';
 import { SELLERS, COMPANY_OPTIONS, AREA_OPTIONS, PROPOSAL_STATUS_OPTIONS, CONTACT_SOURCE_OPTIONS, ALL_SELLERS_OPTION } from '@/lib/constants';
 import { format, parseISO, isValid } from 'date-fns';
 
@@ -100,7 +99,8 @@ export default function GerenciarPropostasPage() {
     window.print();
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const XLSX = await import('xlsx');
     const dataToExport = managementFilteredQuotes.map(q => ({
       'Cliente': q.clientName || '',
       'Vendedor': q.seller,
@@ -129,6 +129,7 @@ export default function GerenciarPropostasPage() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'array', cellDates: true });
         const sheetName = workbook.SheetNames[0];
