@@ -28,23 +28,29 @@ export default function ConfiguracoesPage() {
   
   useEffect(() => {
     if (!loadingSettings && settings) {
-      setEnableSalesNotifications(settings.enableSalesEmailNotifications);
+      setEnableSalesNotifications(settings.enableSalesEmailNotifications ?? false);
       setSalesEmailList(settings.salesNotificationEmails?.join(', ') || '');
-      setEnableProposalsNotifications(settings.enableProposalsEmailNotifications);
+      setEnableProposalsNotifications(settings.enableProposalsEmailNotifications ?? false);
       setProposalsEmailList(settings.proposalsNotificationEmails?.join(', ') || '');
     }
   }, [settings, loadingSettings]);
 
-  const handleSaveSalesSettings = async () => {
-    setIsSubmittingSales(true);
-    setIsSavedSales(false);
-    const salesEmails = salesEmailList.split(',').map(email => email.trim()).filter(email => email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
-    
+  const handleSaveSettings = async () => {
+    const salesEmails = salesEmailList.split(',').map(email => email.trim()).filter(Boolean);
+    const proposalsEmails = proposalsEmailList.split(',').map(email => email.trim()).filter(Boolean);
+
     await updateSettings({
       enableSalesEmailNotifications: enableSalesNotifications,
       salesNotificationEmails: salesEmails,
+      enableProposalsEmailNotifications: enableProposalsNotifications,
+      proposalsNotificationEmails: proposalsEmails,
     });
+  };
 
+  const handleSaveSalesSettings = async () => {
+    setIsSubmittingSales(true);
+    setIsSavedSales(false);
+    await handleSaveSettings();
     setIsSavedSales(true);
     setIsSubmittingSales(false);
     setTimeout(() => setIsSavedSales(false), 2000);
@@ -53,13 +59,7 @@ export default function ConfiguracoesPage() {
   const handleSaveProposalsSettings = async () => {
     setIsSubmittingProposals(true);
     setIsSavedProposals(false);
-    const proposalsEmails = proposalsEmailList.split(',').map(email => email.trim()).filter(email => email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
-      
-    await updateSettings({
-      enableProposalsEmailNotifications: enableProposalsNotifications,
-      proposalsNotificationEmails: proposalsEmails,
-    });
-
+    await handleSaveSettings();
     setIsSavedProposals(true);
     setIsSubmittingProposals(false);
     setTimeout(() => setIsSavedProposals(false), 2000);
