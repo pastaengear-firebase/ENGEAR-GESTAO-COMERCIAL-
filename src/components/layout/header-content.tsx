@@ -47,7 +47,7 @@ export default function HeaderContent({ toggleMobileMenu }: HeaderContentProps) 
                     value={viewingAsSeller}
                     onValueChange={(value) => setViewingAsSeller(value as UserRole)}
                 >
-                    <SelectTrigger className="w-[180px] bg-sidebar/80 text-sidebar-foreground border-sidebar-border focus:ring-sidebar-ring">
+                    <SelectTrigger className="w-[180px] bg-sidebar text-sidebar-foreground border-sidebar-border focus:ring-sidebar-ring">
                         <SelectValue placeholder="Ver como..." />
                     </SelectTrigger>
                     <SelectContent>
