@@ -4,10 +4,8 @@ runtime: nodejs20
 runConfig:
   cpu: 1
   memoryMiB: 512
-
-# O aviso no seu console (faixa azul) pede variáveis de ambiente.
-# Se você usa Firebase Auth ou Firestore (vimos que estão ativados), 
-# você pode precisar declarar as chaves aqui se o build as exigir.
 env:
+  - variable: NEXT_PHASE
+    value: "phase-production-build"
   - variable: NODE_ENV
     value: "production"
