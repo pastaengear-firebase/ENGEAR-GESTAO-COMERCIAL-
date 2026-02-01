@@ -17,15 +17,15 @@ export default function ConfiguracoesPage() {
   // State for Sales notifications
   const [enableSalesNotifications, setEnableSalesNotifications] = useState(false);
   const [salesEmailList, setSalesEmailList] = useState('');
-  const [isSubmittingSales, setIsSubmittingSales] = useState(false);
-  const [isSavedSales, setIsSavedSales] = useState(false);
   
   // State for Proposals notifications
   const [enableProposalsNotifications, setEnableProposalsNotifications] = useState(false);
   const [proposalsEmailList, setProposalsEmailList] = useState('');
-  const [isSubmittingProposals, setIsSubmittingProposals] = useState(false);
-  const [isSavedProposals, setIsSavedProposals] = useState(false);
   
+  // Unified saving state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
   useEffect(() => {
     if (!loadingSettings && settings) {
       setEnableSalesNotifications(settings.enableSalesEmailNotifications ?? false);
@@ -35,7 +35,10 @@ export default function ConfiguracoesPage() {
     }
   }, [settings, loadingSettings]);
 
-  const handleSaveSettings = async () => {
+  const handleSaveAllSettings = async () => {
+    setIsSubmitting(true);
+    setIsSaved(false);
+
     const salesEmails = salesEmailList.split(',').map(email => email.trim()).filter(Boolean);
     const proposalsEmails = proposalsEmailList.split(',').map(email => email.trim()).filter(Boolean);
 
@@ -45,24 +48,10 @@ export default function ConfiguracoesPage() {
       enableProposalsEmailNotifications: enableProposalsNotifications,
       proposalsNotificationEmails: proposalsEmails,
     });
-  };
-
-  const handleSaveSalesSettings = async () => {
-    setIsSubmittingSales(true);
-    setIsSavedSales(false);
-    await handleSaveSettings();
-    setIsSavedSales(true);
-    setIsSubmittingSales(false);
-    setTimeout(() => setIsSavedSales(false), 2000);
-  };
-
-  const handleSaveProposalsSettings = async () => {
-    setIsSubmittingProposals(true);
-    setIsSavedProposals(false);
-    await handleSaveSettings();
-    setIsSavedProposals(true);
-    setIsSubmittingProposals(false);
-    setTimeout(() => setIsSavedProposals(false), 2000);
+    
+    setIsSaved(true);
+    setIsSubmitting(false);
+    setTimeout(() => setIsSaved(false), 2000);
   };
 
   if (loadingSettings) {
@@ -87,7 +76,7 @@ export default function ConfiguracoesPage() {
         </div>
       </div>
 
-      <Accordion type="multiple" defaultValue={['vendas-notifications']} className="w-full">
+      <Accordion type="multiple" defaultValue={['vendas-notifications', 'propostas-notifications']} className="w-full">
         <AccordionItem value="vendas-notifications">
           <AccordionTrigger className="text-xl font-semibold">
             <div className="flex items-center">
@@ -96,13 +85,13 @@ export default function ConfiguracoesPage() {
           </AccordionTrigger>
           <AccordionContent>
             <Card className="shadow-none border-0">
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 px-1">
                 <CardTitle className="text-lg">Novas Vendas</CardTitle>
                 <CardDescription>
                   Controle o preparo de e-mails quando uma nova venda é inserida.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 pt-2">
+              <CardContent className="space-y-4 pt-2 px-1">
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="sales-email-notifications-toggle"
@@ -128,12 +117,6 @@ export default function ConfiguracoesPage() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter>
-                <Button onClick={handleSaveSalesSettings} disabled={isSubmittingSales || isSavedSales}>
-                  {isSavedSales ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-                  {isSubmittingSales ? 'Salvando...' : isSavedSales ? 'Salvo!' : 'Salvar'}
-                </Button>
-              </CardFooter>
             </Card>
           </AccordionContent>
         </AccordionItem>
@@ -146,13 +129,13 @@ export default function ConfiguracoesPage() {
           </AccordionTrigger>
           <AccordionContent>
             <Card className="shadow-none border-0">
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 px-1">
                 <CardTitle className="text-lg">Novas Propostas</CardTitle>
                 <CardDescription>
                   Controle o preparo de e-mails quando uma nova proposta é criada.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 pt-2">
+              <CardContent className="space-y-4 pt-2 px-1">
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="proposals-email-notifications-toggle"
@@ -178,16 +161,20 @@ export default function ConfiguracoesPage() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter>
-                <Button onClick={handleSaveProposalsSettings} disabled={isSubmittingProposals || isSavedProposals}>
-                  {isSavedProposals ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-                  {isSubmittingProposals ? 'Salvando...' : isSavedProposals ? 'Salvo!' : 'Salvar'}
-                </Button>
-              </CardFooter>
             </Card>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      <Card className="mt-6 shadow-md">
+        <CardFooter className="p-4 flex justify-end">
+            <Button onClick={handleSaveAllSettings} disabled={isSubmitting || isSaved}>
+              {isSaved ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+              {isSubmitting ? 'Salvando...' : isSaved ? 'Salvo!' : 'Salvar Configurações'}
+            </Button>
+        </CardFooter>
+      </Card>
+
     </div>
   );
 }
