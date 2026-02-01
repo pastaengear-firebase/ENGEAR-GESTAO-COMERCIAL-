@@ -1,6 +1,7 @@
-
 // src/components/quotes/quotes-table.tsx
 "use client";
+import type { ChangeEvent } from 'react';
+import { useState, useRef } from 'react';
 import type { Quote } from '@/lib/types';
 import { useQuotes } from '@/hooks/use-quotes';
 import { useSales } from '@/hooks/use-sales';
@@ -17,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit3, Trash2, Eye, BellRing, CheckCircle, FileUp } from 'lucide-react';
+import { MoreHorizontal, Edit3, Trash2, Eye, BellRing, CheckCircle, FileUp, Loader2, Link as LinkIcon, Paperclip, UploadCloud } from 'lucide-react';
 import { format, parseISO, isPast, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -33,10 +34,14 @@ interface QuotesTableProps {
 }
 
 export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActions: globalDisabled }: QuotesTableProps) {
-  const { toggleFollowUpDone } = useQuotes();
+  const { toggleFollowUpDone, uploadAttachment, deleteAttachment } = useQuotes();
   const { userRole } = useSales();
   const router = useRouter();
   const { toast } = useToast();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedQuoteForUpload, setSelectedQuoteForUpload] = useState<Quote | null>(null);
+  const [isUploading, setIsUploading] = useState<string | null>(null);
 
   const getStatusBadgeVariant = (status: Quote['status']): React.ComponentProps<typeof Badge>['variant'] => {
     switch (status) {
@@ -79,6 +84,49 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
     router.push(`/vendas/nova?fromQuoteId=${quote.id}`);
   };
 
+  const handleAttachClick = (quote: Quote) => {
+    setSelectedQuoteForUpload(quote);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files?.length || !selectedQuoteForUpload) return;
+    const file = event.target.files[0];
+
+    // Basic validation
+    if (file.size > 5 * 1024 * 1024) { // 5 MB limit
+      toast({ title: "Arquivo Muito Grande", description: "O arquivo deve ter no máximo 5MB.", variant: "destructive" });
+      return;
+    }
+    if (file.type !== "application/pdf") {
+      toast({ title: "Formato Inválido", description: "Por favor, anexe apenas arquivos PDF.", variant: "destructive" });
+      return;
+    }
+
+    setIsUploading(selectedQuoteForUpload.id);
+    try {
+      await uploadAttachment(selectedQuoteForUpload.id, file);
+      toast({ title: "Sucesso!", description: "Anexo enviado." });
+    } catch (error: any) {
+      toast({ title: "Erro no Upload", description: error.message || "Não foi possível enviar o anexo.", variant: "destructive" });
+    } finally {
+      setIsUploading(null);
+      setSelectedQuoteForUpload(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleDeleteAttachment = async (quote: Quote) => {
+    try {
+      await deleteAttachment(quote);
+      toast({ title: "Sucesso!", description: "Anexo removido." });
+    } catch (error: any) {
+      toast({ title: "Erro ao Remover", description: error.message || "Não foi possível remover o anexo.", variant: "destructive" });
+    }
+  };
+
 
   if (!quotesData.length) {
     return (
@@ -93,6 +141,14 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
   }
 
   return (
+    <>
+    <input
+      type="file"
+      ref={fileInputRef}
+      onChange={handleFileSelected}
+      className="hidden"
+      accept="application/pdf"
+    />
     <ScrollArea className="whitespace-nowrap rounded-md border">
       <Table className="min-w-full">
         <TableHeader>
@@ -102,6 +158,7 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
             <TableHead>Vendedor</TableHead>
             <TableHead className="text-right">Valor Proposto</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Anexo</TableHead>
             <TableHead className="w-[200px]">Follow-up</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
@@ -122,6 +179,23 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
                 <Badge variant={getStatusBadgeVariant(quote.status)} className="capitalize text-xs px-2 py-0.5">
                   {quote.status}
                 </Badge>
+              </TableCell>
+              <TableCell>
+                 {isUploading === quote.id ? (
+                   <Button variant="outline" size="sm" disabled>
+                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...
+                   </Button>
+                 ) : quote.attachmentUrl ? (
+                   <Button asChild variant="outline" size="sm">
+                     <a href={quote.attachmentUrl} target="_blank" rel="noopener noreferrer">
+                       <LinkIcon className="mr-2 h-4 w-4" /> Ver PDF
+                     </a>
+                   </Button>
+                 ) : (
+                   <Button variant="secondary" size="sm" onClick={() => handleAttachClick(quote)} disabled={areActionsDisabled}>
+                     <UploadCloud className="mr-2 h-4 w-4" /> Anexar
+                   </Button>
+                 )}
               </TableCell>
               <TableCell className="space-x-2">
                  {quote.followUpDate ? (
@@ -162,6 +236,9 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
                      <DropdownMenuItem onClick={() => handleConvertToSale(quote)} disabled={areActionsDisabled}>
                       <FileUp className="mr-2 h-4 w-4" /> Converter em Venda
                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => handleDeleteAttachment(quote)} disabled={areActionsDisabled || !quote.attachmentUrl}>
+                        <Paperclip className="mr-2 h-4 w-4" /> Remover Anexo
+                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => onDelete(quote.id)} className="text-destructive" disabled={areActionsDisabled}>
                       <Trash2 className="mr-2 h-4 w-4" /> Excluir
@@ -175,5 +252,6 @@ export default function QuotesTable({ quotesData, onEdit, onDelete, disabledActi
       </Table>
       <ScrollBar orientation="horizontal" />
     </ScrollArea>
+    </>
   );
 }

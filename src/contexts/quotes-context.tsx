@@ -4,8 +4,9 @@
 "use client";
 import type React from 'react';
 import { createContext, useState, useCallback, useContext, useMemo } from 'react';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useStorage } from '@/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { ALL_SELLERS_OPTION, SELLERS } from '@/lib/constants';
 import type { Quote, QuotesContextType, Seller, FollowUpOptionValue, QuoteDashboardFilters } from '@/lib/types';
 import { useSales } from '@/hooks/use-sales';
@@ -37,6 +38,7 @@ const calculateFollowUp = (proposalDateStr: string, followUpOption: FollowUpOpti
 
 export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const firestore = useFirestore();
+  const storage = useStorage();
 
   const quotesCollection = useMemo(() => firestore ? collection(firestore, 'quotes') : null, [firestore]);
   
@@ -108,12 +110,48 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const deleteQuote = useCallback(async (id: string) => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas");
+    
+    const quoteToDelete = quotes?.find(q => q.id === id);
+    if (quoteToDelete?.attachmentPath) {
+        await deleteAttachment(quoteToDelete);
+    }
     await deleteDoc(doc(quotesCollection, id));
-  }, [quotesCollection]);
+  }, [quotesCollection, quotes]);
 
   const getQuoteById = useCallback((id: string): Quote | undefined => {
     return quotes?.find(quote => quote.id === id);
   }, [quotes]);
+
+  const uploadAttachment = useCallback(async (quoteId: string, file: File) => {
+    if (!storage || !quotesCollection) throw new Error("Storage ou Firestore não inicializado.");
+    
+    const filePath = `proposals/${quoteId}/${file.name}`;
+    const fileRef = ref(storage, filePath);
+    
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    
+    const quoteRef = doc(quotesCollection, quoteId);
+    await updateDoc(quoteRef, {
+        attachmentUrl: url,
+        attachmentPath: filePath,
+        updatedAt: serverTimestamp()
+    });
+  }, [storage, quotesCollection]);
+
+  const deleteAttachment = useCallback(async (quote: Quote) => {
+      if (!storage || !quotesCollection || !quote.attachmentPath) return;
+
+      const fileRef = ref(storage, quote.attachmentPath);
+      await deleteObject(fileRef);
+
+      const quoteRef = doc(quotesCollection, quote.id);
+      await updateDoc(quoteRef, {
+          attachmentUrl: null,
+          attachmentPath: null,
+          updatedAt: serverTimestamp()
+      });
+  }, [storage, quotesCollection]);
 
   const toggleFollowUpDone = useCallback(async (quoteId: string) => {
     if (!quotesCollection) throw new Error("Firestore não inicializado para propostas.");
@@ -217,6 +255,8 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addBulkQuotes,
         updateQuote,
         deleteQuote,
+        uploadAttachment,
+        deleteAttachment,
         getQuoteById,
         toggleFollowUpDone,
         loadingQuotes

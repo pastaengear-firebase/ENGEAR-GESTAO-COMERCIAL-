@@ -93,6 +93,8 @@ export interface Quote {
   followUpDate?: string | null;
   followUpDone?: boolean;
   followUpSequence?: string;
+  attachmentUrl?: string;
+  attachmentPath?: string;
   createdAt: any; // Can be a server timestamp
   updatedAt?: any; // Can be a server timestamp
 }
@@ -112,6 +114,8 @@ export type QuotesContextType = {
   addBulkQuotes: (newQuotes: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>[]) => Promise<void>;
   updateQuote: (id: string, quoteData: Partial<Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'followUpDate' | 'followUpSequence'>> & { followUpOption: FollowUpOptionValue, followUpDone?: boolean }) => Promise<void>;
   deleteQuote: (id: string) => Promise<void>;
+  uploadAttachment: (quoteId: string, file: File) => Promise<void>;
+  deleteAttachment: (quote: Quote) => Promise<void>;
   getQuoteById: (id: string) => Quote | undefined;
   toggleFollowUpDone: (quoteId: string) => Promise<void>; 
   loadingQuotes: boolean;

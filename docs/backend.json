@@ -42,6 +42,8 @@
         "followUpDate": { "type": "string", "format": "date" },
         "followUpDone": { "type": "boolean" },
         "followUpSequence": { "type": "string", "description": "A comma-separated string of day offsets for a follow-up sequence, e.g., '5,15,30'." },
+        "attachmentUrl": { "type": "string", "description": "Public URL of the attached file in Firebase Storage." },
+        "attachmentPath": { "type": "string", "description": "The path to the attached file in Firebase Storage." },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -95,6 +97,11 @@
     "/billing-logs/{logId}": {
       "schema": { "$ref": "#/entities/BillingLog" },
       "description": "Collection of billing request log documents."
+    }
+  },
+  "storage": {
+    "/proposals/{quoteId}/{fileName}": {
+      "description": "Proposal attachment files. Only the quote owner can upload/delete."
     }
   }
 }
