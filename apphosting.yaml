@@ -1,4 +1,5 @@
 # apphosting.yaml
+# Forçando um novo build para resolver o erro "Signed URL Expired".
 runtime: nodejs20
 
 runConfig:
