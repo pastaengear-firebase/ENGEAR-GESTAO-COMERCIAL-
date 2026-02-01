@@ -50,7 +50,7 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
     resolver: zodResolver(QuoteFormSchema),
     defaultValues: {
       clientName: '',
-      proposalDate: undefined, 
+      proposalDate: new Date(), 
       validityDate: undefined,
       company: undefined,
       area: undefined,
@@ -106,52 +106,61 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
         status: "Enviada",
         notes: '',
         followUpOption: '0',
-        sendProposalNotification: appSettings.enableProposalsEmailNotifications, // Default to config
+        sendProposalNotification: appSettings.enableProposalsEmailNotifications,
       });
     }
   }, [quoteToEdit, editMode, form, appSettings.enableProposalsEmailNotifications]);
 
   const triggerProposalEmailNotification = (quote: Quote) => {
-    if (loadingSettings || !appSettings.enableProposalsEmailNotifications || appSettings.proposalsNotificationEmails.length === 0) {
+    if (loadingSettings) {
+      toast({ title: "Aguarde", description: "Carregando configurações de e-mail...", variant: "default" });
+      return;
+    }
+    if (!appSettings.enableProposalsEmailNotifications || !appSettings.proposalsNotificationEmails?.length) {
+      toast({ title: "Notificação Desligada", description: "As notificações por e-mail para propostas estão desativadas ou nenhum destinatário foi configurado.", variant: "default" });
       return;
     }
 
     const recipients = appSettings.proposalsNotificationEmails.join(',');
     
-    const subjectClient = quote.clientName && quote.clientName.length > 25 ? `${quote.clientName.substring(0, 22)}...` : (quote.clientName || "N/A");
     const subjectValue = (quote.proposedValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const subject = `Nova Proposta: ${quote.clientName || 'Cliente não informado'} (${subjectValue}) - ${quote.seller}`;
     
-    const subject = `NOVA PROPOSTA - Cliente ${subjectClient}, Valor ${subjectValue}, Vendedor ${quote.seller}`;
     const appBaseUrl = window.location.origin;
-    const quoteLink = `${appBaseUrl}/propostas/gerenciar`; // Link to the management page
+    const quoteLink = `${appBaseUrl}/propostas/gerenciar`;
 
     const body = `
-Uma nova proposta foi registrada no sistema:
+Uma nova proposta foi registrada no sistema.
 
-Detalhes da Proposta:
---------------------------------------------------
-ID: ${quote.id}
-Data da Proposta: ${format(parseISO(quote.proposalDate), 'dd/MM/yyyy', { locale: ptBR })}
 Vendedor: ${quote.seller}
 Cliente: ${quote.clientName || 'Não informado'}
-Valor Proposto: ${(quote.proposedValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+Valor Proposto: ${subjectValue}
 Status: ${quote.status}
---------------------------------------------------
+Data: ${format(parseISO(quote.proposalDate), 'dd/MM/yyyy', { locale: ptBR })}
 
-Descrição do Escopo:
---------------------------------------------------
+Descrição:
 ${quote.description || "Nenhuma descrição fornecida."}
---------------------------------------------------
 
-Acesse a aplicação para gerenciar as propostas: ${quoteLink}
-
-Atenciosamente,
-Sistema de Controle de Vendas ENGEAR
+Para gerenciar, acesse: ${quoteLink}
     `;
 
     const mailtoLink = `mailto:${recipients}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoLink, '_blank');
+    
+    try {
+        const openedWindow = window.open(mailtoLink, '_blank');
+        if (!openedWindow) {
+            throw new Error('Popup blocked');
+        }
+    } catch (e) {
+        toast({
+            title: "Ação Necessária",
+            description: "Não foi possível abrir seu programa de e-mail. Verifique se o bloqueador de pop-ups do seu navegador está desativado para este site.",
+            variant: "destructive",
+            duration: 9000,
+        });
+    }
   };
+
 
   const onSubmit = async (data: QuoteFormData) => {
     if (isFormDisabled) { 
@@ -163,10 +172,8 @@ Sistema de Controle de Vendas ENGEAR
       return;
     }
     
-    if (!data.proposalDate) {
-        toast({ title: "Erro de Validação", description: "Data da proposta é obrigatória.", variant: "destructive" });
-        return;
-    }
+    // As validation is more relaxed, ensure at least proposalDate exists
+    const proposalDate = data.proposalDate || new Date();
 
     setIsSubmitting(true);
     setIsSaved(false);
@@ -175,9 +182,10 @@ Sistema de Controle de Vendas ENGEAR
 
     const quotePayload = {
       ...restOfData,
-      proposalDate: format(data.proposalDate, 'yyyy-MM-dd'),
+      proposalDate: format(proposalDate, 'yyyy-MM-dd'),
       ...(validityDate && { validityDate: format(validityDate, 'yyyy-MM-dd') }),
       proposedValue: Number(Math.round(+(data.proposedValue || 0) + 'e+2') + 'e-2'),
+      status: data.status || 'Enviada', // Ensure status has a default
     };
 
     try {

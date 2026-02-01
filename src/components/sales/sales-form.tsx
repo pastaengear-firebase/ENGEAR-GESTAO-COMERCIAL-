@@ -133,52 +133,54 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
 
 
   const triggerEmailNotification = async (sale: Sale) => {
-    if (loadingSettings || !appSettings.enableSalesEmailNotifications || appSettings.salesNotificationEmails.length === 0) {
+    if (loadingSettings) {
+      toast({ title: "Aguarde", description: "Carregando configurações de e-mail...", variant: "default" });
+      return;
+    }
+    if (!appSettings.enableSalesEmailNotifications || !appSettings.salesNotificationEmails?.length) {
+       toast({ title: "Notificação Desligada", description: "As notificações por e-mail para vendas estão desativadas ou nenhum destinatário foi configurado.", variant: "default" });
       return;
     }
 
     const recipients = appSettings.salesNotificationEmails.join(',');
     
-    const subjectProject = sale.project.length > 25 ? `${sale.project.substring(0, 22)}...` : sale.project;
-    const subjectClient = sale.clientService.length > 25 ? `${sale.clientService.substring(0, 22)}...` : sale.clientService;
     const subjectValue = sale.salesValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    
-    const subject = `NOVA VENDA - ${sale.company}, Projeto ${subjectProject}, OS ${sale.os || 'N/A'}, ${subjectClient}, ${subjectValue}, e ${sale.seller}`;
+    const subject = `Nova Venda: ${sale.project} (${subjectValue}) - ${sale.seller}`;
+
     const appBaseUrl = window.location.origin;
-    const saleEditLink = `${appBaseUrl}/vendas/gerenciar?editId=${sale.id}`;
+    const saleEditLink = `${appBaseUrl}/vendas/gerenciar`;
 
     const body = `
-Uma nova venda foi registrada no sistema:
+Uma nova venda foi registrada no sistema.
 
-Detalhes da Venda:
---------------------------------------------------
-ID da Venda: ${sale.id}
-Data: ${format(parseISO(sale.date), 'dd/MM/yyyy', { locale: ptBR })}
 Vendedor: ${sale.seller}
-Empresa: ${sale.company}
 Projeto: ${sale.project}
-O.S.: ${sale.os || 'Não informado'}
-Área: ${sale.area}
 Cliente/Serviço: ${sale.clientService}
-Valor da Venda: ${sale.salesValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+Valor da Venda: ${subjectValue}
 Status: ${sale.status}
-Pagamento Registrado: ${sale.payment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
---------------------------------------------------
+Data: ${format(parseISO(sale.date), 'dd/MM/yyyy', { locale: ptBR })}
 
-Resumo da Venda/Serviço:
---------------------------------------------------
+Resumo:
 ${sale.summary || "Nenhum resumo fornecido."}
---------------------------------------------------
 
-Acesse a aplicação: ${appBaseUrl}/dashboard
-Visualize ou edite esta venda: ${saleEditLink}
-
-Atenciosamente,
-Sistema de Controle de Vendas ENGEAR
+Para gerenciar, acesse: ${saleEditLink}
     `;
 
     const mailtoLink = `mailto:${recipients}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoLink, '_blank');
+    
+    try {
+        const openedWindow = window.open(mailtoLink, '_blank');
+        if (!openedWindow) {
+            throw new Error('Popup blocked');
+        }
+    } catch (e) {
+        toast({
+            title: "Ação Necessária",
+            description: "Não foi possível abrir seu programa de e-mail. Verifique se o bloqueador de pop-ups do seu navegador está desativado para este site.",
+            variant: "destructive",
+            duration: 9000,
+        });
+    }
   };
 
   const onSubmit = async (data: SalesFormData) => {
