@@ -1,9 +1,10 @@
 // src/firebase/client-provider.tsx
 'use client';
 import type React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { initializeFirebase } from '.';
 import { FirebaseProvider } from './provider';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 export function FirebaseClientProvider({
   children,
@@ -11,6 +12,29 @@ export function FirebaseClientProvider({
   children: React.ReactNode;
 }) {
   const firebase = useMemo(() => initializeFirebase(), []);
+
+  // Initialize App Check on the client side
+  useEffect(() => {
+    if (firebase.app) {
+      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+      // Make sure the key is not the placeholder
+      if (!siteKey || siteKey === 'COLE_A_SUA_CHAVE_DE_SITE_AQUI') {
+        console.warn("Firebase App Check: Chave de site do reCAPTCHA não configurada. Por favor, adicione NEXT_PUBLIC_RECAPTCHA_SITE_KEY ao seu arquivo .env.local.");
+        return;
+      }
+      
+      try {
+        initializeAppCheck(firebase.app, {
+          provider: new ReCaptchaV3Provider(siteKey),
+          isTokenAutoRefreshEnabled: true,
+        });
+        console.log("Firebase App Check inicializado com sucesso.");
+      } catch (error) {
+        console.error("Erro ao inicializar Firebase App Check:", error);
+      }
+    }
+  }, [firebase.app]);
 
   return <FirebaseProvider value={firebase}>{children}</FirebaseProvider>;
 }
