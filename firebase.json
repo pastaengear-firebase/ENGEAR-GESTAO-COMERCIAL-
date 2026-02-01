@@ -1,12 +1,19 @@
 {
   "hosting": {
-    "source": ".",
+    "public": "out",
+    "predeploy": [
+      "npm run build && npm run export"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
     "ignore": [
       "firebase.json",
-      "**/node_modules/**"
-    ],
-    "frameworksBackend": {
-      "region": "us-central1"
-    }
+      "**/node_modules/**",
+      "**/.next/**"
+    ]
   }
 }
