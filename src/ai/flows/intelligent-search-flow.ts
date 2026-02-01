@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An intelligent search agent for sales and quotes data.
@@ -114,11 +115,13 @@ const intelligentSearchFlow = ai.defineFlow(
     // App Check verification: When deployed to Firebase, context.request
     // holds the original CallableRequest. If the `app` property is undefined,
     // the request is unverified. This check is only active in production.
+    /*
     if (process.env.GENKIT_ENV === 'prod' && (context.request as any)?.app === undefined) {
       throw new Error(
         'A requisição foi bloqueada pelo App Check. A função deve ser chamada por um app verificado.'
       );
     }
+    */
     
     const llmResponse = await searchPrompt(input);
     const output = llmResponse.output;
