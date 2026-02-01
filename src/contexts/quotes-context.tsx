@@ -1,5 +1,4 @@
 
-
 // src/contexts/quotes-context.tsx
 "use client";
 import type React from 'react';
@@ -67,10 +66,13 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       followUpSequence: sequence,
     };
 
-    await setDoc(docRef, { ...newQuoteData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    // Remove any undefined properties before sending to Firestore
+    const cleanedData = Object.fromEntries(Object.entries(newQuoteData).filter(([_, v]) => v !== undefined));
+
+    await setDoc(docRef, { ...cleanedData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
     return { 
-        ...newQuoteData,
+        ...cleanedData,
         id: docRef.id,
         createdAt: new Date().toISOString() 
     } as Quote;
@@ -81,7 +83,9 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const batch = writeBatch(firestore);
     newQuotesData.forEach(quoteData => {
         const docRef = doc(quotesCollection);
-        batch.set(docRef, { ...quoteData, seller: userRole, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        // Remove any undefined properties before sending to Firestore
+        const cleanedData = Object.fromEntries(Object.entries(quoteData).filter(([_, v]) => v !== undefined));
+        batch.set(docRef, { ...cleanedData, seller: userRole, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     });
     await batch.commit();
   }, [firestore, quotesCollection, user, userRole]);
@@ -105,7 +109,10 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updatePayload = { ...updatePayload, followUpDate: date, followUpSequence: sequence, followUpDone: done };
     }
     
-    await updateDoc(quoteRef, { ...updatePayload, updatedAt: serverTimestamp() });
+    // Remove any undefined properties before sending to Firestore
+    const cleanedPayload = Object.fromEntries(Object.entries(updatePayload).filter(([_, v]) => v !== undefined));
+
+    await updateDoc(quoteRef, { ...cleanedPayload, updatedAt: serverTimestamp() });
   }, [quotes, quotesCollection]);
 
   const deleteQuote = useCallback(async (id: string) => {

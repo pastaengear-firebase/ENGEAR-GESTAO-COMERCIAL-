@@ -72,10 +72,13 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       sellerUid: user.uid,
     };
     
-    await setDoc(docRef, { ...newSaleData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    // Remove any undefined properties before sending to Firestore
+    const cleanedData = Object.fromEntries(Object.entries(newSaleData).filter(([_, v]) => v !== undefined));
+    
+    await setDoc(docRef, { ...cleanedData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     
     return { 
-        ...newSaleData, 
+        ...cleanedData, 
         id: docRef.id, 
         createdAt: new Date().toISOString() 
     } as Sale;
@@ -86,7 +89,9 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const batch = writeBatch(firestore);
     newSalesData.forEach(saleData => {
         const docRef = doc(salesCollection);
-        batch.set(docRef, { ...saleData, seller: userRole, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        // Remove any undefined properties before sending to Firestore
+        const cleanedData = Object.fromEntries(Object.entries(saleData).filter(([_, v]) => v !== undefined));
+        batch.set(docRef, { ...cleanedData, seller: userRole, sellerUid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     });
     await batch.commit();
   }, [firestore, salesCollection, user, userRole]);
@@ -94,7 +99,11 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateSale = useCallback(async (id: string, saleUpdateData: Partial<Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>>) => {
     if (!salesCollection) throw new Error("Firestore não está inicializado.");
     const saleRef = doc(salesCollection, id);
-    await updateDoc(saleRef, { ...saleUpdateData, updatedAt: serverTimestamp() });
+
+    // Remove any undefined properties before sending to Firestore
+    const cleanedData = Object.fromEntries(Object.entries(saleUpdateData).filter(([_, v]) => v !== undefined));
+
+    await updateDoc(saleRef, { ...cleanedData, updatedAt: serverTimestamp() });
   }, [salesCollection]);
 
   const deleteSale = useCallback(async (id: string) => {
