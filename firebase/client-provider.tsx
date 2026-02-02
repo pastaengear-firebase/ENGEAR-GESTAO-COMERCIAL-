@@ -1,4 +1,3 @@
-
 // src/firebase/client-provider.tsx
 'use client';
 import type React from 'react';
@@ -12,7 +11,7 @@ export function FirebaseClientProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // Inicializa o Firebase usando o módulo de init isolado para evitar dependências circulares
+  // Inicializa o Firebase de forma isolada
   const firebase = useMemo(() => initializeFirebase(), []);
 
   useEffect(() => {

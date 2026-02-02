@@ -6,14 +6,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithRedirect,
   getRedirectResult,
 } from 'firebase/auth';
-import { useFirebaseApp } from '@/firebase';
+import { useAuth, useFirebaseApp } from '@/firebase/provider';
 import { useSales } from '@/hooks/use-sales';
 
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Mail, KeyRound, LogIn, UserPlus, Loader2, AlertCircle } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
@@ -40,8 +38,7 @@ type RegisterFormData = z.infer<typeof RegisterSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const firebaseApp = useFirebaseApp();
-  const auth = getAuth(firebaseApp!);
+  const auth = useAuth();
   const { user, loadingAuth } = useSales();
 
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +47,6 @@ export default function LoginPage() {
   const loginForm = useForm<LoginFormData>({ resolver: zodResolver(LoginSchema) });
   const registerForm = useForm<RegisterFormData>({ resolver: zodResolver(RegisterSchema) });
 
-  // Handle redirect result from Google sign-in
   useEffect(() => {
     if (auth) {
       setIsProcessing(true);
@@ -70,7 +66,6 @@ export default function LoginPage() {
     }
   }, [auth, router]);
   
-  // If user is already logged in, redirect
   useEffect(() => {
     if (!loadingAuth && user) {
       router.push('/dashboard');
@@ -78,6 +73,7 @@ export default function LoginPage() {
   }, [user, loadingAuth, router]);
   
   const handleLogin = async (data: LoginFormData) => {
+    if (!auth) return;
     setError(null);
     setIsProcessing(true);
     try {
@@ -91,6 +87,7 @@ export default function LoginPage() {
   };
   
   const handleRegister = async (data: RegisterFormData) => {
+    if (!auth) return;
     setError(null);
     setIsProcessing(true);
     try {
@@ -104,6 +101,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = () => {
+    if (!auth) return;
     setError(null);
     setIsProcessing(true);
     const provider = new GoogleAuthProvider();
