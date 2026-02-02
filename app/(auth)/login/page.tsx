@@ -64,7 +64,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
     } catch (err: any) {
-      setError(err.code === 'auth/invalid-credential' ? 'E-mail ou senha inválidos.' : err.message);
+      setError(err.code === 'auth/invalid-credential' ? 'E-mail ou senha inválidos.' : 'Erro ao entrar.');
       setIsProcessing(false);
     }
   };
@@ -76,7 +76,7 @@ export default function LoginPage() {
     try {
       await createUserWithEmailAndPassword(auth, data.email, data.password);
     } catch (err: any) {
-       setError(err.code === 'auth/email-already-in-use' ? 'E-mail em uso.' : err.message);
+       setError(err.code === 'auth/email-already-in-use' ? 'E-mail em uso.' : 'Erro ao registrar.');
        setIsProcessing(false);
     }
   };

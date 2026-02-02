@@ -2,7 +2,7 @@
 import type React from 'react';
 import { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-center';
+import { Loader2 } from 'lucide-react';
 import { useSales } from '../../hooks/use-sales';
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
