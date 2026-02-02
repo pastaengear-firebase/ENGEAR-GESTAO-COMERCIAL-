@@ -6,8 +6,8 @@ import { useFirestore, useAuth } from '../firebase/provider';
 import { useCollection } from '../firebase/firestore/use-collection';
 import { collection, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
-import { ALL_SELLERS_OPTION, SELLER_EMAIL_MAP } from '../lib/constants';
-import type { Sale, SalesContextType, SalesFilters, AppUser, UserRole, Seller } from '../lib/types';
+import { ALL_SELLERS_OPTION, SELLER_EMAIL_MAP } from '@/lib/constants';
+import type { Sale, SalesContextType, SalesFilters, AppUser, UserRole, Seller } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 
 export const SalesContext = createContext<SalesContextType | undefined>(undefined);
