@@ -10,4 +10,6 @@ env:
     value: "phase-production-build"
   - variable: NODE_ENV
     value: "production"
-
+secretParameters:
+  - secret: NEXTN_GEMINI_KEY
+    key: GOOGLE_GENAI_API_KEY
