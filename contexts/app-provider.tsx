@@ -1,11 +1,14 @@
-// src/contexts/app-provider.tsx
+
 "use client";
+/**
+ * @fileOverview Global application provider.
+ */
 import type React from 'react';
 import { SalesProvider } from './sales-context';
 import { SettingsProvider } from './settings-context';
 import { QuotesProvider } from './quotes-context';
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { FirebaseClientProvider } from '@/firebase';
+import { TooltipProvider } from '../components/ui/tooltip';
+import { FirebaseClientProvider } from '../firebase/client-provider';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
