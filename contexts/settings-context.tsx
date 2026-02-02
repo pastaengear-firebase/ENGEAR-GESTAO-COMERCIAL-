@@ -31,7 +31,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const { data: firestoreSettings, loading: loadingFirestoreSettings } = useDoc<AppSettings>(settingsDocRef);
   
-  const settings = useMemo(() => ({
+  const settingsValue = useMemo(() => ({
     ...defaultSettings,
     ...(firestoreSettings || {})
   }), [firestoreSettings]);
@@ -44,8 +44,14 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }, { merge: true });
   }, [settingsDocRef]);
 
+  const contextValue = useMemo(() => ({
+    settings: settingsValue,
+    updateSettings,
+    loadingSettings: loadingFirestoreSettings
+  }), [settingsValue, updateSettings, loadingFirestoreSettings]);
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, loadingSettings: loadingFirestoreSettings }}>
+    <SettingsContext.Provider value={contextValue}>
       {children}
     </SettingsContext.Provider>
   );

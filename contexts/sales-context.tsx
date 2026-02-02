@@ -2,7 +2,7 @@
 // contexts/sales-context.tsx
 "use client";
 import type React from 'react';
-import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useFirestore, useAuth } from '../firebase/provider';
 import { useCollection } from '../firebase/firestore/use-collection';
 import { collection, updateDoc, deleteDoc, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
@@ -24,6 +24,9 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [viewingAsSeller, setViewingAsSeller] = useState<UserRole>(ALL_SELLERS_OPTION);
   const [filters, setFiltersState] = useState<SalesFilters>({ selectedYear: 'all' });
 
+  // Use a ref to track if we've already done the initial setup for the user
+  const initialSetupDone = useRef(false);
+
   const salesCollection = useMemo(() => firestore ? collection(firestore, 'sales') : null, [firestore]);
   const { data: sales, loading: salesLoading } = useCollection<Sale>(salesCollection);
   
@@ -40,16 +43,26 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
         };
-        setUser(appUser);
+        
+        setUser(prev => {
+            if (prev?.uid === appUser.uid) return prev;
+            return appUser;
+        });
         
         const role = SELLER_EMAIL_MAP[firebaseUser.email?.toLowerCase() as keyof typeof SELLER_EMAIL_MAP] || ALL_SELLERS_OPTION;
         setUserRole(role);
-        setViewingAsSeller(role);
+        
+        // Only set viewingAsSeller on the first valid auth detection
+        if (!initialSetupDone.current) {
+            setViewingAsSeller(role);
+            initialSetupDone.current = true;
+        }
 
       } else {
         setUser(null);
         setUserRole(ALL_SELLERS_OPTION);
         setViewingAsSeller(ALL_SELLERS_OPTION);
+        initialSetupDone.current = false;
       }
       setLoadingAuth(false);
     });
@@ -59,7 +72,8 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const logout = useCallback(async () => {
     if (!auth) return;
     await signOut(auth);
-    router.push('/login');
+    setUser(null);
+    router.replace('/login');
   }, [auth, router]);
 
   const addSale = useCallback(async (saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'seller' | 'sellerUid'>): Promise<Sale> => {
@@ -111,7 +125,11 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [sales]);
 
   const setFilters = useCallback((newFilters: Partial<SalesFilters>) => {
-    setFiltersState(prevFilters => ({ ...prevFilters, ...newFilters }));
+    setFiltersState(prev => {
+        const updated = { ...prev, ...newFilters };
+        if (JSON.stringify(prev) === JSON.stringify(updated)) return prev;
+        return updated;
+    });
   }, []);
 
   const filteredSales = useMemo(() => {

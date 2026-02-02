@@ -1,7 +1,7 @@
 
 // app/(auth)/login/page.tsx
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,9 +41,9 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
   const { user, loadingAuth } = useSales();
-
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const lastRedirect = useRef<string | null>(null);
   
   const loginForm = useForm<LoginFormData>({ resolver: zodResolver(LoginSchema) });
   const registerForm = useForm<RegisterFormData>({ resolver: zodResolver(RegisterSchema) });
@@ -52,12 +52,12 @@ export default function LoginPage() {
     if (auth && !user) {
       getRedirectResult(auth)
         .then((result) => {
-          if (result) {
-            router.push('/dashboard');
+          if (result && lastRedirect.current !== '/dashboard') {
+            lastRedirect.current = '/dashboard';
+            router.replace('/dashboard');
           }
         })
         .catch((error) => {
-          console.error("Redirect Result Error:", error);
           setError(error.message);
         });
     }
@@ -65,7 +65,10 @@ export default function LoginPage() {
   
   useEffect(() => {
     if (!loadingAuth && user) {
-      router.push('/dashboard');
+      if (lastRedirect.current !== '/dashboard') {
+        lastRedirect.current = '/dashboard';
+        router.replace('/dashboard');
+      }
     }
   }, [user, loadingAuth, router]);
   
@@ -116,57 +119,40 @@ export default function LoginPage() {
         <TabsTrigger value="login">Entrar</TabsTrigger>
         <TabsTrigger value="register">Registrar</TabsTrigger>
       </TabsList>
-
       <TabsContent value="login">
         <Card>
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>Acesse sua conta para continuar.</CardDescription>
-          </CardHeader>
+          <CardHeader><CardTitle>Login</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Erro</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
+            {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
             <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login-email"><Mail className="inline-block mr-2 h-4 w-4" />Email</Label>
-                <Input id="login-email" type="email" placeholder="seu@email.com" {...loginForm.register("email")} />
-                {loginForm.formState.errors.email && <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>}
+                <Label htmlFor="login-email">Email</Label>
+                <Input id="login-email" type="email" {...loginForm.register("email")} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="login-password"><KeyRound className="inline-block mr-2 h-4 w-4" />Senha</Label>
+                <Label htmlFor="login-password">Senha</Label>
                 <Input id="login-password" type="password" {...loginForm.register("password")} />
-                 {loginForm.formState.errors.password && <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>}
               </div>
-              <Button type="submit" className="w-full" disabled={isProcessing}><LogIn className="mr-2"/>{isProcessing ? 'Entrando...' : 'Entrar'}</Button>
+              <Button type="submit" className="w-full" disabled={isProcessing}>{isProcessing ? 'Entrando...' : 'Entrar'}</Button>
             </form>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-              <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Ou continue com</span></div>
-            </div>
              <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isProcessing}><FcGoogle className="mr-2 text-lg"/>Google</Button>
           </CardContent>
         </Card>
       </TabsContent>
-
       <TabsContent value="register">
         <Card>
-          <CardHeader>
-            <CardTitle>Registrar</CardTitle>
-            <CardDescription>Crie uma nova conta de vendedor.</CardDescription>
-          </CardHeader>
+          <CardHeader><CardTitle>Registrar</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Erro</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
             <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="register-email"><Mail className="inline-block mr-2 h-4 w-4" />Email</Label>
-                <Input id="register-email" type="email" placeholder="seu@email.com" {...registerForm.register("email")} />
-                {registerForm.formState.errors.email && <p className="text-sm text-destructive">{registerForm.formState.errors.email.message}</p>}
+                <Label htmlFor="register-email">Email</Label>
+                <Input id="register-email" type="email" {...registerForm.register("email")} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="register-password"><KeyRound className="inline-block mr-2 h-4 w-4" />Senha</Label>
+                <Label htmlFor="register-password">Senha</Label>
                 <Input id="register-password" type="password" {...registerForm.register("password")} />
-                {registerForm.formState.errors.password && <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>}
               </div>
-              <Button type="submit" className="w-full" disabled={isProcessing}><UserPlus className="mr-2"/>{isProcessing ? 'Registrando...' : 'Registrar Nova Conta'}</Button>
+              <Button type="submit" className="w-full" disabled={isProcessing}>Registrar Nova Conta</Button>
             </form>
           </CardContent>
         </Card>
