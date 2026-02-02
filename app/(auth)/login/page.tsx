@@ -1,4 +1,5 @@
-// src/app/(auth)/login/page.tsx
+
+// app/(auth)/login/page.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -12,15 +13,15 @@ import {
   signInWithRedirect,
   getRedirectResult,
 } from 'firebase/auth';
-import { useAuth, useFirebaseApp } from '@/firebase/provider';
-import { useSales } from '@/hooks/use-sales';
+import { useAuth } from '../../../firebase/provider';
+import { useSales } from '../../../hooks/use-sales';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Label } from '../../../components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '../../../components/ui/alert';
 import { Mail, KeyRound, LogIn, UserPlus, Loader2, AlertCircle } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 
@@ -48,23 +49,19 @@ export default function LoginPage() {
   const registerForm = useForm<RegisterFormData>({ resolver: zodResolver(RegisterSchema) });
 
   useEffect(() => {
-    if (auth) {
-      setIsProcessing(true);
+    if (auth && !user) {
       getRedirectResult(auth)
         .then((result) => {
           if (result) {
             router.push('/dashboard');
-          } else {
-             setIsProcessing(false);
           }
         })
         .catch((error) => {
           console.error("Redirect Result Error:", error);
           setError(error.message);
-          setIsProcessing(false);
         });
     }
-  }, [auth, router]);
+  }, [auth, user, router]);
   
   useEffect(() => {
     if (!loadingAuth && user) {
@@ -78,10 +75,8 @@ export default function LoginPage() {
     setIsProcessing(true);
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
-      router.push('/dashboard');
     } catch (err: any) {
       setError(err.code === 'auth/invalid-credential' ? 'E-mail ou senha inválidos.' : err.message);
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -92,11 +87,9 @@ export default function LoginPage() {
     setIsProcessing(true);
     try {
       await createUserWithEmailAndPassword(auth, data.email, data.password);
-      router.push('/dashboard');
     } catch (err: any) {
        setError(err.code === 'auth/email-already-in-use' ? 'Este e-mail já está em uso.' : err.message);
-    } finally {
-      setIsProcessing(false);
+       setIsProcessing(false);
     }
   };
 
@@ -108,11 +101,11 @@ export default function LoginPage() {
     signInWithRedirect(auth, provider);
   };
   
-  if (loadingAuth || isProcessing || user) {
+  if (loadingAuth || user) {
      return (
-        <div className="flex flex-col items-center justify-center text-center p-10">
+        <div className="flex flex-col items-center justify-center text-center p-10 h-screen w-screen">
           <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-          <p className="text-muted-foreground">Carregando...</p>
+          <p className="text-muted-foreground">Carregando perfil...</p>
         </div>
      )
   }
@@ -143,7 +136,7 @@ export default function LoginPage() {
                 <Input id="login-password" type="password" {...loginForm.register("password")} />
                  {loginForm.formState.errors.password && <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>}
               </div>
-              <Button type="submit" className="w-full" disabled={isProcessing}><LogIn className="mr-2"/>Entrar</Button>
+              <Button type="submit" className="w-full" disabled={isProcessing}><LogIn className="mr-2"/>{isProcessing ? 'Entrando...' : 'Entrar'}</Button>
             </form>
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
@@ -173,7 +166,7 @@ export default function LoginPage() {
                 <Input id="register-password" type="password" {...registerForm.register("password")} />
                 {registerForm.formState.errors.password && <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>}
               </div>
-              <Button type="submit" className="w-full" disabled={isProcessing}><UserPlus className="mr-2"/>Registrar Nova Conta</Button>
+              <Button type="submit" className="w-full" disabled={isProcessing}><UserPlus className="mr-2"/>{isProcessing ? 'Registrando...' : 'Registrar Nova Conta'}</Button>
             </form>
           </CardContent>
         </Card>

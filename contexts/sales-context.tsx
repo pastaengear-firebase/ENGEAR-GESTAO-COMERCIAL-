@@ -1,13 +1,14 @@
+
 // contexts/sales-context.tsx
 "use client";
 import type React from 'react';
 import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useFirestore, useAuth } from '../firebase/provider';
 import { useCollection } from '../firebase/firestore/use-collection';
-import { collection, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, updateDoc, deleteDoc, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
-import { ALL_SELLERS_OPTION, SELLER_EMAIL_MAP } from '@/lib/constants';
-import type { Sale, SalesContextType, SalesFilters, AppUser, UserRole, Seller } from '@/lib/types';
+import { ALL_SELLERS_OPTION, SELLER_EMAIL_MAP } from '../lib/constants';
+import type { Sale, SalesContextType, SalesFilters, AppUser, UserRole, Seller } from '../lib/types';
 import { useRouter } from 'next/navigation';
 
 export const SalesContext = createContext<SalesContextType | undefined>(undefined);
@@ -17,15 +18,14 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const auth = useAuth();
   const firestore = useFirestore();
   
-  const salesCollection = useMemo(() => firestore ? collection(firestore, 'sales') : null, [firestore]);
-  
-  const { data: sales, loading: salesLoading } = useCollection<Sale>(salesCollection);
-
   const [user, setUser] = useState<AppUser | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(ALL_SELLERS_OPTION);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [viewingAsSeller, setViewingAsSeller] = useState<UserRole>(ALL_SELLERS_OPTION);
   const [filters, setFiltersState] = useState<SalesFilters>({ selectedYear: 'all' });
+
+  const salesCollection = useMemo(() => firestore ? collection(firestore, 'sales') : null, [firestore]);
+  const { data: sales, loading: salesLoading } = useCollection<Sale>(salesCollection);
   
   useEffect(() => {
     if (!auth) {
@@ -137,27 +137,27 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
   }, [sales, viewingAsSeller, filters]);
 
+  const contextValue = useMemo(() => ({
+    user,
+    userRole,
+    loadingAuth,
+    logout,
+    sales: sales || [],
+    filteredSales,
+    viewingAsSeller,
+    setViewingAsSeller,
+    addSale,
+    addBulkSales,
+    updateSale,
+    deleteSale,
+    getSaleById,
+    setFilters,
+    filters,
+    loading: salesLoading
+  }), [user, userRole, loadingAuth, logout, sales, filteredSales, viewingAsSeller, addSale, addBulkSales, updateSale, deleteSale, getSaleById, setFilters, filters, salesLoading]);
+
   return (
-    <SalesContext.Provider
-      value={{
-        user,
-        userRole,
-        loadingAuth,
-        logout,
-        sales: sales || [],
-        filteredSales,
-        viewingAsSeller,
-        setViewingAsSeller,
-        addSale,
-        addBulkSales,
-        updateSale,
-        deleteSale,
-        getSaleById,
-        setFilters,
-        filters,
-        loading: salesLoading
-      }}
-    >
+    <SalesContext.Provider value={contextValue}>
       {children}
     </SalesContext.Provider>
   );

@@ -12,12 +12,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loadingAuth && !user) {
+    if (!loadingAuth && !user && pathname !== '/login') {
       router.push('/login');
     }
   }, [user, loadingAuth, router, pathname]);
 
-  if (loadingAuth || !user) {
+  if (loadingAuth || (!user && pathname !== '/login')) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />

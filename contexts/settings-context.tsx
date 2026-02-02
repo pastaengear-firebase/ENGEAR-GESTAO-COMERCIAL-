@@ -1,11 +1,12 @@
+
 // contexts/settings-context.tsx
 "use client";
 import type React from 'react';
-import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useCallback, useMemo } from 'react';
 import { useFirestore } from '../firebase/provider';
 import { useDoc } from '../firebase/firestore/use-doc';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { AppSettings, SettingsContextType } from '@/lib/types';
+import type { AppSettings, SettingsContextType } from '../lib/types';
 
 const defaultSettings: AppSettings = {
   enableSalesEmailNotifications: true,
@@ -30,13 +31,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const { data: firestoreSettings, loading: loadingFirestoreSettings } = useDoc<AppSettings>(settingsDocRef);
   
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  
-  useEffect(() => {
-    if (firestoreSettings) {
-        setSettings(prevSettings => ({ ...prevSettings, ...firestoreSettings }));
-    }
-  }, [firestoreSettings]);
+  const settings = useMemo(() => ({
+    ...defaultSettings,
+    ...(firestoreSettings || {})
+  }), [firestoreSettings]);
 
   const updateSettings = useCallback(async (newSettings: Partial<AppSettings>) => {
       if (!settingsDocRef) throw new Error("Firestore not available");
@@ -46,10 +44,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }, { merge: true });
   }, [settingsDocRef]);
 
-  const loadingSettings = loadingFirestoreSettings;
-
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, loadingSettings }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, loadingSettings: loadingFirestoreSettings }}>
       {children}
     </SettingsContext.Provider>
   );
