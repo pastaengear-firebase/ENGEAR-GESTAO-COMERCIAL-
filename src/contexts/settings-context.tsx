@@ -3,9 +3,9 @@
 "use client";
 import type React from 'react';
 import { createContext, useCallback, useMemo } from 'react';
-import { useFirestore, useDoc } from '@/firebase';
+import { useFirestore, useDoc } from '../firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { AppSettings, SettingsContextType } from '@/lib/types';
+import type { AppSettings, SettingsContextType } from '../lib/types';
 
 const defaultSettings: AppSettings = {
   enableSalesEmailNotifications: true,
@@ -30,7 +30,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const { data: firestoreSettings, loading: loadingFirestoreSettings } = useDoc<AppSettings>(settingsDocRef);
   
-  // Calcula as configurações unificadas via useMemo para evitar loops de renderização
   const settings = useMemo(() => ({
     ...defaultSettings,
     ...(firestoreSettings || {})
