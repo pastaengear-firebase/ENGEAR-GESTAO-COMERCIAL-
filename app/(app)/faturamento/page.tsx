@@ -4,19 +4,19 @@ import { format, parseISO, isBefore, subDays, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale';
 import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Receipt, Search, Send, Printer, DollarSign, AlertTriangle, CheckCircle, Info, Loader2, History } from 'lucide-react';
-import { useSales } from '@/hooks/use-sales';
-import { useFirestore, useCollection } from '@/firebase';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from '@/hooks/use-toast';
-import { ALL_SELLERS_OPTION } from '@/lib/constants';
-import type { Sale, BillingLog } from '@/lib/types';
+import { useSales } from '../../../hooks/use-sales';
+import { useFirestore, useCollection } from '../../../firebase';
+import { Input } from '../../../components/ui/input';
+import { Button } from '../../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../../components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
+import { Textarea } from '../../../components/ui/textarea';
+import { Label } from '../../../components/ui/label';
+import { ScrollArea, ScrollBar } from "../../../components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
+import { useToast } from '../../../hooks/use-toast';
+import { ALL_SELLERS_OPTION } from '../../../lib/constants';
+import type { Sale, BillingLog } from '../../../lib/types';
 
 export default function FaturamentoPage() {
   const { sales, updateSale, loading: salesLoading, userRole, user } = useSales();

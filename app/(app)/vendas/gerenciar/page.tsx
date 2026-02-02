@@ -1,24 +1,22 @@
-
-// src/app/(app)/vendas/gerenciar/page.tsx
 "use client";
 import type { ChangeEvent } from 'react';
 import { useState, useMemo, useRef } from 'react';
-import { useSales } from '@/hooks/use-sales';
-import { useToast } from '@/hooks/use-toast';
+import { useSales } from '../../../hooks/use-sales';
+import { useToast } from '../../../hooks/use-toast';
 import { format, parseISO, isValid } from 'date-fns';
 
-import SalesForm from '@/components/sales/sales-form';
-import SalesTable from '@/components/sales/sales-table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from "@/components/ui/scroll-area";
+import SalesForm from '../../../components/sales/sales-form';
+import SalesTable from '../../../components/sales/sales-table';
+import { Input } from '../../../components/ui/input';
+import { Button } from '../../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../../components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../../components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog';
+import { ScrollArea } from "../../../components/ui/scroll-area";
 import { Search, RotateCcw, FileUp, FileDown, Wrench, Printer } from 'lucide-react';
 
-import type { Sale, CompanyOption, AreaOption, StatusOption } from '@/lib/types';
-import { COMPANY_OPTIONS, AREA_OPTIONS, STATUS_OPTIONS, ALL_SELLERS_OPTION } from '@/lib/constants';
+import type { Sale, CompanyOption, AreaOption, StatusOption } from '../../../lib/types';
+import { COMPANY_OPTIONS, AREA_OPTIONS, STATUS_OPTIONS, ALL_SELLERS_OPTION } from '../../../lib/constants';
 
 export default function GerenciarVendasPage() {
   // Hooks
