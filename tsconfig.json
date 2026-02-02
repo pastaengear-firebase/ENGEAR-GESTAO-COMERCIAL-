@@ -33,10 +33,10 @@
     "contexts/**/*.tsx",
     "hooks/**/*.ts",
     "hooks/**/*.tsx",
-    "lib/**/*.ts",
-    "lib/**/*.tsx",
     "firebase/**/*.ts",
     "firebase/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
     "ai/**/*.ts",
     "ai/**/*.tsx"
   ],
