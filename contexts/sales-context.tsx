@@ -4,10 +4,10 @@ import { createContext, useState, useEffect, useCallback, useMemo, useRef } from
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { collection, serverTimestamp, setDoc, doc, writeBatch, updateDoc, deleteDoc } from 'firebase/firestore';
-import { useFirestore, useAuth } from '@/firebase/provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { ALL_SELLERS_OPTION, SELLER_EMAIL_MAP } from '@/lib/constants';
-import type { Sale, SalesContextType, SalesFilters, AppUser, UserRole, Seller } from '@/lib/types';
+import { useFirestore, useAuth } from '../firebase/provider';
+import { useCollection } from '../firebase/firestore/use-collection';
+import { ALL_SELLERS_OPTION, SELLER_EMAIL_MAP } from '../lib/constants';
+import type { Sale, SalesContextType, SalesFilters, AppUser, UserRole, Seller } from '../lib/types';
 
 export const SalesContext = createContext<SalesContextType | undefined>(undefined);
 

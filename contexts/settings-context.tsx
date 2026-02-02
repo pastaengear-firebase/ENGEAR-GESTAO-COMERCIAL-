@@ -2,9 +2,9 @@
 import type React from 'react';
 import { createContext, useCallback, useMemo } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase/provider';
-import { useDoc } from '@/firebase/firestore/use-doc';
-import type { AppSettings, SettingsContextType } from '@/lib/types';
+import { useFirestore } from '../firebase/provider';
+import { useDoc } from '../firebase/firestore/use-doc';
+import type { AppSettings, SettingsContextType } from '../lib/types';
 
 const defaultSettings: AppSettings = {
   enableSalesEmailNotifications: true,

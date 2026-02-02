@@ -1,14 +1,13 @@
-// contexts/quotes-context.tsx
-"use client";
+'use client';
 import type React from 'react';
 import { createContext, useState, useCallback, useMemo } from 'react';
 import { useFirestore, useStorage } from '../firebase/provider';
 import { useCollection } from '../firebase/firestore/use-collection';
 import { collection, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { ALL_SELLERS_OPTION } from '@/lib/constants';
-import type { Quote, QuotesContextType, Seller, FollowUpOptionValue, QuoteDashboardFilters } from '@/lib/types';
-import { useSales } from '@/hooks/use-sales';
+import { ALL_SELLERS_OPTION } from '../lib/constants';
+import type { Quote, QuotesContextType, Seller, FollowUpOptionValue, QuoteDashboardFilters } from '../lib/types';
+import { useSales } from '../hooks/use-sales';
 import { format, parseISO, addDays } from 'date-fns';
 
 export const QuotesContext = createContext<QuotesContextType | undefined>(undefined);

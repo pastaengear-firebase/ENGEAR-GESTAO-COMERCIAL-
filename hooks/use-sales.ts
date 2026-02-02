@@ -1,9 +1,7 @@
-
-// src/hooks/use-sales.ts
-"use client";
+'use client';
 import { useContext } from 'react';
-import { SalesContext } from '@/contexts/sales-context';
-import type { SalesContextType } from '@/lib/types';
+import { SalesContext } from '../contexts/sales-context';
+import type { SalesContextType } from '../lib/types';
 
 export const useSales = (): SalesContextType => {
   const context = useContext(SalesContext);

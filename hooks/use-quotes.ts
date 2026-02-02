@@ -1,9 +1,7 @@
-
-// src/hooks/use-quotes.ts
-"use client";
+'use client';
 import { useContext } from 'react';
-import { QuotesContext } from '@/contexts/quotes-context';
-import type { QuotesContextType } from '@/lib/types';
+import { QuotesContext } from '../contexts/quotes-context';
+import type { QuotesContextType } from '../lib/types';
 
 export const useQuotes = (): QuotesContextType => {
   const context = useContext(QuotesContext);
