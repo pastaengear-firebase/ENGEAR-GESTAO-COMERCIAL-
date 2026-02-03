@@ -70,7 +70,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Comercial</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">Dashboard Comercial</h1>
           <p className="text-muted-foreground">{viewingAsSeller}</p>
         </div>
         <div className="flex items-center gap-2">
