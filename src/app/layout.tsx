@@ -1,2 +1,2 @@
-// Neutralized to resolve duplicate page errors
-export default function NeutralizedLayout({ children }: { children: any }) { return <>{children}</>; }
+// Arquivo neutralizado para eliminar duplicidade de layout.
+export default function Placeholder({ children }: { children: any }) { return <>{children}</>; }

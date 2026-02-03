@@ -1,2 +1,2 @@
-// Neutralizado para evitar erro de duplicidade de rota no Next.js
-export default function NeutralizedPage() { return null; }
+// Arquivo neutralizado para eliminar duplicidade de rota /dashboard.
+export default function Placeholder() { return null; }

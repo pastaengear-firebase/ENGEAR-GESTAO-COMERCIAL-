@@ -1,2 +1,2 @@
-// Neutralized to resolve duplicate page errors
-export default function NeutralizedPage() { return null; }
+// Arquivo neutralizado para eliminar duplicidade de rota raiz.
+export default function Placeholder() { return null; }
