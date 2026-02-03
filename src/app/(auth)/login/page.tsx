@@ -1,5 +1,5 @@
 'use client';
 /**
- * @fileOverview Placeholder neutro para evitar conflito de roteamento com app/(auth)/login/page.tsx
+ * Neutralized to prevent duplication conflict with root app/ folder.
  */
 export default function Placeholder() { return null; }
