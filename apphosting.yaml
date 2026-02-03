@@ -1,12 +1,19 @@
 runtime: nodejs20
+
+build:
+  command: npm run build
+
+run:
+  command: npm start
+
 runConfig:
   cpu: 1
   memoryMiB: 512
+
 env:
-  - variable: NEXT_PHASE
-    value: "phase-production-build"
   - variable: NODE_ENV
     value: "production"
+
 secretParameters:
   - secret: NEXTN_GEMINI_KEY
     key: GOOGLE_GENAI_API_KEY
