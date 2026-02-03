@@ -18,10 +18,8 @@
         "name": "next"
       }
     ],
-    "paths": {
-      "@/*": ["./*"]
-    }
+    "paths": {}
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "app", "components", "contexts", "firebase", "hooks", "lib"],
   "exclude": ["node_modules", "src"]
 }

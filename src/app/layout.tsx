@@ -1,5 +1,2 @@
-// Arquivo neutralizado para evitar erro de duplicidade no build.
-// O layout principal está definido em app/layout.tsx
-export default function ObsoleteLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
+// Neutralized to resolve duplicate page errors
+export default function NeutralizedLayout({ children }: { children: any }) { return <>{children}</>; }
