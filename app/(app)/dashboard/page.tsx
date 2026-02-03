@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const yearOptions = useMemo(() => {
     const years = new Set<number>();
     [...allSales, ...allQuotes].forEach(item => {
-      const dateStr = item.date || (item as Quote).proposalDate;
+      const dateStr = (item as Sale).date || (item as Quote).proposalDate;
       if (dateStr) {
         const year = new Date(dateStr).getFullYear();
         if (year >= 2025) years.add(year);
