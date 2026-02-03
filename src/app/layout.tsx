@@ -1,2 +1,2 @@
-/** @fileOverview DELETED TO FIX DUPLICATE PAGE ERROR */
-export default function DeletedLayout({ children }: { children: any }) { return <>{children}</>; }
+/** @fileOverview CONFLITO DE DUPLICIDADE - ARQUIVO NEUTRALIZADO. */
+export default function Neutralized({ children }: { children: any }) { return <>{children}</>; }
