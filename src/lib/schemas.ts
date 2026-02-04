@@ -10,8 +10,8 @@ export type LoginFormData = z.infer<typeof LoginSchema>;
 export const SalesFormSchema = z.object({
   date: z.date({ required_error: 'Data é obrigatória.' }),
   company: z.enum(COMPANY_OPTIONS, { required_error: 'Empresa é obrigatória.' }),
-  project: z.string().min(1, 'Projeto é obrigatório.'),
-  os: z.string().optional(),
+  project: z.string().min(1, 'Projeto é obrigatório.').max(5, 'O projeto deve ter no máximo 5 dígitos.'),
+  os: z.string().max(5, 'A O.S. deve ter no máximo 5 dígitos.').optional(),
   area: z.enum(AREA_OPTIONS, { required_error: 'Área é obrigatória.' }),
   clientService: z.string().min(1, 'Cliente/Serviço é obrigatório.'),
   salesValue: z.coerce.number().positive('Valor da Venda deve ser positivo.'),

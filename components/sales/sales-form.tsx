@@ -95,7 +95,7 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
           form.reset({
             date: new Date(),
             company: quoteToConvert.company,
-            project: `${quoteToConvert.clientName} - ${quoteToConvert.description.substring(0,50)}${quoteToConvert.description.length > 50 ? '...' : ''}`,
+            project: (quoteToConvert.clientName || '').substring(0, 5),
             os: '',
             area: quoteToConvert.area,
             clientService: quoteToConvert.clientName,
@@ -352,9 +352,9 @@ Para gerenciar, acesse: ${saleEditLink}
             name="project"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Projeto</FormLabel>
+                <FormLabel>Projeto (máx 5 dígitos)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome ou Descrição do Projeto" {...field} disabled={isFormDisabled || isSubmitting} />
+                  <Input placeholder="Código do Projeto" {...field} maxLength={5} disabled={isFormDisabled || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -366,9 +366,9 @@ Para gerenciar, acesse: ${saleEditLink}
             name="os"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>O.S. (Ordem de Serviço)</FormLabel>
+                <FormLabel>O.S. (máx 5 dígitos)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Número da O.S., 0000 ou deixe em branco" {...field} disabled={isFormDisabled || isSubmitting} />
+                  <Input placeholder="Número da O.S. ou deixe em branco" {...field} maxLength={5} disabled={isFormDisabled || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
