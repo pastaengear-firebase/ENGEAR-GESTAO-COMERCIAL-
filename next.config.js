@@ -1,4 +1,17 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  output: 'standalone',
+  reactStrictMode: true,
+  swcMinify: true,
+  images: {
+    domains: ['firebasestorage.googleapis.com'],
+    unoptimized: false,
+  },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['*.web.app', '*.firebaseapp.com'],
+    },
+  },
+}
 
 module.exports = nextConfig
