@@ -3,3 +3,10 @@ node_modules/
 
 # Local environment variables file
 .env.local
+
+# Next.js build output
+.next/
+out/
+
+# Package manager lock files
+package-lock.json
