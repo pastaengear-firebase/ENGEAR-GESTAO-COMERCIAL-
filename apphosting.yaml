@@ -1,13 +1,16 @@
-runtime: nodejs20
-env: standard
-handlers:
-  - url: /.*
-    script: auto
-    envConfig:
-      NEXT_PUBLIC_FIREBASE_API_KEY: AIzaSyAfGwU56XJvloOMDig5aljP8lN1hVnK9RM
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: engear---depto-comercial-v3.firebaseapp.com
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: engear---depto-comercial-v3
-      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: engear---depto-comercial-v3.firebasestorage.app
-      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "297634043634"
-      NEXT_PUBLIC_FIREBASE_APP_ID: 1:297634043634:web:7ab55b978129187c9aa26b
-      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: G-XXEKVJLWDG
+runConfig:
+  env:
+    - name: "FIREBASE_API_KEY"
+      availability: [BUILD, RUNTIME]
+    - name: "FIREBASE_AUTH_DOMAIN"
+      availability: [BUILD, RUNTIME]
+    - name: "FIREBASE_DATABASE_URL"
+      availability: [BUILD, RUNTIME]
+    - name: "FIREBASE_PROJECT_ID"
+      availability: [BUILD, RUNTIME]
+    - name: "FIREBASE_STORAGE_BUCKET"
+      availability: [BUILD, RUNTIME]
+    - name: "FIREBASE_MESSAGING_SENDER_ID"
+      availability: [BUILD, RUNTIME]
+    - name: "FIREBASE_APP_ID"
+      availability: [BUILD, RUNTIME]
