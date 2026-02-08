@@ -1,16 +1,28 @@
 runConfig:
-  env:
-    - name: "FIREBASE_API_KEY"
-      availability: [BUILD, RUNTIME]
-    - name: "FIREBASE_AUTH_DOMAIN"
-      availability: [BUILD, RUNTIME]
-    - name: "FIREBASE_DATABASE_URL"
-      availability: [BUILD, RUNTIME]
-    - name: "FIREBASE_PROJECT_ID"
-      availability: [BUILD, RUNTIME]
-    - name: "FIREBASE_STORAGE_BUCKET"
-      availability: [BUILD, RUNTIME]
-    - name: "FIREBASE_MESSAGING_SENDER_ID"
-      availability: [BUILD, RUNTIME]
-    - name: "FIREBASE_APP_ID"
-      availability: [BUILD, RUNTIME]
+  minInstances: 1
+  maxInstances: 10
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    secret: NEXT_PUBLIC_FIREBASE_API_KEY
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    secret: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    secret: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    secret: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    secret: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    secret: NEXT_PUBLIC_FIREBASE_APP_ID
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    secret: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    availability: [BUILD, RUNTIME]
