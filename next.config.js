@@ -1,18 +1,13 @@
-// next.config.js
+'use client';
 
-const withImages = require('next-images');
+const imageDomains = [
+  'YOUR_FIREBASE_STORAGE_BUCKET_1.com',
+  'YOUR_FIREBASE_STORAGE_BUCKET_2.com',
+  // Add additional Firebase Storage domains as needed
+];
 
-module.exports = withImages({
-  trailingSlash: true,
+module.exports = {
   images: {
-    domains: ['firebasestorage.googleapis.com'], // Add your Firebase storage domain
+    domains: imageDomains,
   },
-  env: {
-    FIREBASE_API_KEY: process.env.FIREBASE_API_KEY,
-    FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN,
-    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
-    FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET,
-    FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
-  },
-});
+};
