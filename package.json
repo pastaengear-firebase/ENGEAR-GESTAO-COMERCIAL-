@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",
-    "@dataconnect/generated": "file:dataconnect-generated",
+    "@dataconnect/generated": "file:src/dataconnect-generated",
     "@genkit-ai/google-genai": "^1.0.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.3",
