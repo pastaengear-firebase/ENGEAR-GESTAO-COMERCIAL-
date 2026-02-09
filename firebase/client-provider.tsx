@@ -4,7 +4,13 @@ import type React from 'react';
 import { useMemo, useEffect } from 'react';
 import { initializeFirebase } from './init'; 
 import { FirebaseProvider } from './provider';
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
+// App Check: manter só em DEV para não bloquear produção (403)
+if (process.env.NODE_ENV !== 'production') {
+  initializeAppCheck(firebase.app, {
+    provider: new ReCaptchaV3Provider(siteKey),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
 
 export function FirebaseClientProvider({
   children,
