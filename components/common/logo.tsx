@@ -9,7 +9,7 @@ interface LogoProps {
 }
 
 const Logo: React.FC<LogoProps> = ({ className, width, height }) => {
-  const logoImagePath = "https://i.ibb.co/GfWMfMY0/novologoe.png";
+  const logoImagePath = "/novologoe.png";
   const altText = "ENGEAR Logo";
 
   // If width and height are provided, use them to set the container size.
