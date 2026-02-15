@@ -1,22 +1,23 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // Allow logged-in users to read all documents.
     match /{document=**} {
       allow read: if request.auth != null;
     }
-    
+
     // Sales Collection: Secure write operations based on user identity.
     match /sales/{saleId} {
       // Allow create if the user is authenticated and the seller UID on the new document matches their own UID.
       allow create: if request.auth != null && request.auth.uid == request.resource.data.sellerUid;
-      
-      // Allow update if the user owns the document and is not changing the seller field.
-      allow update: if request.auth != null && request.auth.uid == resource.data.sellerUid && request.resource.data.seller == resource.data.seller;
-        
+
+      // Allow update only if the user owns the document AND is not changing ownership (sellerUid).
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.sellerUid
+        && request.resource.data.sellerUid == resource.data.sellerUid;
+
       // Allow delete if the user owns the document.
       allow delete: if request.auth != null && request.auth.uid == resource.data.sellerUid;
     }
@@ -24,7 +25,12 @@ service cloud.firestore {
     // Quotes Collection: Secure write operations based on user identity.
     match /quotes/{quoteId} {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.sellerUid;
-      allow update: if request.auth != null && request.auth.uid == resource.data.sellerUid && request.resource.data.seller == resource.data.seller;
+
+      // Allow update only if the user owns the document AND is not changing ownership (sellerUid).
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.sellerUid
+        && request.resource.data.sellerUid == resource.data.sellerUid;
+
       allow delete: if request.auth != null && request.auth.uid == resource.data.sellerUid;
     }
 
@@ -47,7 +53,8 @@ service firebase.storage {
       allow read: if request.auth != null;
 
       // Allow write (create, update, delete) only if the user is the owner of the quote
-      allow write: if request.auth != null && get(/databases/$(database)/documents/quotes/$(quoteId)).data.sellerUid == request.auth.uid;
+      allow write: if request.auth != null
+        && get(/databases/$(database)/documents/quotes/$(quoteId)).data.sellerUid == request.auth.uid;
     }
   }
 }

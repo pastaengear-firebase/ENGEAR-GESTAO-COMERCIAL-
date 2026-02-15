@@ -137,12 +137,21 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
       toast({ title: "Aguarde", description: "Carregando configurações de e-mail...", variant: "default" });
       return;
     }
-    if (!appSettings.enableSalesEmailNotifications || !appSettings.salesNotificationEmails?.length) {
-       toast({ title: "Notificação Desligada", description: "As notificações por e-mail para vendas estão desativadas ou nenhum destinatário foi configurado.", variant: "default" });
+    if (!appSettings.enableSalesEmailNotifications) {
+      toast({ title: "Notificação desativada", description: "O envio automático de e-mail para Vendas está desativado nas Configurações.", variant: "default" });
       return;
     }
 
-    const recipients = appSettings.salesNotificationEmails.join(',');
+    let recipients = appSettings.salesNotificationEmails.join(',');
+    if (!recipients) {
+      toast({
+        title: "Destinatários não configurados",
+        description: "Vou abrir o e-mail mesmo assim para você preencher os destinatários manualmente. (Ou cadastre em Configurações.)",
+        variant: "default",
+        duration: 6500
+      });
+      recipients = "";
+    }
     
     const subjectValue = sale.salesValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const subject = `Nova Venda: ${sale.project} (${subjectValue}) - ${sale.seller}`;

@@ -1,9 +1,8 @@
-
 // src/app/(app)/configuracoes/page.tsx
 "use client";
 import { useState, useEffect } from 'react';
 import { useSettings } from '@/hooks/use-settings';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,11 +16,15 @@ export default function ConfiguracoesPage() {
   // State for Sales notifications
   const [enableSalesNotifications, setEnableSalesNotifications] = useState(false);
   const [salesEmailList, setSalesEmailList] = useState('');
-  
+
   // State for Proposals notifications
   const [enableProposalsNotifications, setEnableProposalsNotifications] = useState(false);
   const [proposalsEmailList, setProposalsEmailList] = useState('');
-  
+
+  // State for Billing notifications
+  const [enableBillingNotifications, setEnableBillingNotifications] = useState(false);
+  const [billingEmailList, setBillingEmailList] = useState('');
+
   // Unified saving state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -30,8 +33,12 @@ export default function ConfiguracoesPage() {
     if (!loadingSettings && settings) {
       setEnableSalesNotifications(settings.enableSalesEmailNotifications ?? false);
       setSalesEmailList(settings.salesNotificationEmails?.join(', ') || '');
+
       setEnableProposalsNotifications(settings.enableProposalsEmailNotifications ?? false);
       setProposalsEmailList(settings.proposalsNotificationEmails?.join(', ') || '');
+
+      setEnableBillingNotifications(settings.enableBillingEmailNotifications ?? false);
+      setBillingEmailList(settings.billingNotificationEmails?.join(', ') || '');
     }
   }, [settings, loadingSettings]);
 
@@ -41,14 +48,19 @@ export default function ConfiguracoesPage() {
 
     const salesEmails = salesEmailList.split(',').map(email => email.trim()).filter(Boolean);
     const proposalsEmails = proposalsEmailList.split(',').map(email => email.trim()).filter(Boolean);
+    const billingEmails = billingEmailList.split(',').map(email => email.trim()).filter(Boolean);
 
     await updateSettings({
       enableSalesEmailNotifications: enableSalesNotifications,
       salesNotificationEmails: salesEmails,
+
       enableProposalsEmailNotifications: enableProposalsNotifications,
       proposalsNotificationEmails: proposalsEmails,
+
+      enableBillingEmailNotifications: enableBillingNotifications,
+      billingNotificationEmails: billingEmails,
     });
-    
+
     setIsSaved(true);
     setIsSubmitting(false);
     setTimeout(() => setIsSaved(false), 2000);
@@ -76,7 +88,11 @@ export default function ConfiguracoesPage() {
         </div>
       </div>
 
-      <Accordion type="multiple" defaultValue={['vendas-notifications', 'propostas-notifications']} className="w-full">
+      <Accordion
+        type="multiple"
+        defaultValue={['vendas-notifications', 'propostas-notifications', 'faturamento-notifications']}
+        className="w-full"
+      >
         <AccordionItem value="vendas-notifications">
           <AccordionTrigger className="text-xl font-semibold">
             <div className="flex items-center">
@@ -102,6 +118,7 @@ export default function ConfiguracoesPage() {
                     Habilitar preparação de e-mail para novas vendas
                   </Label>
                 </div>
+
                 {enableSalesNotifications && (
                   <div className="space-y-2">
                     <Label htmlFor="sales-notification-emails" className="text-base">
@@ -120,7 +137,7 @@ export default function ConfiguracoesPage() {
             </Card>
           </AccordionContent>
         </AccordionItem>
-        
+
         <AccordionItem value="propostas-notifications">
           <AccordionTrigger className="text-xl font-semibold">
             <div className="flex items-center">
@@ -146,6 +163,7 @@ export default function ConfiguracoesPage() {
                     Habilitar preparação de e-mail para novas propostas
                   </Label>
                 </div>
+
                 {enableProposalsNotifications && (
                   <div className="space-y-2">
                     <Label htmlFor="proposals-notification-emails" className="text-base">
@@ -164,17 +182,61 @@ export default function ConfiguracoesPage() {
             </Card>
           </AccordionContent>
         </AccordionItem>
+
+        <AccordionItem value="faturamento-notifications">
+          <AccordionTrigger className="text-xl font-semibold">
+            <div className="flex items-center">
+              <FileText className="mr-2 h-5 w-5 text-primary" /> Notificações de Faturamento
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <Card className="shadow-none border-0">
+              <CardHeader className="pb-2 px-1">
+                <CardTitle className="text-lg">Solicitação de Faturamento</CardTitle>
+                <CardDescription>
+                  Controle os e-mails usados ao solicitar faturamento.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-2 px-1">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="billing-email-notifications-toggle"
+                    checked={enableBillingNotifications}
+                    onCheckedChange={setEnableBillingNotifications}
+                  />
+                  <Label htmlFor="billing-email-notifications-toggle" className="text-base">
+                    Habilitar preparação de e-mail para faturamento
+                  </Label>
+                </div>
+
+                {enableBillingNotifications && (
+                  <div className="space-y-2">
+                    <Label htmlFor="billing-notification-emails" className="text-base">
+                      E-mails para Notificação (separados por vírgula)
+                    </Label>
+                    <Textarea
+                      id="billing-notification-emails"
+                      placeholder="financeiro@dominio.com, faturamento@dominio.com"
+                      value={billingEmailList}
+                      onChange={(e) => setBillingEmailList(e.target.value)}
+                      className="min-h-[80px]"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
       </Accordion>
 
       <Card className="mt-6 shadow-md">
         <CardFooter className="p-4 flex justify-end">
-            <Button onClick={handleSaveAllSettings} disabled={isSubmitting || isSaved}>
-              {isSaved ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-              {isSubmitting ? 'Salvando...' : isSaved ? 'Salvo!' : 'Salvar Configurações'}
-            </Button>
+          <Button onClick={handleSaveAllSettings} disabled={isSubmitting || isSaved}>
+            {isSaved ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+            {isSubmitting ? 'Salvando...' : isSaved ? 'Salvo!' : 'Salvar Configurações'}
+          </Button>
         </CardFooter>
       </Card>
-
     </div>
   );
 }

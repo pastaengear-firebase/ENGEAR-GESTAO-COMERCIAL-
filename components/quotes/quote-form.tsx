@@ -116,12 +116,21 @@ export default function QuoteForm({ quoteToEdit, onFormSubmit, showReadOnlyAlert
       toast({ title: "Aguarde", description: "Carregando configurações de e-mail...", variant: "default" });
       return;
     }
-    if (!appSettings.enableProposalsEmailNotifications || !appSettings.proposalsNotificationEmails?.length) {
-      toast({ title: "Notificação Desligada", description: "As notificações por e-mail para propostas estão desativadas ou nenhum destinatário foi configurado.", variant: "default" });
+    if (!appSettings.enableProposalsEmailNotifications) {
+      toast({ title: "Notificação desativada", description: "O envio automático de e-mail para Propostas está desativado nas Configurações.", variant: "default" });
       return;
     }
 
-    const recipients = appSettings.proposalsNotificationEmails.join(',');
+    let recipients = appSettings.proposalsNotificationEmails.join(',');
+    if (!recipients) {
+      toast({
+        title: "Destinatários não configurados",
+        description: "Vou abrir o e-mail mesmo assim para você preencher os destinatários manualmente. (Ou cadastre em Configurações.)",
+        variant: "default",
+        duration: 6500
+      });
+      recipients = "";
+    }
     
     const subjectValue = (quote.proposedValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const subject = `Nova Proposta: ${quote.clientName || 'Cliente não informado'} (${subjectValue}) - ${quote.seller}`;

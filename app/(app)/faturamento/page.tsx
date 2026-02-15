@@ -4,6 +4,7 @@ import { format, parseISO, isBefore, subDays, differenceInDays } from 'date-fns'
 import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Receipt, Search, Send, AlertTriangle, Loader2 } from 'lucide-react';
 import { useSales } from '@/hooks/use-sales';
+import { useSettings } from '@/hooks/use-settings';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import type { Sale, BillingLog } from '@/lib/types';
 
 export default function FaturamentoPage() {
   const { sales, updateSale, userRole, user } = useSales();
+  const { settings } = useSettings();
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -30,62 +32,129 @@ export default function FaturamentoPage() {
   const [recipientEmail, setRecipientEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const logsQuery = useMemo(() => firestore ? query(collection(firestore, 'billing-logs'), orderBy('requestedAt', 'desc')) : null, [firestore]);
+  const billingEnabled = settings?.enableBillingEmailNotifications ?? false;
+  const billingEmails = settings?.billingNotificationEmails ?? [];
+  const hasBillingEmails = Array.isArray(billingEmails) && billingEmails.length > 0;
+
+  const logsQuery = useMemo(
+    () => firestore ? query(collection(firestore, 'billing-logs'), orderBy('requestedAt', 'desc')) : null,
+    [firestore]
+  );
   const { data: billingLogs } = useCollection<BillingLog>(logsQuery);
 
   const pendingSales = useMemo(() => {
     const limit = subDays(new Date(), 30);
-    return sales.filter(s => {
+    return sales
+      .filter(s => {
         const isPending = s.payment < s.salesValue;
         const isProcess = s.status === 'Á INICAR' || s.status === 'EM ANDAMENTO';
         return isPending && isProcess && isBefore(parseISO(s.date), limit);
-    }).map(s => ({ ...s, daysPending: differenceInDays(new Date(), parseISO(s.date)) })).sort((a,b) => b.daysPending - a.daysPending);
+      })
+      .map(s => ({ ...s, daysPending: differenceInDays(new Date(), parseISO(s.date)) }))
+      .sort((a, b) => b.daysPending - a.daysPending);
   }, [sales]);
 
   const handleSearch = () => {
     const term = searchTerm.toLowerCase();
-    setSearchResults(sales.filter(s => s.project.toLowerCase().includes(term) || (s.os || '').toLowerCase().includes(term) || s.clientService.toLowerCase().includes(term)));
+    setSearchResults(
+      sales.filter(s =>
+        s.project.toLowerCase().includes(term) ||
+        (s.os || '').toLowerCase().includes(term) ||
+        s.clientService.toLowerCase().includes(term)
+      )
+    );
   };
 
   const handleSendEmail = async () => {
     if (!selectedSale || !user) return;
-    if (!recipientEmail || !billingAmount) {
-        toast({ title: "Erro", description: "Preencha valor e e-mail.", variant: "destructive" });
-        return;
+
+    const resolvedRecipients = (billingEnabled && hasBillingEmails)
+      ? billingEmails.join(';')
+      : recipientEmail.trim();
+
+    if (!billingAmount) {
+      toast({ title: "Erro", description: "Preencha o valor.", variant: "destructive" });
+      return;
     }
-    
+
+    if (!resolvedRecipients) {
+      toast({
+        title: "Erro",
+        description: billingEnabled ? "Cadastre os e-mails de faturamento em Configurações." : "Preencha o e-mail do destinatário.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-        await addDoc(collection(firestore!, 'billing-logs'), {
-            saleId: selectedSale.id, saleData: selectedSale, billingInfo, billingAmount: Number(billingAmount),
-            recipientEmail, requestedBy: userRole, requestedByUid: user.uid, requestedAt: serverTimestamp()
-        });
-        await updateSale(selectedSale.id, { status: "AGUARDANDO PAGAMENTO" });
-        window.open(`mailto:${recipientEmail}?subject=FATURAMENTO: ${selectedSale.project}&body=Favor faturar ${Number(billingAmount).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}`);
-        toast({ title: "Sucesso", description: "Solicitação registrada." });
-        setSelectedSale(null);
+      await addDoc(collection(firestore!, 'billing-logs'), {
+        saleId: selectedSale.id,
+        saleData: selectedSale,
+        billingInfo,
+        billingAmount: Number(billingAmount),
+        recipientEmail: resolvedRecipients,
+        requestedBy: userRole,
+        requestedByUid: user.uid,
+        requestedAt: serverTimestamp(),
+      });
+
+      await updateSale(selectedSale.id, { status: "AGUARDANDO PAGAMENTO" });
+
+      const amountBRL = Number(billingAmount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      const subject = `FATURAMENTO - OS ${selectedSale.os || 'NÃO INFORMADO'} - ${selectedSale.project || 'NÃO INFORMADO'} - Empresa ${selectedSale.company || 'NÃO INFORMADO'}`;
+
+      const body = [
+        `Solicitação de faturamento`,
+        ``,
+        `Projeto: ${selectedSale.project || 'NÃO INFORMADO'}`,
+        `OS: ${selectedSale.os || 'NÃO INFORMADO'}`,
+        `Cliente/Serviço: ${selectedSale.clientService || 'NÃO INFORMADO'}`,
+        `Área: ${selectedSale.area || 'NÃO INFORMADA'}`,
+        `Vendedor: ${selectedSale.seller || 'NÃO INFORMADO'}`,
+        ``,
+        `Valor a faturar: ${amountBRL}`,
+        ``,
+        billingInfo?.trim() ? `Observações: ${billingInfo.trim()}` : `Observações: (sem)`,
+      ].join('\n');
+
+      const mailtoLink = `mailto:${resolvedRecipients}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.open(mailtoLink, '_blank');
+
+      toast({ title: "Sucesso", description: "Solicitação registrada." });
+      setSelectedSale(null);
+      setRecipientEmail('');
+      setBillingInfo('');
+      setBillingAmount('');
     } catch (e) {
-        toast({ title: "Erro", description: "Falha ao processar.", variant: "destructive" });
+      toast({ title: "Erro", description: "Falha ao processar.", variant: "destructive" });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold flex items-center"><Receipt className="mr-2" /> FATURAMENTO</h1>
-      
+
       <Tabs defaultValue="request">
         <TabsList className="w-full grid grid-cols-2">
           <TabsTrigger value="request">Solicitar</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
         </TabsList>
+
         <TabsContent value="request" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Buscar Venda</CardTitle>
               <div className="flex gap-2 mt-2">
-                <Input placeholder="Projeto, OS ou Cliente..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+                <Input
+                  placeholder="Projeto, OS ou Cliente..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                />
                 <Button onClick={handleSearch}><Search className="h-4 w-4 mr-2" /> Buscar</Button>
               </div>
             </CardHeader>
@@ -95,10 +164,19 @@ export default function FaturamentoPage() {
                   <Table>
                     <TableBody>
                       {searchResults.map(s => (
-                        <TableRow key={s.id} className="cursor-pointer" onClick={() => { setSelectedSale(s); setBillingAmount(String(s.salesValue - s.payment)); }}>
+                        <TableRow
+                          key={s.id}
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setSelectedSale(s);
+                            setBillingAmount(String(s.salesValue - s.payment));
+                          }}
+                        >
                           <TableCell>{s.project}</TableCell>
                           <TableCell>{s.clientService}</TableCell>
-                          <TableCell className="text-right">{(s.salesValue - s.payment).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</TableCell>
+                          <TableCell className="text-right">
+                            {(s.salesValue - s.payment).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -114,16 +192,33 @@ export default function FaturamentoPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div><strong>Projeto:</strong> {selectedSale.project}</div>
-                  <div><strong>Saldo:</strong> {(selectedSale.salesValue - selectedSale.payment).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</div>
+                  <div><strong>Saldo:</strong> {(selectedSale.salesValue - selectedSale.payment).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                 </div>
+
                 <div className="space-y-2">
                   <Label>Valor a Faturar</Label>
                   <Input type="number" value={billingAmount} onChange={e => setBillingAmount(e.target.value)} />
                 </div>
+
                 <div className="space-y-2">
                   <Label>E-mail do Destinatário</Label>
-                  <Input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)} placeholder="financeiro@..." />
+
+                  {billingEnabled && (
+                    <div className="text-sm text-muted-foreground">
+                      Faturamento por e-mail está <strong>ATIVADO</strong>.{" "}
+                      {hasBillingEmails ? `Destinatários: ${billingEmails.join(', ')}` : "Nenhum e-mail cadastrado em Configurações."}
+                    </div>
+                  )}
+
+                  <Input
+                    type="email"
+                    value={recipientEmail}
+                    onChange={e => setRecipientEmail(e.target.value)}
+                    placeholder="financeiro@..."
+                    disabled={billingEnabled && hasBillingEmails}
+                  />
                 </div>
+
                 <div className="space-y-2">
                   <Label>Observações</Label>
                   <Textarea value={billingInfo} onChange={e => setBillingInfo(e.target.value)} />
@@ -137,13 +232,19 @@ export default function FaturamentoPage() {
             </Card>
           )}
         </TabsContent>
+
         <TabsContent value="history">
           <Card>
             <CardContent className="pt-6">
               <ScrollArea className="h-96">
                 <Table>
                   <TableHeader>
-                    <TableRow><TableHead>Data</TableHead><TableHead>Vendedor</TableHead><TableHead>Projeto</TableHead><TableHead className="text-right">Valor</TableHead></TableRow>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Vendedor</TableHead>
+                      <TableHead>Projeto</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                    </TableRow>
                   </TableHeader>
                   <TableBody>
                     {billingLogs?.map(log => (
@@ -151,7 +252,7 @@ export default function FaturamentoPage() {
                         <TableCell>{log.requestedAt?.toDate ? format(log.requestedAt.toDate(), 'dd/MM/yy HH:mm') : '...'}</TableCell>
                         <TableCell>{log.requestedBy}</TableCell>
                         <TableCell>{log.saleData.project}</TableCell>
-                        <TableCell className="text-right">{log.billingAmount.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</TableCell>
+                        <TableCell className="text-right">{log.billingAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -163,11 +264,19 @@ export default function FaturamentoPage() {
       </Tabs>
 
       <Card id="cobranca" className="border-amber-500/20">
-        <CardHeader><CardTitle className="flex items-center text-amber-600"><AlertTriangle className="mr-2" /> Controle de Cobrança</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="flex items-center text-amber-600">
+            <AlertTriangle className="mr-2" /> Controle de Cobrança
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow><TableHead>Vendedor</TableHead><TableHead>Projeto</TableHead><TableHead className="text-right">Atraso</TableHead></TableRow>
+              <TableRow>
+                <TableHead>Vendedor</TableHead>
+                <TableHead>Projeto</TableHead>
+                <TableHead className="text-right">Atraso</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {pendingSales.map(s => (
