@@ -17,7 +17,7 @@ interface SalesChartsProps {
 const CHART_COLORS = {
   SERGIO: 'hsl(var(--chart-1))',
   RODRIGO: 'hsl(var(--chart-2))',
-  "Á INICAR": 'hsl(var(--chart-3))',
+  "A INICIAR": 'hsl(var(--chart-3))',
   "EM ANDAMENTO": 'hsl(var(--chart-4))',
   "AGUARDANDO PAGAMENTO": 'hsl(var(--chart-2))',
   "FINALIZADO": 'hsl(var(--chart-5))', 

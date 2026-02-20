@@ -100,7 +100,7 @@ export default function SalesForm({ saleToEdit, fromQuoteId, onFormSubmit, showR
             area: quoteToConvert.area,
             clientService: quoteToConvert.clientName,
             salesValue: quoteToConvert.proposedValue,
-            status: "Á INICAR",
+            status: "A INICIAR",
             payment: 0,
             summary: quoteToConvert.description, // Pre-fill summary from quote description
             sendSaleNotification: appSettings.enableSalesEmailNotifications,
@@ -224,7 +224,13 @@ Para gerenciar, acesse: ${saleEditLink}
         newSale = await addSale(salePayload);
         
         if (fromQuoteId) {
-            await updateQuoteStatus(fromQuoteId, { status: "Aceita" } as any);
+            const quoteToUpdate = getQuoteByIdFromContext(fromQuoteId);
+            if (quoteToUpdate) {
+              await updateQuoteStatus(fromQuoteId, { 
+                status: "Aceita", 
+                followUpOption: quoteToUpdate.followUpOption || "Nenhum" 
+              });
+            }
         }
       }
 

@@ -47,7 +47,7 @@ export default function FaturamentoPage() {
     return sales
       .filter(s => {
         const isPending = s.payment < s.salesValue;
-        const isProcess = s.status === 'Á INICAR' || s.status === 'EM ANDAMENTO';
+        const isProcess = s.status === 'A INICIAR' || s.status === 'EM ANDAMENTO';
         return isPending && isProcess && isBefore(parseISO(s.date), limit);
       })
       .map(s => ({ ...s, daysPending: differenceInDays(new Date(), parseISO(s.date)) }))

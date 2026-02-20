@@ -61,7 +61,7 @@ export default function DashboardPage() {
     const limit = subDays(new Date(), 30);
     return allSales.filter(s => {
         const matchesSeller = viewingAsSeller === ALL_SELLERS_OPTION || s.seller === viewingAsSeller;
-        return matchesSeller && s.payment < s.salesValue && (s.status === 'Á INICAR' || s.status === 'EM ANDAMENTO') && isBefore(parseISO(s.date), limit);
+        return matchesSeller && s.payment < s.salesValue && (s.status === 'A INICIAR' || s.status === 'EM ANDAMENTO') && isBefore(parseISO(s.date), limit);
     }).length;
   }, [allSales, viewingAsSeller]);
 
