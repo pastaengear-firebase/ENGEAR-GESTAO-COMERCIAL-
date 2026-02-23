@@ -103,9 +103,12 @@ export default function DashboardPage() {
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Propostas Total</CardTitle></CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.totalProposedValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div></CardContent>
         </Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Conversão (Valor)</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{stats.convValue.toFixed(1)}%</div></CardContent>
-        </Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle></CardHeader>
+  <CardContent>
+    <div className="text-2xl font-bold">{stats.convCount.toFixed(1)}%</div>
+    <p className="text-xs text-muted-foreground">{stats.totalSalesCount} de {stats.totalProposalsCount} propostas</p>
+  </CardContent>
+</Card>
       </div>
 
       <SalesCharts salesData={filteredSales} />
