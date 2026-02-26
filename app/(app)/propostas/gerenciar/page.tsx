@@ -1,3 +1,5 @@
+
+
 // src/app/(app)/propostas/gerenciar/page.tsx
 "use client";
 import type { ChangeEvent } from 'react';
@@ -96,72 +98,71 @@ export default function GerenciarPropostasPage() {
   const handlePrint = () => {
     window.print();
   };
+// Helpers CSV (Excel PT-BR usa ';')
+const escapeCsv = (value: any) => {
+  const v = String(value ?? '');
+  return /[",\n\r;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+};
 
-  const escapeCsv = (value: any) => {
-    const v = String(value ?? '');
-    return /[",\n\r;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-  };
+const rowsToCsv = (rows: Record<string, any>[]) => {
+  if (!rows || rows.length === 0) return '';
+  const headers = Object.keys(rows[0]);
+  const lines = [
+    headers.join(';'),
+    ...rows.map(r => headers.map(h => escapeCsv((r as any)[h])).join(';')),
+  ];
+  return lines.join('\n');
+};
 
-  const rowsToCsv = (rows: Record<string, any>[]) => {
-    if (!rows || rows.length === 0) return '';
-    const headers = Object.keys(rows[0]);
-    const lines = [
-      headers.join(';'),
-      ...rows.map(r => headers.map(h => escapeCsv((r as any)[h])).join(';')),
-    ];
-    return lines.join('\n');
-  };
+const csvToRows = (csvText: string) => {
+  const text = (csvText || '').replace(/^\uFEFF/, '');
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
 
-  const csvToRows = (csvText: string) => {
-    const text = (csvText || '').replace(/^\uFEFF/, '');
-    const rows: string[][] = [];
-    let row: string[] = [];
-    let field = '';
-    let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
 
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      const next = text[i + 1];
-
-      if (inQuotes) {
-        if (c === '"' && next === '"') { field += '"'; i++; continue; }
-        if (c === '"') { inQuotes = false; continue; }
-        field += c;
-        continue;
-      }
-
-      if (c === '"') { inQuotes = true; continue; }
-      if (c === ';') { row.push(field.trim()); field = ''; continue; }
-      if (c === '\r') continue;
-      if (c === '\n') { row.push(field.trim()); rows.push(row); row = []; field = ''; continue; }
+    if (inQuotes) {
+      if (c === '"' && next === '"') { field += '"'; i++; continue; }
+      if (c === '"') { inQuotes = false; continue; }
       field += c;
+      continue;
     }
-    row.push(field.trim());
-    rows.push(row);
 
-    const cleaned = rows.filter(r => r.some(v => (v ?? '').trim() !== ''));
-    if (cleaned.length === 0) return [];
+    if (c === '"') { inQuotes = true; continue; }
+    if (c === ';') { row.push(field.trim()); field = ''; continue; }
+    if (c === '\r') continue;
+    if (c === '\n') { row.push(field.trim()); rows.push(row); row = []; field = ''; continue; }
+    field += c;
+  }
+  row.push(field.trim());
+  rows.push(row);
 
-    const headers = cleaned[0].map(h => (h ?? '').trim());
-    return cleaned.slice(1).map(r => {
-      const obj: Record<string, string> = {};
-      headers.forEach((h, idx) => { obj[h] = r[idx] ?? ''; });
-      return obj;
-    });
-  };
+  const cleaned = rows.filter(r => r.some(v => (v ?? '').trim() !== ''));
+  if (cleaned.length === 0) return [];
 
-  const downloadTextFile = (content: string, filename: string, mime: string) => {
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
+  const headers = cleaned[0].map(h => (h ?? '').trim());
+  return cleaned.slice(1).map(r => {
+    const obj: Record<string, string> = {};
+    headers.forEach((h, idx) => { obj[h] = r[idx] ?? ''; });
+    return obj;
+  });
+};
 
+const downloadTextFile = (content: string, filename: string, mime: string) => {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
   const handleExport = async () => {
     const dataToExport = managementFilteredQuotes.map(q => ({
       'Cliente': q.clientName || '',
@@ -178,8 +179,7 @@ export default function GerenciarPropostasPage() {
       'Data Follow-up': q.followUpDate || '',
       'Follow-up Realizado?': q.followUpDone ? 'Sim' : 'Não',
     }));
-    
-    const csv = rowsToCsv(dataToExport);
+        const csv = rowsToCsv(dataToExport);
     downloadTextFile(csv, "Dados_Propostas.csv", "text/csv;charset=utf-8;");
   };
 
@@ -190,7 +190,8 @@ export default function GerenciarPropostasPage() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const text = String(e.target?.result ?? '');
+      
+                const text = String(e.target?.result ?? '');
         const json: any[] = csvToRows(text);
 
         if (json.length === 0) {
@@ -398,7 +399,6 @@ export default function GerenciarPropostasPage() {
             </DialogHeader>
             <div className="p-4">
               <QuoteForm 
-                key={editingQuote?.id || 'new-quote'}
                 quoteToEdit={editingQuote} 
                 onFormSubmit={handleFormSubmitted}
                 showReadOnlyAlert={true} 
