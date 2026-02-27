@@ -1,4 +1,5 @@
-﻿// src/components/sales/sales-table.tsx
+
+// src/components/sales/sales-table.tsx
 "use client";
 import type { Sale } from '@/lib/types';
 import {
@@ -12,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit3, Trash2, Eye, Link as LinkIcon } from 'lucide-react';
+import { MoreHorizontal, Edit3, Trash2, Eye } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -31,13 +32,13 @@ export default function SalesTable({ salesData, onEdit, onDelete, disabledAction
   const getStatusBadgeVariant = (status: Sale['status']): React.ComponentProps<typeof Badge>['variant'] => {
     switch (status) {
       case 'FINALIZADO':
-        return 'default';
+        return 'default'; 
       case 'A INICIAR':
       case 'EM ANDAMENTO':
       case 'AGUARDANDO PAGAMENTO':
-        return 'secondary';
+        return 'secondary'; 
       case 'CANCELADO':
-        return 'destructive';
+        return 'destructive'; 
       default:
         return 'outline';
     }
@@ -73,15 +74,13 @@ export default function SalesTable({ salesData, onEdit, onDelete, disabledAction
             <TableHead className="text-right">Valor Venda</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Pagamento</TableHead>
-            <TableHead>PDF</TableHead>
             {showActions && <TableHead className="text-right print-hide">Ações</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {salesData.map((sale) => {
             const areActionsDisabled = globalDisabled || userRole !== sale.seller;
-            const attachmentUrl = (sale as any).attachmentUrl as string | undefined;
-
+            
             return (
             <TableRow key={sale.id} className="hover:bg-muted/50 transition-colors">
               <TableCell>{format(parseISO(sale.date), 'dd/MM/yy', { locale: ptBR })}</TableCell>
@@ -101,17 +100,6 @@ export default function SalesTable({ salesData, onEdit, onDelete, disabledAction
               </TableCell>
               <TableCell className="text-right">
                 {sale.payment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-              </TableCell>
-              <TableCell>
-                {attachmentUrl ? (
-                  <Button asChild variant="outline" size="sm">
-                    <a href={attachmentUrl} target="_blank" rel="noopener noreferrer">
-                      <LinkIcon className="mr-2 h-4 w-4" /> Ver PDF
-                    </a>
-                  </Button>
-                ) : (
-                  <span className="text-xs text-muted-foreground/70 italic">—</span>
-                )}
               </TableCell>
               {showActions && (
                 <TableCell className="text-right print-hide">
@@ -142,23 +130,38 @@ export default function SalesTable({ salesData, onEdit, onDelete, disabledAction
     </ScrollArea>
       <style jsx global>{`
         @media print {
-          body * { visibility: hidden; }
-          #sales-table-printable-area, #sales-table-printable-area * { visibility: visible; }
+          body * {
+            visibility: hidden;
+          }
+          #sales-table-printable-area, #sales-table-printable-area * {
+            visibility: visible;
+          }
           #sales-table-printable-area {
             position: absolute;
-            left: 0; top: 0; width: 100%;
-            font-size: 8pt;
+            left: 0;
+            top: 0;
+            width: 100%;
+            font-size: 8pt; /* Smaller font for printing */
           }
-          .print-hide { display: none !important; }
-          table { width: 100% !important; border-collapse: collapse !important; }
+          .print-hide {
+            display: none !important;
+          }
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
           th, td {
             border: 1px solid #ccc !important;
             padding: 4px !important;
-            white-space: normal !important;
-            word-break: break-word;
+            white-space: normal !important; /* Allow text wrapping */
+            word-break: break-word; /* Break long words */
           }
-          .max-w-\\[200px\\] { max-width: 100px !important; }
-          @page { size: A4 landscape; margin: 10mm; }
+          .max-w-\\[200px\\] { max-width: 100px !important; } /* Adjust max width for print */
+
+          @page {
+            size: A4 landscape; /* Horizontal A4 */
+            margin: 10mm; /* Margins for A4 */
+          }
         }
       `}</style>
     </>

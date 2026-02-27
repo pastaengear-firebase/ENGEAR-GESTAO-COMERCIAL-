@@ -1,4 +1,5 @@
-﻿"use client";
+﻿// components/sales/sales-form.tsx
+"use client";
 import type React from "react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
@@ -8,9 +9,6 @@ import { AREA_OPTIONS, STATUS_OPTIONS, COMPANY_OPTIONS, ALL_SELLERS_OPTION } fro
 import { useSales } from "@/hooks/use-sales";
 import { useQuotes } from "@/hooks/use-quotes";
 import { useSettings } from "@/hooks/use-settings";
-import { useFirestore, useStorage } from "@/firebase/provider";
-import { doc, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +17,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarIcon, DollarSign, Save, RotateCcw, Info, Check, UploadCloud, Link as LinkIcon, Trash2 } from "lucide-react";
+import { CalendarIcon, DollarSign, Save, RotateCcw, Info, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -40,24 +38,17 @@ export default function SalesForm({
   showReadOnlyAlert,
 }: SalesFormProps) {
   const { addSale, updateSale, userRole } = useSales();
-  const { getQuoteById: getQuoteByIdFromContext, updateQuote: updateQuoteStatus, loadingQuotes } = useQuotes();
+  const {
+    getQuoteById: getQuoteByIdFromContext,
+    updateQuote: updateQuoteStatus,
+    loadingQuotes,
+  } = useQuotes();
   const { settings: appSettings } = useSettings();
-  const firestore = useFirestore();
-  const storage = useStorage();
   const { toast } = useToast();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [originatingSeller, setOriginatingSeller] = useState<string | null>(null);
-
-  // PDF (vendas)
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [pdfUploading, setPdfUploading] = useState(false);
-  const [deleteExistingPdf, setDeleteExistingPdf] = useState(false);
-  const [existingPdfUrl, setExistingPdfUrl] = useState<string | null>(null);
-  const [existingPdfPath, setExistingPdfPath] = useState<string | null>(null);
-  const [existingPdfName, setExistingPdfName] = useState<string | null>(null);
 
   const editMode = !!saleToEdit;
 
@@ -87,18 +78,6 @@ export default function SalesForm({
   const isFormDisabled =
     (userRole === ALL_SELLERS_OPTION && !editMode) ||
     (editMode && userRole !== saleToEdit?.seller);
-
-  const resetPdfStateFromSale = useCallback((sale?: any) => {
-    const url = sale?.attachmentUrl ?? null;
-    const path = sale?.attachmentPath ?? null;
-    const name = sale?.attachmentName ?? null;
-    setExistingPdfUrl(url);
-    setExistingPdfPath(path);
-    setExistingPdfName(name);
-    setPdfFile(null);
-    setDeleteExistingPdf(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
 
   // Função para resetar o formulário com segurança
   const resetForm = useCallback(
@@ -137,7 +116,6 @@ export default function SalesForm({
     // 1) Edição de venda: sempre carrega a venda completa
     if (editMode && saleToEdit) {
       resetForm(saleToEdit);
-      resetPdfStateFromSale(saleToEdit);
       setOriginatingSeller(saleToEdit.seller);
       return;
     }
@@ -146,8 +124,11 @@ export default function SalesForm({
     if (fromQuoteId) {
       const quoteToConvert = getQuoteByIdFromContext(fromQuoteId);
 
+      // Se ainda está carregando, não faz nada ainda (evita pré-preencher vazio)
       if (!quoteToConvert) {
         if (loadingQuotes) return;
+
+        // Carregamento terminou e mesmo assim não achou: erro controlado
         toast({
           title: "Proposta não encontrada",
           description: "Não foi possível localizar a proposta para conversão. Volte e tente novamente.",
@@ -156,6 +137,7 @@ export default function SalesForm({
         return;
       }
 
+      // Pré-preenche apenas 1 vez (não sobrescreve se usuário já começou a editar)
       if (!prefillDoneRef.current) {
         if (userRole !== quoteToConvert.seller) {
           toast({
@@ -169,8 +151,8 @@ export default function SalesForm({
         resetForm({
           date: new Date(),
           company: quoteToConvert.company,
-          project: "",
-          os: "",
+          project: "", // usuário preenche
+          os: "", // usuário preenche
           area: quoteToConvert.area,
           clientService: quoteToConvert.clientName,
           salesValue: quoteToConvert.proposedValue,
@@ -179,9 +161,6 @@ export default function SalesForm({
           summary: `Convertido da Proposta: ${quoteToConvert.description || ""}`,
           sendSaleNotification: appSettings?.enableSalesEmailNotifications || false,
         });
-
-        // Sem PDF herdado da proposta (é PDF da venda)
-        resetPdfStateFromSale(undefined);
 
         prefillDoneRef.current = true;
       }
@@ -192,7 +171,6 @@ export default function SalesForm({
 
     // 3) Nova venda “normal”
     resetForm();
-    resetPdfStateFromSale(undefined);
     setOriginatingSeller(null);
   }, [
     editMode,
@@ -201,112 +179,20 @@ export default function SalesForm({
     getQuoteByIdFromContext,
     loadingQuotes,
     resetForm,
-    resetPdfStateFromSale,
     userRole,
     toast,
     appSettings?.enableSalesEmailNotifications,
   ]);
 
-  const handlePickPdf = () => fileInputRef.current?.click();
-
-  const handlePdfSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-
-    if (f.type !== "application/pdf") {
-      toast({ title: "Formato inválido", description: "Selecione apenas PDF.", variant: "destructive" });
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
-    if (f.size > 4 * 1024 * 1024) {
-      toast({ title: "Arquivo grande", description: "Máximo permitido: 4MB.", variant: "destructive" });
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
-
-    setPdfFile(f);
-    // se escolher novo PDF, não deletamos automaticamente; substituição ocorrerá no submit
-    setDeleteExistingPdf(false);
-  };
-
-  const removeExistingPdfLocally = () => {
-    // marca para remover do storage e limpar campos no submit
-    setDeleteExistingPdf(true);
-    setPdfFile(null);
-  };
-
-  const uploadSalePdf = async (saleId: string) => {
-    if (!storage || !firestore) throw new Error("Storage/Firestore não inicializado.");
-    if (!pdfFile) return null;
-
-    // apaga o anterior se existir
-    if (existingPdfPath) {
-      const oldRef = ref(storage, existingPdfPath);
-      await deleteObject(oldRef).catch(() => {});
-    }
-
-    const safeName = pdfFile.name.replace(/[^\w.\-() ]+/g, "_");
-    const filePath = `sales/${saleId}/${Date.now()}-${safeName}`;
-    const fileRef = ref(storage, filePath);
-    await uploadBytes(fileRef, pdfFile);
-    const url = await getDownloadURL(fileRef);
-
-    const saleRef = doc(firestore, "sales", saleId);
-    await updateDoc(saleRef, {
-      attachmentUrl: url,
-      attachmentPath: filePath,
-      attachmentName: pdfFile.name,
-      updatedAt: new Date(),
-    } as any);
-
-    setExistingPdfUrl(url);
-    setExistingPdfPath(filePath);
-    setExistingPdfName(pdfFile.name);
-    setPdfFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    return url;
-  };
-
-  const deleteSalePdf = async (saleId: string) => {
-    if (!storage || !firestore) throw new Error("Storage/Firestore não inicializado.");
-    if (!existingPdfPath) {
-      // só limpa os campos
-      const saleRef = doc(firestore, "sales", saleId);
-      await updateDoc(saleRef, { attachmentUrl: null, attachmentPath: null, attachmentName: null } as any);
-      setExistingPdfUrl(null);
-      setExistingPdfPath(null);
-      setExistingPdfName(null);
-      return;
-    }
-
-    const fileRef = ref(storage, existingPdfPath);
-    await deleteObject(fileRef).catch(() => {});
-    const saleRef = doc(firestore, "sales", saleId);
-    await updateDoc(saleRef, { attachmentUrl: null, attachmentPath: null, attachmentName: null } as any);
-
-    setExistingPdfUrl(null);
-    setExistingPdfPath(null);
-    setExistingPdfName(null);
-  };
-
-  const triggerEmailNotification = async (sale: Sale & any) => {
+  const triggerEmailNotification = async (sale: Sale) => {
     if (!appSettings.enableSalesEmailNotifications) return;
 
     const recipients = appSettings.salesNotificationEmails.join(",");
     const subjectValue = sale.salesValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     const subject = `Nova Venda: ${sale.project} (${subjectValue}) - ${sale.seller}`;
-
-    const pdfLine = sale.attachmentUrl ? `\nPDF: ${sale.attachmentUrl}` : "";
-    const body =
-      `Nova venda registrada.\n` +
-      `Vendedor: ${sale.seller}\n` +
-      `Projeto: ${sale.project}\n` +
-      `O.S.: ${sale.os}\n` +
-      `Cliente: ${sale.clientService}\n` +
-      `Valor: ${subjectValue}` +
-      pdfLine;
-
+    const body = `Nova venda registrada.\nVendedor: ${sale.seller}\nProjeto: ${sale.project}\nCliente: ${sale.clientService}\nValor: ${subjectValue}`;
     const mailtoLink = `mailto:${recipients}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
     window.open(mailtoLink, "_blank");
   };
 
@@ -327,54 +213,25 @@ export default function SalesForm({
     };
 
     try {
-      let saleId: string;
-      let savedSale: any;
-
       if (editMode && saleToEdit) {
         await updateSale(saleToEdit.id, salePayload);
-        saleId = saleToEdit.id;
-        savedSale = { ...saleToEdit, ...salePayload };
-
-        if (deleteExistingPdf && (existingPdfUrl || existingPdfPath)) {
-          await deleteSalePdf(saleId);
-          savedSale.attachmentUrl = null;
-        }
-
-        if (pdfFile) {
-          setPdfUploading(true);
-          const url = await uploadSalePdf(saleId);
-          savedSale.attachmentUrl = url;
-        }
-
         toast({ title: "Sucesso", description: "Venda atualizada com sucesso!" });
       } else {
         const newSale = await addSale(salePayload);
-        saleId = newSale.id;
-        savedSale = { ...newSale };
-
         if (fromQuoteId) {
           await updateQuoteStatus(fromQuoteId, { status: "Aceita" } as any);
         }
-
-        if (pdfFile) {
-          setPdfUploading(true);
-          const url = await uploadSalePdf(saleId);
-          savedSale.attachmentUrl = url;
+        if (newSale && data.sendSaleNotification) {
+          await triggerEmailNotification(newSale);
         }
-
-        if (savedSale && data.sendSaleNotification) {
-          await triggerEmailNotification(savedSale);
-        }
-
         toast({ title: "Sucesso", description: "Venda cadastrada com sucesso!" });
       }
 
       setIsSaved(true);
       if (onFormSubmit) onFormSubmit();
-    } catch (e: any) {
-      toast({ title: "Erro", description: e?.message || "Erro ao salvar.", variant: "destructive" });
+    } catch {
+      toast({ title: "Erro", description: "Erro ao salvar.", variant: "destructive" });
     } finally {
-      setPdfUploading(false);
       setIsSubmitting(false);
       setTimeout(() => setIsSaved(false), 2000);
     }
@@ -408,7 +265,7 @@ export default function SalesForm({
                       <Button
                         variant={"outline"}
                         className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        disabled={isFormDisabled || isSubmitting || pdfUploading}
+                        disabled={isFormDisabled || isSubmitting}
                       >
                         {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -420,7 +277,7 @@ export default function SalesForm({
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) => date > new Date() || isFormDisabled || isSubmitting || pdfUploading}
+                      disabled={(date) => date > new Date() || isFormDisabled || isSubmitting}
                       initialFocus
                     />
                   </PopoverContent>
@@ -441,7 +298,7 @@ export default function SalesForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Empresa</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFormDisabled || isSubmitting || pdfUploading}>
+                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFormDisabled || isSubmitting}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a Empresa" />
@@ -467,7 +324,7 @@ export default function SalesForm({
               <FormItem>
                 <FormLabel>Projeto (máx 5 dígitos)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Código do Projeto" {...field} maxLength={5} disabled={isFormDisabled || isSubmitting || pdfUploading} />
+                  <Input placeholder="Código do Projeto" {...field} maxLength={5} disabled={isFormDisabled || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -481,7 +338,7 @@ export default function SalesForm({
               <FormItem>
                 <FormLabel>O.S. (máx 5 dígitos)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Número da O.S." {...field} maxLength={5} disabled={isFormDisabled || isSubmitting || pdfUploading} />
+                  <Input placeholder="Número da O.S." {...field} maxLength={5} disabled={isFormDisabled || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -494,7 +351,7 @@ export default function SalesForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Área</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFormDisabled || isSubmitting || pdfUploading}>
+                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFormDisabled || isSubmitting}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a Área" />
@@ -520,7 +377,7 @@ export default function SalesForm({
               <FormItem>
                 <FormLabel>Cliente/Serviço</FormLabel>
                 <FormControl>
-                  <Input placeholder="Cliente ou Serviço" {...field} disabled={isFormDisabled || isSubmitting || pdfUploading} />
+                  <Input placeholder="Cliente ou Serviço" {...field} disabled={isFormDisabled || isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -541,7 +398,7 @@ export default function SalesForm({
                       className="pl-8"
                       value={field.value ?? ""}
                       onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
-                      disabled={isFormDisabled || isSubmitting || pdfUploading}
+                      disabled={isFormDisabled || isSubmitting}
                       step="0.01"
                     />
                   </div>
@@ -557,7 +414,7 @@ export default function SalesForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFormDisabled || isSubmitting || pdfUploading}>
+                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFormDisabled || isSubmitting}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o Status" />
@@ -590,7 +447,7 @@ export default function SalesForm({
                       className="pl-8"
                       value={field.value ?? ""}
                       onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                      disabled={isFormDisabled || isSubmitting || pdfUploading}
+                      disabled={isFormDisabled || isSubmitting}
                       step="0.01"
                     />
                   </div>
@@ -601,52 +458,6 @@ export default function SalesForm({
           />
         </div>
 
-        {/* PDF da Venda */}
-        <div className="rounded-lg border p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-semibold">PDF da Venda</div>
-              <div className="text-sm text-muted-foreground">Máximo 4MB. Será salvo e o link vai no e-mail.</div>
-            </div>
-            <input ref={fileInputRef} type="file" className="hidden" accept="application/pdf" onChange={handlePdfSelected} />
-            <Button type="button" variant="secondary" onClick={handlePickPdf} disabled={isFormDisabled || isSubmitting || pdfUploading}>
-              <UploadCloud className="mr-2 h-4 w-4" /> Selecionar PDF
-            </Button>
-          </div>
-
-          {pdfFile && (
-            <div className="text-sm">
-              Selecionado: <span className="font-medium">{pdfFile.name}</span>
-            </div>
-          )}
-
-          {!pdfFile && existingPdfUrl && !deleteExistingPdf && (
-            <div className="flex items-center justify-between gap-3">
-              <Button asChild variant="outline" size="sm">
-                <a href={existingPdfUrl} target="_blank" rel="noopener noreferrer">
-                  <LinkIcon className="mr-2 h-4 w-4" /> Ver PDF{existingPdfName ? ` (${existingPdfName})` : ""}
-                </a>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={removeExistingPdfLocally}
-                disabled={isFormDisabled || isSubmitting || pdfUploading}
-                className="text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Remover PDF
-              </Button>
-            </div>
-          )}
-
-          {deleteExistingPdf && (
-            <div className="text-sm text-destructive">
-              PDF marcado para remoção. Salve a venda para confirmar.
-            </div>
-          )}
-        </div>
-
         <FormField
           control={form.control}
           name="summary"
@@ -654,7 +465,7 @@ export default function SalesForm({
             <FormItem>
               <FormLabel>Resumo</FormLabel>
               <FormControl>
-                <Textarea {...field} disabled={isFormDisabled || isSubmitting || pdfUploading} rows={4} />
+                <Textarea {...field} disabled={isFormDisabled || isSubmitting} rows={4} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -662,23 +473,13 @@ export default function SalesForm({
         />
 
         <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => resetForm()}
-            disabled={isSubmitting || pdfUploading}
-            className="w-full sm:w-auto"
-          >
+          <Button type="button" variant="ghost" onClick={() => resetForm()} disabled={isSubmitting} className="w-full sm:w-auto">
             <RotateCcw className="mr-2 h-4 w-4" />
             Limpar
           </Button>
-          <Button
-            type="submit"
-            disabled={isFormDisabled || isSubmitting || pdfUploading || isSaved}
-            className="w-full sm:w-auto"
-          >
+          <Button type="submit" disabled={isFormDisabled || isSubmitting || isSaved} className="w-full sm:w-auto">
             {isSaved ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-            {pdfUploading ? "Enviando PDF..." : isSubmitting ? "Salvando..." : editMode ? "Atualizar Venda" : "Salvar Venda"}
+            {isSubmitting ? "Salvando..." : editMode ? "Atualizar Venda" : "Salvar Venda"}
           </Button>
         </div>
       </form>
